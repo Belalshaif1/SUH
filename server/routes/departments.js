@@ -1,0 +1,132 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+const { v4: uuidv4 } = require('uuid');
+
+const { authenticateToken, checkPermission } = require('../middleware/auth');
+
+// Get all departments
+router.get('/', async (req, res) => {
+    try {
+        let query = 'SELECT d.*, c.name_ar as college_name_ar, c.name_en as college_name_en, c.university_id FROM departments d LEFT JOIN colleges c ON d.college_id = c.id';
+        let params = [];
+
+        if (req.query.college_id) {
+            query += ' WHERE d.college_id = ?';
+            params.push(req.query.college_id);
+        }
+
+        query += ' ORDER BY d.name_ar ASC';
+        const departments = await db.query(query, params);
+
+        const formatted = departments.map(d => ({
+            ...d,
+            colleges: d.college_name_ar ? { name_ar: d.college_name_ar, name_en: d.college_name_en } : null
+        }));
+
+        res.json(formatted);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Get single department
+router.get('/:id', async (req, res) => {
+    try {
+        const department = await db.getAsync('SELECT * FROM departments WHERE id = ?', [req.params.id]);
+        if (!department) return res.status(404).json({ error: 'Department not found' });
+        res.json(department);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Create department
+router.post('/', authenticateToken, checkPermission('manage_departments'), async (req, res) => {
+    try {
+        const { college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url } = req.body;
+
+        // Scope check
+        if (req.user.role !== 'super_admin') {
+            const college = await db.getAsync('SELECT university_id FROM colleges WHERE id = ?', [college_id]);
+            if (!college) return res.status(400).json({ error: 'Invalid college' });
+
+            if (req.user.university_id && college.university_id !== req.user.university_id) {
+                return res.status(403).json({ error: 'Access denied: Cannot create department for another university' });
+            }
+            if (req.user.role === 'college_admin' && req.user.college_id !== college_id) {
+                return res.status(403).json({ error: 'Access denied: Cannot create department for another college' });
+            }
+        }
+
+        const id = uuidv4();
+        await db.runAsync(
+            'INSERT INTO departments (id, college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [id, college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url]
+        );
+        res.json({ id });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Update department
+router.put('/:id', authenticateToken, checkPermission('manage_departments'), async (req, res) => {
+    try {
+        const { name_ar, name_en, description_ar, description_en, study_plan_url, logo_url } = req.body;
+        const target = await db.getAsync(`
+            SELECT d.id, c.university_id, d.college_id 
+            FROM departments d 
+            JOIN colleges c ON d.college_id = c.id 
+            WHERE d.id = ?`, [req.params.id]);
+
+        if (!target) return res.status(404).json({ error: 'Department not found' });
+
+        if (req.user.role !== 'super_admin') {
+            const isUniAdminOfThis = req.user.role === 'university_admin' && req.user.university_id === target.university_id;
+            const isColAdminOfThis = req.user.role === 'college_admin' && req.user.college_id === target.college_id;
+            const isDeptAdminOfThis = req.user.role === 'department_admin' && req.user.department_id === req.params.id;
+
+            if (!isUniAdminOfThis && !isColAdminOfThis && !isDeptAdminOfThis) {
+                return res.status(403).json({ error: 'Access denied: Out of scope' });
+            }
+        }
+
+        await db.runAsync(
+            'UPDATE departments SET name_ar = ?, name_en = ?, description_ar = ?, description_en = ?, study_plan_url = ?, logo_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            [name_ar, name_en, description_ar, description_en, study_plan_url, logo_url, req.params.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Delete department
+router.delete('/:id', authenticateToken, checkPermission('manage_departments'), async (req, res) => {
+    try {
+        const target = await db.getAsync(`
+            SELECT d.id, c.university_id, d.college_id 
+            FROM departments d 
+            JOIN colleges c ON d.college_id = c.id 
+            WHERE d.id = ?`, [req.params.id]);
+
+        if (!target) return res.status(404).json({ error: 'Department not found' });
+
+        if (req.user.role !== 'super_admin') {
+            const isUniAdminOfThis = req.user.role === 'university_admin' && req.user.university_id === target.university_id;
+            const isColAdminOfThis = req.user.role === 'college_admin' && req.user.college_id === target.college_id;
+
+            if (!isUniAdminOfThis && !isColAdminOfThis) {
+                return res.status(403).json({ error: 'Access denied: Out of scope' });
+            }
+        }
+
+        await db.runAsync('DELETE FROM departments WHERE id = ?', [req.params.id]);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+module.exports = router;
