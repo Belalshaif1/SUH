@@ -5,6 +5,7 @@
     },
     "deploy": {
         "rootDirectory": "server",
-        "startCommand": "npm start"
+        "startCommand": "npm start",
+        "healthcheckPath": "/api/health"
     }
 }
