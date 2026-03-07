@@ -83,10 +83,10 @@ const Jobs: React.FC = () => {
     <div className="container mx-auto px-4 py-16 animate-fade-in min-h-[80vh]">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
         <div className="space-y-4">
-          <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none px-4 py-1 rounded-full font-bold">
+          <Badge variant="outline" className="px-5 py-1.5 rounded-full border-primary/40 text-primary bg-primary/10 mb-4 font-extrabold text-xs uppercase tracking-widest shadow-sm">
             {isAr ? 'فرص وظيفية' : 'Career Opportunities'}
           </Badge>
-          <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
+          <h1 className="text-4xl md:text-6xl heading-premium mb-6">
             {t('jobs.title')}
           </h1>
           <p className="text-muted-foreground text-lg max-w-xl">
@@ -99,7 +99,7 @@ const Jobs: React.FC = () => {
           <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             placeholder={isAr ? 'ابحث عن مسمى وظيفي أو جهة...' : 'Search for job title or entity...'}
-            className="ps-12 py-7 bg-card border-border/60 focus:border-gold/50 rounded-2xl shadow-sm text-lg"
+            className="h-16 ps-16 pe-6 text-lg rounded-2xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -115,29 +115,33 @@ const Jobs: React.FC = () => {
       ) : filteredJobs.length > 0 ? (
         <div className="grid gap-8 md:grid-cols-2">
           {filteredJobs.map(j => (
-            <Card key={j.id} className="group border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[3rem] p-4 relative overflow-hidden">
+            <Card key={j.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
               <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
 
               <CardContent className="p-8 flex flex-col h-full relative z-10">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center group-hover:bg-primary transition-all duration-500">
-                    <Briefcase className="h-8 w-8 text-primary group-hover:text-white transition-colors" />
+                <div className="flex items-start justify-between mb-8">
+                  <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-3 shadow-inner">
+                    {j.universities?.logo_url ? (
+                      <img src={j.universities.logo_url.startsWith('http') ? j.universities.logo_url : `http://localhost:5000${j.universities.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                    ) : (
+                      <Briefcase className="h-8 w-8 text-primary group-hover:text-white transition-colors" />
+                    )}
                   </div>
                   {j.deadline && (
-                    <div className="flex items-center gap-2 text-xs font-bold text-destructive bg-destructive/5 px-4 py-2 rounded-full">
+                    <div className="flex items-center gap-2 text-[10px] font-extrabold text-destructive bg-destructive/5 px-4 py-2 rounded-full uppercase tracking-widest border border-destructive/10">
                       <Calendar className="h-3.5 w-3.5" />
                       <span>{t('jobs.deadline')}: {new Date(j.deadline).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}</span>
                     </div>
                   )}
                 </div>
 
-                <div className="mb-4">
-                  <Badge variant="outline" className="text-[10px] uppercase font-black px-3 py-1 rounded-full border-primary/20 text-primary bg-primary/5 mb-2">
+                <div className="mb-6">
+                  <Badge variant="outline" className="text-[10px] uppercase font-extrabold px-4 py-1.5 rounded-full border-primary/30 text-primary bg-primary/10 mb-3 tracking-wider shadow-sm">
                     {language === 'ar'
                       ? `${j.universities?.name_ar || ''} ${j.colleges ? `> ${j.colleges.name_ar}` : ''}`
                       : `${j.universities?.name_en || j.universities?.name_ar || ''} ${j.colleges ? `> ${j.colleges.name_en || j.colleges.name_ar}` : ''}`}
                   </Badge>
-                  <h3 className="text-2xl font-black text-foreground leading-tight group-hover:text-primary transition-colors">
+                  <h3 className="text-2xl font-extrabold text-foreground leading-tight group-hover:text-primary transition-colors mb-2">
                     {isAr ? j.title_ar : (j.title_en || j.title_ar)}
                   </h3>
                 </div>
@@ -158,7 +162,7 @@ const Jobs: React.FC = () => {
                 </p>
 
                 <Button
-                  className="w-full h-14 rounded-2xl text-lg font-black shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all transform active:scale-95 mt-auto"
+                  className="w-full h-14 rounded-2xl text-lg font-extrabold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all transform active:scale-95 mt-auto bg-primary"
                   onClick={() => handleApplyClick(j.id)}
                 >
                   {isAr ? 'التقديم لهذه الوظيفة' : 'Apply for this Job'}

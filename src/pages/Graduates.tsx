@@ -83,13 +83,13 @@ const Graduates: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-16 animate-in fade-in duration-1000 min-h-[80vh]">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-8 bg-gradient-to-br from-gold/10 to-transparent p-12 rounded-[3rem] border border-gold/5 relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-12 rounded-[3.5rem] border border-primary/5 relative overflow-hidden shadow-2xl shadow-primary/5">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
 
-        <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-8">
+        <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-10">
           {/* Entity Logo */}
           {(selectedDept !== 'all' || selectedCollege !== 'all' || selectedUni !== 'all') && (
-            <div className="shrink-0 h-32 w-32 rounded-[2rem] bg-white shadow-2xl p-4 flex items-center justify-center border border-gold/10 group hover:scale-110 transition-transform duration-500">
+            <div className="shrink-0 h-36 w-36 rounded-[2.5rem] bg-white shadow-2xl p-5 flex items-center justify-center border-4 border-white group hover:scale-105 transition-transform duration-500">
               <img
                 src={(
                   (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
@@ -111,23 +111,23 @@ const Graduates: React.FC = () => {
           )}
 
           <div>
-            <Badge className="bg-gold/10 text-gold hover:bg-gold/20 border-none px-4 py-1 rounded-full font-black mb-4 inline-flex uppercase">
+            <Badge variant="outline" className="px-5 py-1.5 rounded-full border-primary/40 text-primary bg-primary/10 mb-4 font-extrabold text-xs uppercase tracking-widest shadow-sm inline-flex">
               {isAr ? 'خريجون متميزون' : 'Distinguished Graduates'}
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight mb-4">
+            <h1 className="text-4xl md:text-6xl heading-premium mb-6">
               {t('graduates.title')}
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl font-medium">
               {isAr ? 'قائمة المبدعين الذين تخرجوا من جامعتنا وتركوا بصمة علمية مميزة.' : 'List of creative minds who graduated from our university and left a distinguished scientific mark.'}
             </p>
           </div>
         </div>
 
         <div className="relative w-full lg:w-96 group z-10">
-          <Search className="absolute start-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-gold transition-colors" />
+          <Search className="absolute start-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={isAr ? 'بحث عن خريج...' : 'Search for graduate...'}
-            className="h-16 ps-16 pe-6 text-lg rounded-2xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-gold/20 bg-white"
+            className="h-16 ps-16 pe-6 text-lg rounded-2xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -137,12 +137,12 @@ const Graduates: React.FC = () => {
       {/* Filters */}
       <div className="flex flex-wrap gap-4 mb-12 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
         <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200">
-          <Filter className="h-4 w-4 text-gold" />
-          <span className="text-xs font-black uppercase text-muted-foreground">{isAr ? 'تصفية حسب:' : 'Filter By:'}</span>
+          <Filter className="h-4 w-4 text-primary" />
+          <span className="text-xs font-extrabold uppercase text-muted-foreground tracking-widest">{isAr ? 'تصفية حسب:' : 'Filter By:'}</span>
         </div>
 
         <Select value={selectedUni} onValueChange={setSelectedUni}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-gold/20">
+          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
             <SelectValue placeholder={isAr ? 'الجامعة' : 'University'} />
           </SelectTrigger>
           <SelectContent>
@@ -154,7 +154,7 @@ const Graduates: React.FC = () => {
         </Select>
 
         <Select value={selectedCollege} onValueChange={setSelectedCollege} disabled={selectedUni === 'all'}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-gold/20">
+          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
             <SelectValue placeholder={isAr ? 'الكلية' : 'College'} />
           </SelectTrigger>
           <SelectContent>
@@ -166,7 +166,7 @@ const Graduates: React.FC = () => {
         </Select>
 
         <Select value={selectedDept} onValueChange={setSelectedDept} disabled={selectedCollege === 'all'}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-gold/20">
+          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
             <SelectValue placeholder={isAr ? 'القسم' : 'Department'} />
           </SelectTrigger>
           <SelectContent>
@@ -179,12 +179,12 @@ const Graduates: React.FC = () => {
 
         <div className="ms-auto flex items-center gap-4 w-full md:w-auto">
           <div className="h-8 w-[1px] bg-slate-200 hidden md:block" />
-          <div className="flex items-center gap-2 text-xs font-black uppercase text-muted-foreground whitespace-nowrap">
-            <SortAsc className="h-4 w-4 text-gold" />
+          <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground whitespace-nowrap tracking-widest">
+            <SortAsc className="h-4 w-4 text-primary" />
             {isAr ? 'ترتيب:' : 'Sort:'}
           </div>
           <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger className="w-full md:w-[150px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-gold/20">
+            <SelectTrigger className="w-full md:w-[150px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -205,42 +205,46 @@ const Graduates: React.FC = () => {
       ) : filteredGraduates.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {filteredGraduates.map(g => (
-            <Card key={g.id} className="group border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[3rem] p-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+            <Card key={g.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
 
               <CardContent className="p-8 flex flex-col h-full relative z-10">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="h-14 w-14 rounded-2xl bg-gold/10 flex items-center justify-center group-hover:bg-gold transition-all duration-500">
-                    <User className="h-7 w-7 text-gold group-hover:text-white transition-colors" />
+                <div className="flex items-start justify-between mb-8">
+                  <div className="h-16 w-16 rounded-2xl bg-primary/5 shadow-inner flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-3">
+                    {g.department_logo_url || g.college_logo_url ? (
+                      <img src={(g.department_logo_url || g.college_logo_url).startsWith('http') ? (g.department_logo_url || g.college_logo_url) : `http://localhost:5000${g.department_logo_url || g.college_logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                    ) : (
+                      <User className="h-7 w-7 text-primary group-hover:text-white transition-colors" />
+                    )}
                   </div>
                   {g.gpa && (
-                    <Badge variant="outline" className="border-gold/30 text-gold bg-gold/5 font-black text-xs px-3 py-1 rounded-full">
+                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 font-extrabold text-xs px-4 py-1.5 rounded-full shadow-sm tracking-widest uppercase">
                       {g.gpa} GPA
                     </Badge>
                   )}
                 </div>
 
                 <div className="mb-6">
-                  <Badge variant="outline" className="text-[10px] uppercase font-black px-3 py-1 rounded-full border-gold/20 text-gold bg-gold/5 mb-3 break-words max-w-full block w-fit">
+                  <Badge variant="outline" className="text-[10px] uppercase font-extrabold px-4 py-1.5 rounded-full border-primary/30 text-primary bg-primary/10 mb-4 break-words max-w-full block w-fit shadow-sm tracking-widest">
                     {isAr
                       ? `${g.university_name_ar || ''} > ${g.college_name_ar || ''} > ${g.department_name_ar || g.department_name || ''}`
                       : `${g.university_name_en || g.university_name_ar || ''} > ${g.college_name_en || g.college_name_ar || ''} > ${g.department_name_en || g.department_name_ar || g.department_name || ''}`
                     }
                   </Badge>
-                  <h3 className="text-2xl font-black text-foreground mb-1 group-hover:text-gold transition-colors duration-300">
+                  <h3 className="text-2xl font-extrabold text-foreground mb-1 group-hover:text-primary transition-colors duration-300 leading-tight">
                     {isAr ? g.full_name_ar : (g.full_name_en || g.full_name_ar)}
                   </h3>
                 </div>
 
                 <div className="space-y-4 mb-4 mt-auto">
-                  <div className="flex items-center gap-3 text-sm font-bold text-muted-foreground bg-muted/30 p-3 rounded-2xl">
-                    <Calendar className="h-4 w-4 text-gold/60" />
-                    <span>{isAr ? 'دفعة' : 'Class of'} {g.graduation_year}</span>
+                  <div className="flex items-center gap-3 text-sm font-extrabold text-muted-foreground bg-slate-50 p-3 rounded-2xl shadow-sm">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="tracking-wider uppercase">{isAr ? 'دفعة' : 'Class of'} {g.graduation_year}</span>
                   </div>
                   {(g.specialization_ar || g.specialization_en) && (
-                    <div className="flex items-center gap-3 text-sm font-bold text-muted-foreground bg-muted/30 p-3 rounded-2xl">
-                      <Award className="h-4 w-4 text-gold/60" />
-                      <span className="line-clamp-1">{isAr ? g.specialization_ar : (g.specialization_en || g.specialization_ar)}</span>
+                    <div className="flex items-center gap-3 text-sm font-extrabold text-muted-foreground bg-slate-50 p-3 rounded-2xl shadow-sm">
+                      <Award className="h-4 w-4 text-primary" />
+                      <span className="line-clamp-1 truncate">{isAr ? g.specialization_ar : (g.specialization_en || g.specialization_ar)}</span>
                     </div>
                   )}
                 </div>

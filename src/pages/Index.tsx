@@ -11,6 +11,7 @@ const Index: React.FC = () => {
   const { t, language, isRTL } = useLanguage();
   const [stats, setStats] = useState({ universities: 0, colleges: 0, departments: 0, graduates: 0, research: 0 });
   const [announcements, setAnnouncements] = useState<any[]>([]);
+  const isAr = language === 'ar';
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -58,15 +59,19 @@ const Index: React.FC = () => {
   return (
     <div className="animate-fade-in">
       {/* Hero */}
-      <section className="gradient-academic py-16 text-center text-primary-foreground md:py-24">
-        <div className="container mx-auto px-4">
-          <GraduationCap className="mx-auto mb-4 h-16 w-16 text-gold" />
-          <h1 className="mb-4 text-3xl font-bold md:text-5xl">{t('home.welcome')}</h1>
-          <p className="mx-auto mb-8 max-w-2xl text-lg opacity-90">{t('home.subtitle')}</p>
+      <section className="relative py-24 text-center overflow-hidden min-h-[60vh] flex items-center">
+        <div className="absolute inset-0 gradient-academic opacity-10 animate-pulse" />
+        <div className="container mx-auto px-4 relative z-10">
+          <Badge variant="outline" className="px-6 py-2 rounded-full border-primary/30 text-primary bg-primary/5 mb-8 font-extrabold text-sm uppercase tracking-[0.2em] shadow-sm">
+            <GraduationCap className="h-5 w-5 me-2 inline text-gold" />
+            {isAr ? 'منصة التعليم الذكي' : 'SMART EDUCATION PLATFORM'}
+          </Badge>
+          <h1 className="mb-10 text-5xl md:text-8xl heading-premium leading-[1.1]">{t('home.welcome')}</h1>
+          <p className="mx-auto mb-12 max-w-3xl text-xl md:text-2xl text-muted-foreground/80 leading-relaxed font-medium">{t('home.subtitle')}</p>
           <Link to="/universities">
-            <Button size="lg" className="bg-gold text-gold-foreground hover:bg-gold/90">
+            <Button size="lg" className="h-16 px-12 bg-gold text-gold-foreground hover:bg-gold/90 rounded-2xl shadow-2xl shadow-gold/30 text-xl font-black transition-all hover:scale-105 active:scale-95 group">
               {t('home.explore')}
-              <Arrow className="ms-2 h-5 w-5" />
+              <Arrow className="ms-3 h-7 w-7 transition-transform group-hover:translate-x-2" />
             </Button>
           </Link>
         </div>
@@ -76,11 +81,13 @@ const Index: React.FC = () => {
       <section className="container mx-auto -mt-8 px-4">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           {statItems.map((item) => (
-            <Card key={item.key} className="border-none shadow-lg">
-              <CardContent className="flex flex-col items-center p-4 text-center">
-                <item.icon className={`mb-2 h-8 w-8 ${item.color}`} />
-                <span className="text-2xl font-bold text-foreground">{stats[item.key as keyof typeof stats]}</span>
-                <span className="text-sm text-muted-foreground">{t(`home.stats.${item.key}`)}</span>
+            <Card key={item.key} className="card-premium">
+              <CardContent className="flex flex-col items-center p-6 text-center">
+                <div className={`p-3 rounded-2xl bg-slate-50 mb-3 group-hover:bg-white transition-colors`}>
+                  <item.icon className={`h-8 w-8 ${item.color}`} />
+                </div>
+                <span className="text-3xl font-extrabold text-foreground mb-1">{stats[item.key as keyof typeof stats]}</span>
+                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{t(`home.stats.${item.key}`)}</span>
               </CardContent>
             </Card>
           ))}
@@ -98,10 +105,12 @@ const Index: React.FC = () => {
             { path: '/fees', label: t('nav.fees'), icon: BookOpen },
           ].map((link) => (
             <Link key={link.path} to={link.path}>
-              <Card className="transition-all hover:shadow-lg hover:border-gold">
-                <CardContent className="flex flex-col items-center gap-2 p-6">
-                  <link.icon className="h-8 w-8 text-gold" />
-                  <span className="font-semibold text-foreground">{link.label}</span>
+              <Card className="card-premium group hover:border-primary/20 border-2 border-transparent">
+                <CardContent className="flex flex-col items-center gap-6 p-10">
+                  <div className="h-20 w-20 rounded-[2.5rem] bg-gold/5 flex items-center justify-center group-hover:bg-gold transition-all duration-700 shadow-inner">
+                    <link.icon className="h-10 w-10 text-gold group-hover:text-white transition-colors" />
+                  </div>
+                  <span className="text-xl font-bold text-foreground group-hover:text-primary transition-colors tracking-tight">{link.label}</span>
                 </CardContent>
               </Card>
             </Link>
@@ -112,24 +121,24 @@ const Index: React.FC = () => {
       {/* Latest Announcements */}
       {announcements.length > 0 && (
         <section className="container mx-auto px-4 pb-24">
-          <div className="flex items-center justify-between mb-12">
-            <div className="space-y-2">
-              <Badge variant="outline" className="px-3 py-0.5 rounded-full border-gold/30 text-gold bg-gold/5 mb-2 font-black text-[10px] uppercase tracking-wider">
-                <Sparkles className="h-3 w-3 me-2 animate-pulse" />
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
+            <div className="space-y-4">
+              <Badge variant="outline" className="px-4 py-1.5 rounded-full border-gold/40 text-gold bg-gold/10 font-extrabold text-xs uppercase tracking-widest shadow-sm">
+                <Sparkles className="h-4 w-4 me-2 animate-pulse" />
                 {t('home.latest_announcements')}
               </Badge>
-              <h2 className="text-4xl font-black text-foreground tracking-tight">{t('home.latest_announcements')}</h2>
+              <h2 className="text-4xl md:text-5xl heading-premium">{t('home.latest_announcements')}</h2>
             </div>
             <Link to="/announcements">
-              <Button variant="ghost" className="text-gold font-bold hover:text-gold hover:bg-gold/5 rounded-2xl group/all">
+              <Button variant="ghost" className="text-gold font-extrabold hover:text-gold hover:bg-gold/10 rounded-2xl h-12 px-6 group/all text-base">
                 {t('common.view_all')}
-                <Arrow className="ms-2 h-4 w-4 transition-transform group-hover/all:translate-x-1" />
+                <Arrow className="ms-2 h-5 w-5 transition-transform group-hover/all:translate-x-1" />
               </Button>
             </Link>
           </div>
-          <div className="grid gap-10 md:grid-cols-3">
+          <div className="grid gap-8 md:grid-cols-3">
             {announcements.map((a) => (
-              <Card key={a.id} className="group relative border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-700 rounded-[3rem] overflow-hidden flex flex-col h-full">
+              <Card key={a.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem]">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 z-0" />
 
                 {/* Entity Logo Overlay */}
@@ -145,22 +154,22 @@ const Index: React.FC = () => {
                   </div>
                 )}
 
-                <CardContent className="p-10 flex flex-col flex-grow relative z-10">
+                <CardContent className="p-8 flex flex-col flex-grow relative z-10">
                   <div className="flex items-center justify-between mb-6">
-                    <Badge className="bg-primary/5 text-primary border-none rounded-full px-4 py-1 text-[11px] font-black uppercase tracking-widest">
+                    <Badge className="bg-primary/10 text-primary border-none rounded-full px-4 py-1.5 text-xs font-extrabold uppercase tracking-widest shadow-sm">
                       {a.scope === 'global' ? (language === 'ar' ? 'عام' : 'Global') : (language === 'ar' ? 'مؤسسي' : 'Institutional')}
                     </Badge>
-                    <div className="flex items-center gap-2 text-xs font-black text-muted-foreground uppercase">
-                      <Calendar className="h-4 w-4 text-gold/60" />
+                    <div className="flex items-center gap-2 text-xs font-extrabold text-muted-foreground uppercase tracking-wider bg-slate-50 px-3 py-1.5 rounded-full">
+                      <Calendar className="h-4 w-4 text-gold" />
                       <span>{new Date(a.created_at).toLocaleDateString(language === 'ar' ? 'ar-IQ' : 'en-US', { day: 'numeric', month: 'short' })}</span>
                     </div>
                   </div>
 
-                  <h3 className="text-2xl font-black text-foreground mb-5 line-clamp-2 leading-tight group-hover:text-gold transition-colors duration-300">
+                  <h3 className="text-2xl font-extrabold text-foreground mb-4 line-clamp-2 leading-tight group-hover:text-gold transition-colors duration-300">
                     {language === 'ar' ? a.title_ar : (a.title_en || a.title_ar)}
                   </h3>
 
-                  <p className="text-muted-foreground text-lg leading-relaxed mb-8 line-clamp-3">
+                  <p className="text-muted-foreground text-base leading-relaxed mb-8 line-clamp-3">
                     {language === 'ar' ? a.content_ar : (a.content_en || a.content_ar)}
                   </p>
 

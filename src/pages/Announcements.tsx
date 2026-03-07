@@ -35,11 +35,11 @@ const Announcements: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-16 animate-fade-in min-h-[80vh]">
       <div className="text-center max-w-2xl mx-auto mb-16 space-y-4">
-        <Badge variant="outline" className="px-4 py-1 rounded-full border-gold/30 text-gold bg-gold/5 mb-2 animate-bounce">
-          <Sparkles className="h-3.5 w-3.5 me-2" />
+        <Badge variant="outline" className="px-5 py-1.5 rounded-full border-gold/40 text-gold bg-gold/10 mb-4 font-extrabold text-xs uppercase tracking-widest shadow-sm">
+          <Sparkles className="h-4 w-4 me-2 animate-bounce" />
           {isAr ? 'آخر المستجدات' : 'Latest Updates'}
         </Badge>
-        <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
+        <h1 className="text-4xl md:text-6xl heading-premium mb-6">
           {t('announcements.title')}
         </h1>
         <p className="text-muted-foreground text-lg leading-relaxed">
@@ -57,7 +57,7 @@ const Announcements: React.FC = () => {
       ) : announcements.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {announcements.map((a) => (
-            <Card key={a.id} className="group relative border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-700 rounded-[3rem] overflow-hidden flex flex-col h-full">
+            <Card key={a.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem]">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 z-20" />
 
               {/* Image Section */}
@@ -89,7 +89,7 @@ const Announcements: React.FC = () => {
 
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60" />
                 <div className="absolute top-6 right-6 flex gap-2 z-30">
-                  <Badge className="bg-white/20 backdrop-blur-md border-white/30 text-white rounded-full px-5 py-1 font-black text-xs">
+                  <Badge className="bg-white/20 backdrop-blur-md border-white/40 text-white rounded-full px-5 py-1.5 font-extrabold text-xs tracking-wider shadow-lg">
                     {getScopeLabel(a.scope).toUpperCase()}
                   </Badge>
                 </div>
@@ -97,18 +97,16 @@ const Announcements: React.FC = () => {
 
               {/* Content Section */}
               <CardContent className="p-10 flex flex-col flex-grow relative z-10">
-                <div className="flex items-center gap-3 text-xs font-black text-muted-foreground mb-5 uppercase tracking-widest">
-                  <div className="p-2 rounded-xl bg-gold/10">
-                    <Calendar className="h-4 w-4 text-gold" />
-                  </div>
+                <div className="flex items-center gap-3 text-xs font-extrabold text-muted-foreground mb-6 uppercase tracking-widest bg-slate-50 self-start px-4 py-2 rounded-2xl shadow-sm">
+                  <Calendar className="h-4 w-4 text-gold" />
                   <span>{new Date(a.created_at).toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 </div>
 
-                <h3 className="text-2xl font-black text-foreground mb-6 line-clamp-2 leading-tight group-hover:text-gold transition-colors duration-300">
+                <h3 className="text-2xl font-extrabold text-foreground mb-4 line-clamp-2 leading-tight group-hover:text-gold transition-colors duration-300">
                   {isAr ? a.title_ar : (a.title_en || a.title_ar)}
                 </h3>
 
-                <p className={`text-muted-foreground text-lg leading-relaxed mb-8 transition-all duration-500 line-clamp-3`}>
+                <p className={`text-muted-foreground text-base leading-relaxed mb-8 transition-all duration-500 line-clamp-3`}>
                   {isAr ? a.content_ar : (a.content_en || a.content_ar)}
                 </p>
 

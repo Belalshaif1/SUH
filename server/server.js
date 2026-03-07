@@ -1,7 +1,7 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express'); // استيراد مكتبة Express لإنشاء خادم الويب والتعامل مع الطلبات
 const cors = require('cors'); // استيراد مكتبة CORS للسماح بالطلبات القادمة من نطاقات مختلفة (مثل الواجهة الأمامية)
-const path = require('path'); // استيراد مكتبة path للتعامل مع مسارات الملفات والمجلدات بشكل صحيح
 const db = require('./db'); // استيراد كائن قاعدة البيانات من ملف db.js للقيام بالعمليات البرمجية
 
 // استيراد جميع مسارات الـ API (Routes) من مجلد routes

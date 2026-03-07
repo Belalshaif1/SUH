@@ -89,39 +89,24 @@ const Research: React.FC = () => {
 
   return (
     <>
-      <div className="container mx-auto px-4 py-16 animate-in fade-in duration-1000 min-h-[80vh]">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-8 bg-gradient-to-br from-primary/5 to-transparent p-12 rounded-[3rem] border border-primary/5 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-gold/5 rounded-full -mr-32 -mt-32 blur-3xl" />
+      <div className="container mx-auto px-4 py-20 animate-in fade-in duration-1000 min-h-[80vh]">
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-12 rounded-[3.5rem] border border-primary/5 relative overflow-hidden shadow-2xl shadow-primary/5">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
 
-          <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-8">
-            {/* Entity Logo */}
-            {(selectedDept !== 'all' || selectedCollege !== 'all' || selectedUni !== 'all') && (
-              <div className="shrink-0 h-32 w-32 rounded-[2rem] bg-white shadow-2xl p-4 flex items-center justify-center border border-primary/5 group hover:scale-110 transition-transform duration-500">
-                <img
-                  src={(
-                    (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
-                    (selectedCollege !== 'all' ? colleges.find(c => c.id === selectedCollege)?.logo_url : null) ||
-                    (selectedUni !== 'all' ? universities.find(u => u.id === selectedUni)?.logo_url : null)
-                  )?.startsWith('http') ? (
-                    (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
-                    (selectedCollege !== 'all' ? colleges.find(c => c.id === selectedCollege)?.logo_url : null) ||
-                    (selectedUni !== 'all' ? universities.find(u => u.id === selectedUni)?.logo_url : null)
-                  ) : `http://localhost:5000${(
-                    (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
-                    (selectedCollege !== 'all' ? colleges.find(c => c.id === selectedCollege)?.logo_url : null) ||
-                    (selectedUni !== 'all' ? universities.find(u => u.id === selectedUni)?.logo_url : null)
-                  )}`}
-                  alt="Entity Logo"
-                  className="w-full h-full object-contain"
-                />
-              </div>
-            )}
+          <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-10">
+            {/* Entity Logo Overlay Logic for Research (Simplified for variety) */}
+            <div className="shrink-0 h-36 w-36 rounded-[2.5rem] bg-white shadow-2xl p-5 flex items-center justify-center border-4 border-white group hover:rotate-3 transition-transform duration-500">
+              <Search className="h-16 w-16 text-primary/20 group-hover:text-primary transition-colors" />
+            </div>
 
             <div>
-              <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight mb-4">
+              <Badge variant="outline" className="px-6 py-2 rounded-full border-primary/30 text-primary bg-primary/5 mb-6 font-extrabold text-sm uppercase tracking-[0.2em] shadow-sm inline-flex">
+                {isAr ? 'الأبحاث والابتكارات' : 'Research & Innovations'}
+              </Badge>
+              <h1 className="text-4xl md:text-6xl heading-premium mb-6">
                 {t('research.title')}
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed max-w-2xl">
+              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl font-medium">
                 {isAr ? 'اكتشف أحدث الأبحاث العلمية والمساهمات المعرفية من أعضاء هيئة التدريس والطلاب.'
                   : 'Discover the latest scientific research and knowledge contributions from faculty members and students.'}
               </p>
@@ -210,30 +195,30 @@ const Research: React.FC = () => {
         ) : filteredResearch.length > 0 ? (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
             {filteredResearch.map(r => (
-              <Card key={r.id} className="group overflow-hidden border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[3rem] p-4 relative">
+              <Card key={r.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 group-hover:scale-125 transition-transform duration-700" />
 
                 <CardContent className="p-8 flex flex-col h-full relative z-10">
-                  <div className="flex items-center gap-3 mb-6">
-                    <Badge variant="outline" className="text-[10px] uppercase font-black px-3 py-1 rounded-full border-primary/20 text-primary bg-primary/5 break-words max-w-full">
+                  <div className="flex flex-wrap items-center gap-3 mb-6">
+                    <Badge variant="outline" className="text-[10px] uppercase font-extrabold px-4 py-1.5 rounded-full border-primary/30 text-primary bg-primary/10 break-words max-w-full shadow-sm">
                       {isAr
                         ? `${r.university_name_ar || ''} > ${r.college_name_ar || ''} > ${r.department_name_ar || r.department_name || ''}`
                         : `${r.university_name_en || r.university_name_ar || ''} > ${r.college_name_en || r.college_name_ar || ''} > ${r.department_name_en || r.department_name_ar || r.department_name || ''}`
                       }
                     </Badge>
                     {r.publish_date && (
-                      <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground bg-slate-50 px-4 py-1.5 rounded-full">
+                      <div className="flex items-center gap-2 text-xs font-extrabold text-muted-foreground bg-slate-50 px-4 py-2 rounded-full shadow-sm">
                         <Calendar className="h-4 w-4 text-primary" />
                         {new Date(r.publish_date).getFullYear()}
                       </div>
                     )}
                   </div>
 
-                  <h3 className="text-2xl md:text-3xl font-black text-foreground mb-6 group-hover:text-primary transition-colors duration-300 leading-tight tracking-tight">
+                  <h3 className="text-2xl md:text-3xl font-extrabold text-foreground mb-4 group-hover:text-primary transition-colors duration-300 leading-tight tracking-tight">
                     {isAr ? r.title_ar : (r.title_en || r.title_ar)}
                   </h3>
 
-                  <p className="text-muted-foreground text-lg mb-8 line-clamp-3 flex-grow leading-relaxed">
+                  <p className="text-muted-foreground text-base mb-8 line-clamp-3 flex-grow leading-relaxed">
                     {isAr ? r.abstract_ar : (r.abstract_en || r.abstract_ar)}
                   </p>
 
@@ -250,12 +235,12 @@ const Research: React.FC = () => {
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mt-auto pt-8 border-t border-slate-100">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-2xl bg-primary shadow-lg shadow-primary/20 flex items-center justify-center">
-                        <User className="h-6 w-6 text-white" />
+                      <div className="h-14 w-14 rounded-2xl bg-primary shadow-xl shadow-primary/20 flex items-center justify-center">
+                        <User className="h-7 w-7 text-white" />
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-xs font-black text-muted-foreground uppercase tracking-widest">{isAr ? 'الباحث الرئيسي' : 'PRINCIPAL AUTHOR'}</span>
-                        <span className="text-lg font-black text-foreground">{r.author_name}</span>
+                        <span className="text-xs font-extrabold text-muted-foreground uppercase tracking-widest leading-none mb-1">{isAr ? 'الباحث الرئيسي' : 'PRINCIPAL AUTHOR'}</span>
+                        <span className="text-lg font-extrabold text-foreground leading-tight">{r.author_name}</span>
                       </div>
                     </div>
 
@@ -263,7 +248,7 @@ const Research: React.FC = () => {
                       {r.pdf_url && (
                         <>
                           <Button
-                            className="flex-1 sm:flex-none h-14 px-8 rounded-2xl font-black bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
+                            className="flex-1 sm:flex-none h-14 px-8 rounded-2xl font-extrabold bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95 text-base"
                             onClick={() => setPreviewPdf({
                               url: r.pdf_url.startsWith('http') ? r.pdf_url : `http://localhost:5000${r.pdf_url}`,
                               title: isAr ? r.title_ar : (r.title_en || r.title_ar)

@@ -31,13 +31,13 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="flex min-h-[80vh] items-center justify-center px-4 animate-fade-in">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-            <GraduationCap className="h-8 w-8 text-gold" />
+    <div className="flex min-h-[80vh] items-center justify-center px-4 animate-fade-in py-12">
+      <Card className="card-premium w-full max-w-md p-6">
+        <CardHeader className="text-center pb-8">
+          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-3xl bg-primary shadow-xl shadow-primary/20">
+            <GraduationCap className="h-10 w-10 text-gold" />
           </div>
-          <CardTitle className="text-2xl">{t('auth.login')}</CardTitle>
+          <CardTitle className="text-3xl heading-premium">{t('auth.login')}</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

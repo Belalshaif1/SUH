@@ -59,25 +59,27 @@ const Universities: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <Link to={`/universities/${currentCollege?.university_id}`}>
-          <Button variant="ghost" className="mb-8 hover:bg-primary/10 rounded-full group transition-all">
-            <ArrowLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''} me-2 group-hover:-translate-x-1 transition-transform`} />
+          <Button variant="outline" className="mb-12 h-14 px-8 rounded-2xl font-extrabold border-gold/40 text-gold hover:bg-gold hover:text-white shadow-xl shadow-gold/5 hover:shadow-gold/20 transition-all group">
+            <ArrowLeft className={`h-5 w-5 ${isRTL ? 'rotate-180' : ''} me-3 group-hover:-translate-x-2 transition-transform`} />
             {t('universities.back')}
           </Button>
         </Link>
 
-        <div className="flex flex-col lg:flex-row items-center gap-12 mb-20 bg-gradient-to-br from-gold/10 to-transparent p-12 rounded-[3rem] border border-gold/5">
-          <div className="flex-1 text-center lg:text-start">
-            <Badge className="bg-gold/10 text-gold hover:bg-gold/20 border-none px-4 py-1 rounded-full font-bold mb-4">
+        <div className="flex flex-col lg:flex-row items-center gap-12 mb-16 bg-gradient-to-br from-gold/15 via-gold/5 to-transparent p-12 rounded-[3.5rem] border border-gold/10 shadow-2xl shadow-gold/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+
+          <div className="flex-1 text-center lg:text-start relative z-10">
+            <Badge className="bg-gold/20 text-gold-foreground hover:bg-gold/30 border-none px-5 py-1.5 rounded-full font-extrabold text-xs uppercase tracking-widest mb-6 shadow-sm">
               {isAr ? 'عرض الكلية' : 'College View'}
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight mb-6">
+            <h1 className="text-4xl md:text-6xl heading-premium mb-6">
               {currentCollege && getName(currentCollege)}
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed mb-8 max-w-3xl">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 max-w-3xl font-medium">
               {currentCollege && getDesc(currentCollege)}
             </p>
           </div>
-          <div className="w-48 h-48 md:w-64 md:h-64 rounded-[3.5rem] bg-white shadow-2xl flex items-center justify-center border-8 border-gold/5 overflow-hidden p-10 group relative transition-all duration-700 hover:rotate-3">
+          <div className="w-56 h-56 md:w-64 md:h-64 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center border-4 border-white overflow-hidden p-10 group relative transition-all duration-700 hover:rotate-3 shrink-0">
             <div className="absolute inset-0 bg-gradient-to-tr from-gold/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             {currentCollege?.logo_url ? (
               <img src={currentCollege.logo_url.startsWith('http') ? currentCollege.logo_url : `http://localhost:5000${currentCollege.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain relative z-10" />
@@ -94,17 +96,17 @@ const Universities: React.FC = () => {
 
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {departments.map((d, index) => (
-            <Card key={d.id} className="group overflow-hidden border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[2.5rem] p-4 relative">
+            <Card key={d.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               <CardContent className="p-8 h-full flex flex-col relative z-10">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/5 shadow-inner mb-6 group-hover:scale-110 group-hover:bg-gold transition-all duration-500 overflow-hidden p-3">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/5 shadow-inner mb-8 group-hover:scale-110 group-hover:bg-gold transition-all duration-500 overflow-hidden p-3">
                   {d.logo_url ? (
                     <img src={d.logo_url.startsWith('http') ? d.logo_url : `http://localhost:5000${d.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                   ) : (
                     <FileText className="h-8 w-8 text-gold group-hover:text-white transition-colors" />
                   )}
                 </div>
-                <h3 className="text-2xl font-black mb-4 group-hover:text-gold transition-colors">{getName(d)}</h3>
+                <h3 className="text-2xl font-extrabold mb-4 group-hover:text-gold transition-colors">{getName(d)}</h3>
                 <p className="text-muted-foreground leading-relaxed mb-8 line-clamp-3 flex-grow">
                   {getDesc(d) || t('common.no_data')}
                 </p>
@@ -151,27 +153,29 @@ const Universities: React.FC = () => {
     return (
       <div className="container mx-auto px-4 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <Link to="/universities">
-          <Button variant="ghost" className="mb-8 hover:bg-primary/10 rounded-full group transition-all">
-            <ArrowLeft className={`h-4 w-4 ${isRTL ? 'rotate-180' : ''} me-2 group-hover:-translate-x-1 transition-transform`} />
+          <Button variant="outline" className="mb-12 h-14 px-8 rounded-2xl font-extrabold border-primary/20 text-primary hover:bg-primary hover:text-white shadow-xl shadow-primary/5 hover:shadow-primary/20 transition-all group">
+            <ArrowLeft className={`h-5 w-5 ${isRTL ? 'rotate-180' : ''} me-3 group-hover:-translate-x-2 transition-transform`} />
             {t('universities.back')}
           </Button>
         </Link>
 
-        <div className="flex flex-col lg:flex-row items-center gap-12 mb-20 bg-gradient-to-br from-primary/10 to-transparent p-12 rounded-[3rem] border border-primary/5">
-          <div className="flex-1 text-center lg:text-start">
-            <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none px-4 py-1 rounded-full font-bold mb-4">
+        <div className="flex flex-col lg:flex-row items-center gap-12 mb-16 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-12 rounded-[3.5rem] border border-primary/5 shadow-2xl shadow-primary/5 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+
+          <div className="flex-1 text-center lg:text-start relative z-10">
+            <Badge className="bg-primary/20 text-primary border-none px-5 py-1.5 rounded-full font-extrabold text-xs uppercase tracking-widest mb-6 shadow-sm">
               {isAr ? 'عرض الجامعة' : 'University View'}
             </Badge>
-            <h1 className="text-4xl md:text-6xl font-black text-foreground tracking-tight mb-6">
+            <h1 className="text-4xl md:text-6xl heading-premium mb-6">
               {currentUni && getName(currentUni)}
             </h1>
-            <p className="text-xl text-muted-foreground leading-relaxed mb-8 max-w-3xl">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed mb-8 max-w-3xl font-medium">
               {currentUni && getDesc(currentUni)}
             </p>
             {currentUni?.guide_pdf_url && (
               <div className="flex flex-wrap justify-center lg:justify-start gap-4">
                 <Button
-                  className="h-14 px-10 rounded-2xl text-lg font-black bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
+                  className="h-14 px-10 rounded-2xl text-lg font-extrabold bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
                   onClick={() => setPreviewPdf({ url: currentUni.guide_pdf_url.startsWith('http') ? currentUni.guide_pdf_url : `http://localhost:5000${currentUni.guide_pdf_url}`, title: getName(currentUni) })}
                 >
                   <Eye className="h-5 w-5 me-2" />{isAr ? 'دليل الجامعة' : 'University Guide'}
@@ -179,10 +183,10 @@ const Universities: React.FC = () => {
               </div>
             )}
           </div>
-          <div className="w-48 h-48 md:w-64 md:h-64 rounded-[3.5rem] bg-white shadow-2xl flex items-center justify-center border-8 border-primary/5 overflow-hidden p-10 group relative transition-all duration-700 hover:-rotate-3">
+          <div className="w-56 h-56 md:w-64 md:h-64 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center border-4 border-white overflow-hidden p-10 group relative transition-all duration-700 hover:-rotate-3 shrink-0">
             <div className="absolute inset-0 bg-gradient-to-bl from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             {currentUni?.logo_url ? (
-              <img src={currentUni.logo_url.startsWith('http') ? currentUni.logo_url : `http://localhost:5000${currentUni.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain relative z-10 font-black" />
+              <img src={currentUni.logo_url.startsWith('http') ? currentUni.logo_url : `http://localhost:5000${currentUni.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain relative z-10 font-extrabold" />
             ) : (
               <Building2 className="h-24 w-24 text-primary/20 relative z-10" />
             )}
@@ -197,7 +201,7 @@ const Universities: React.FC = () => {
         <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
           {colleges.map(c => (
             <Link key={c.id} to={`/universities/${universityId}/colleges/${c.id}`} className="group">
-              <Card className="h-full overflow-hidden border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[2.5rem] p-4 relative">
+              <Card className="card-premium h-full overflow-hidden flex flex-col p-4 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
                 <CardContent className="p-8 relative z-10 h-full flex flex-col">
                   <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5 shadow-inner mb-8 group-hover:bg-primary group-hover:scale-110 transition-all duration-500 overflow-hidden p-3">
@@ -207,11 +211,11 @@ const Universities: React.FC = () => {
                       <Building2 className="h-8 w-8 text-primary group-hover:text-white transition-colors" />
                     )}
                   </div>
-                  <h3 className="text-2xl font-black mb-4 group-hover:text-primary transition-colors">{getName(c)}</h3>
-                  <p className="text-muted-foreground leading-relaxed mb-8 line-clamp-3 flex-grow">
+                  <h3 className="text-2xl font-extrabold mb-4 group-hover:text-primary transition-colors">{getName(c)}</h3>
+                  <p className="text-muted-foreground leading-relaxed mb-8 line-clamp-3 flex-grow text-base">
                     {getDesc(c) || ''}
                   </p>
-                  <div className="flex items-center text-primary font-black group-hover:translate-x-2 transition-transform mt-auto pt-4 border-t border-slate-50">
+                  <div className="flex items-center text-primary font-extrabold group-hover:translate-x-2 transition-transform mt-auto pt-6 border-t border-slate-50">
                     <span>{isAr ? 'عرض الأقسام' : 'View Departments'}</span>
                     <Arrow className="h-6 w-6 ms-2" />
                   </div>
@@ -234,22 +238,22 @@ const Universities: React.FC = () => {
   return (
     <>
       <div className="container mx-auto px-4 py-16 animate-in fade-in duration-1000">
-        <div className="text-center mb-16">
-          <Badge className="bg-primary/10 text-primary hover:bg-primary/20 border-none px-4 py-1 rounded-full font-bold mb-4">
+        <div className="text-center mb-16 space-y-4">
+          <Badge className="bg-primary/20 text-primary hover:bg-primary/30 border-none px-6 py-1.5 rounded-full font-extrabold text-xs uppercase tracking-widest shadow-sm">
             {isAr ? 'دليل الجامعات الذكي' : 'Smart University Guide'}
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-black text-foreground tracking-tight mb-8">
+          <h1 className="text-4xl md:text-7xl heading-premium mb-6">
             {t('universities.title')}
           </h1>
           <div className="h-2 w-32 bg-primary mx-auto rounded-full mb-12 shadow-xl shadow-primary/20" />
           <div className="max-w-2xl mx-auto group">
             <div className="relative group">
-              <Search className="absolute start-6 top-1/2 h-6 w-6 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
+              <Search className="absolute start-8 top-1/2 h-7 w-7 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" />
               <Input
                 placeholder={t('universities.search')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="h-16 ps-16 pe-6 text-lg rounded-[2.5rem] border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
+                className="h-16 ps-20 pe-8 text-lg rounded-3xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
               />
             </div>
           </div>
@@ -258,11 +262,11 @@ const Universities: React.FC = () => {
         <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
           {filteredUniversities.map(u => (
             <Link key={u.id} to={`/universities/${u.id}`} className="group">
-              <Card className={`h-full overflow-hidden border-none bg-white shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-3 rounded-[3.5rem] p-6 relative ${u.is_pinned ? 'ring-4 ring-gold/20' : ''}`}>
+              <Card className={`card-premium h-full overflow-hidden flex flex-col p-6 h-full relative ${u.is_pinned ? 'ring-4 ring-gold/40' : ''}`}>
                 <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full -mr-24 -mt-24 group-hover:scale-125 transition-transform duration-700" />
 
                 {u.is_pinned && (
-                  <div className="absolute top-8 right-8 z-10 bg-gold text-white p-2 rounded-2xl shadow-lg shadow-gold/30">
+                  <div className="absolute top-8 right-8 z-10 bg-gold text-white p-2.5 rounded-2xl shadow-xl shadow-gold/30">
                     <Building2 className="h-6 w-6" />
                   </div>
                 )}
@@ -276,16 +280,16 @@ const Universities: React.FC = () => {
                     )}
                   </div>
 
-                  <CardTitle className="text-3xl font-black mb-6 group-hover:text-primary transition-colors tracking-tight leading-tight">
+                  <CardTitle className="text-3xl heading-premium mb-6 group-hover:text-primary transition-colors leading-tight">
                     {getName(u)}
                   </CardTitle>
 
-                  <p className="text-muted-foreground text-lg leading-relaxed mb-12 line-clamp-3">
+                  <p className="text-muted-foreground font-medium text-lg leading-relaxed mb-12 line-clamp-3 flex-grow">
                     {getDesc(u) || ''}
                   </p>
 
-                  <div className="flex items-center justify-between pt-8 border-t border-slate-100">
-                    <span className="text-primary font-black text-xl group-hover:translate-x-2 transition-transform inline-flex items-center">
+                  <div className="flex items-center justify-between pt-8 border-t border-slate-50">
+                    <span className="text-primary font-extrabold text-xl group-hover:translate-x-2 transition-transform inline-flex items-center">
                       {isAr ? 'اكتشف المزيد' : 'Discover More'}
                       <Arrow className="h-7 w-7 ms-2" />
                     </span>
