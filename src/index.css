@@ -161,7 +161,7 @@
   }
 
   .card-premium {
-    @apply rounded-[2.5rem] border-none shadow-[0_20px_50px_rgba(0, 0, 0, 0.05)] transition-all duration-700 hover:shadow-[0_40px_80px_rgba(0, 0, 0, 0.1)] hover:-translate-y-2;
+    @apply rounded-[2.5rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-700 hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:-translate-y-2;
     background: hsl(var(--card));
     backdrop-filter: blur(10px);
   }
