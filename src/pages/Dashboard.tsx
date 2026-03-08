@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { BookOpen, Building2, BarChart3, FileText, UserCog, UserPlus, Users, Edit, Trash2, Plus, LogOut, Check, X, Shield, Megaphone, Save, GraduationCap, Briefcase, DollarSign, Info, AlertTriangle, Pin, PinOff } from 'lucide-react';
+import { BookOpen, Building2, BarChart3, FileText, UserCog, UserPlus, Users, Edit, Trash2, Plus, LogOut, Check, X, Shield, Megaphone, Save, GraduationCap, Briefcase, DollarSign, Info, AlertTriangle, Pin, PinOff, Calendar, Lock, ShieldCheck } from 'lucide-react';
 import AdminManagement from '@/components/dashboard/AdminManagement';
 import UserManagementTable from '@/components/dashboard/UserManagementTable';
 import RolePermissions from '@/components/dashboard/RolePermissions';
@@ -763,640 +763,902 @@ const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 animate-fade-in">
-      <h1 className="mb-2 text-3xl font-bold text-foreground flex items-center gap-3">
-        <BarChart3 className="h-8 w-8 text-gold" />
-        {t('dashboard.title')}
-      </h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        {language === 'ar' ? `الدور: ${role === 'super_admin' ? 'مدير الموقع' : role === 'university_admin' ? 'مدير جامعة' : role === 'college_admin' ? 'مدير كلية' : 'مدير قسم'}` : `Role: ${role?.replace('_', ' ')}`}
-      </p>
+    <>
+      <div className="min-h-screen pb-20 pt-10 px-4 animate-fade-in relative overflow-hidden bg-slate-50/50">
+        <div className="absolute inset-0 gradient-academic opacity-[0.03] z-0" />
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-4 mb-8 md:grid-cols-3 lg:grid-cols-6">
-        {statCards.map(s => (
-          <Card key={s.key}>
-            <CardContent className="flex flex-col items-center p-4 text-center">
-              <s.icon className="mb-2 h-6 w-6 text-gold" />
-              <span className="text-2xl font-bold">{stats[s.key as keyof typeof stats]}</span>
-              <span className="text-xs text-muted-foreground">{s.label}</span>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Management Tabs */}
-      <Tabs defaultValue={role === 'super_admin' ? 'users' : 'admins'}>
-        <TabsList className="flex flex-wrap gap-1 h-auto mb-6">
-          {hasPermission('manage_users') && role === 'super_admin' && <TabsTrigger value="users"><Users className="h-4 w-4 me-1" />{language === 'ar' ? 'إدارة المستخدمين' : 'User Management'}</TabsTrigger>}
-          {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && <TabsTrigger value="admins"><UserCog className="h-4 w-4 me-1" />{t('dashboard.manage_admins')}</TabsTrigger>}
-          {role === 'super_admin' && hasPermission('advanced_settings') && <TabsTrigger value="permissions"><Shield className="h-4 w-4 me-1" />{language === 'ar' ? 'الأدوار والصلاحيات' : 'Roles & Permissions'}</TabsTrigger>}
-          {(role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="universities"><Building2 className="h-4 w-4 me-1" />{t('nav.universities')}</TabsTrigger>}
-          {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && hasPermission('manage_colleges') && <TabsTrigger value="colleges"><BookOpen className="h-4 w-4 me-1" />{t('universities.colleges')}</TabsTrigger>}
-          {hasPermission('manage_departments') && <TabsTrigger value="departments"><FileText className="h-4 w-4 me-1" />{t('universities.departments')}</TabsTrigger>}
-          {role === 'super_admin' && (
-            <TabsTrigger value="matrix" className="data-[state=active]:bg-gold data-[state=active]:text-gold-foreground">{language === 'ar' ? 'مصفوفة الصلاحيات' : 'Permissions Matrix'}</TabsTrigger>
-          )}
-          {hasPermission('manage_announcements') && <TabsTrigger value="announcements"><Megaphone className="h-4 w-4 me-1" />{t('nav.announcements')}</TabsTrigger>}
-          {hasPermission('manage_jobs') && (role === 'college_admin' || role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="jobs"><Briefcase className="h-4 w-4 me-1" />{t('nav.jobs')}</TabsTrigger>}
-          {hasPermission('manage_graduates') && <TabsTrigger value="graduates"><GraduationCap className="h-4 w-4 me-1" />{t('nav.graduates')}</TabsTrigger>}
-          {hasPermission('manage_research') && <TabsTrigger value="research"><FileText className="h-4 w-4 me-1" />{t('nav.research')}</TabsTrigger>}
-          {hasPermission('manage_fees') && (role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="fees"><DollarSign className="h-4 w-4 me-1" />{t('nav.fees')}</TabsTrigger>}
-          {role === 'super_admin' && <TabsTrigger value="about_mgmt"><Info className="h-4 w-4 me-1" />{language === 'ar' ? 'صفحة من نحن' : 'About Page'}</TabsTrigger>}
-          {role === 'super_admin' && <TabsTrigger value="error_logs" className="text-red-500 data-[state=active]:bg-destructive data-[state=active]:text-white"><AlertTriangle className="h-4 w-4 me-1" />{language === 'ar' ? 'سجل الأخطاء' : 'Error Logs'}</TabsTrigger>}
-          <TabsTrigger value="security"><Shield className="h-4 w-4 me-1" />{language === 'ar' ? 'الأمان' : 'Security'}</TabsTrigger>
-        </TabsList>
-
-        {/* User Management */}
-        {role === 'super_admin' && (
-          <TabsContent value="users">
-            <UserManagementTable onAddAdmin={() => {
-              const adminsTab = document.querySelector('[data-value="admins"]') as HTMLElement;
-              adminsTab?.click();
-            }} />
-          </TabsContent>
-        )}
-
-        {/* Admins */}
-        {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
-          <TabsContent value="admins">
-            <AdminManagement universities={universities} colleges={colleges} departments={departments} />
-          </TabsContent>
-        )}
-
-        {/* Roles & Permissions */}
-        {role === 'super_admin' && (
-          <TabsContent value="permissions">
-            <RolePermissions />
-          </TabsContent>
-        )}
-
-        {/* Permissions Matrix */}
-        {role === 'super_admin' && (
-          <TabsContent value="matrix">
-            <PermissionsMatrix />
-          </TabsContent>
-        )}
-
-        {/* Universities */}
-        {(role === 'super_admin' || role === 'university_admin') && (
-          <TabsContent value="universities">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <h2 className="text-xl font-bold">{t('dashboard.manage_universities')}</h2>
-              <div className="flex flex-wrap gap-3">
-                <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
-                    <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
-                    <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {role === 'super_admin' && (
-                  <Button onClick={() => openAdd('university')} className="bg-gold text-gold-foreground">
-                    <Plus className="h-4 w-4 me-1" />{t('common.add')}
-                  </Button>
-                )}
+        <div className="container mx-auto relative z-10">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-6">
+            <div className="flex items-center gap-6">
+              <div className="w-20 h-20 rounded-[1.5rem] bg-white shadow-2xl border border-slate-50 flex items-center justify-center group hover:rotate-6 transition-transform duration-500">
+                <div className="absolute inset-0 gradient-academic opacity-0 group-hover:opacity-10 transition-opacity rounded-[1.5rem]" />
+                <BarChart3 className="h-10 w-10 text-primary relative z-10" />
               </div>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {processData(universities
-                .filter(u => role === 'super_admin' || u.id === userRole.university_id))
-                .map(u => (
-                  <Card key={u.id}>
-                    <CardContent className="flex items-center justify-between p-4 relative overflow-hidden">
-                      {u.is_pinned === 1 && (
-                        <div className="absolute top-0 right-0 p-1 bg-gold/10 rounded-bl-lg">
-                          <Pin className="h-3 w-3 text-gold" />
-                        </div>
-                      )}
-                      <span className="font-semibold">{getName(u)}</span>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit('university', u)}><Edit className="h-4 w-4" /></Button>
-                        {role === 'super_admin' && (
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete('universities', u.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          </TabsContent>
-        )}
-
-        {/* Colleges */}
-        {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && hasPermission('manage_colleges') && (
-          <TabsContent value="colleges">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-              <h2 className="text-xl font-bold">{t('dashboard.manage_colleges')}</h2>
-              <div className="flex flex-wrap gap-3">
-                <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
-                    <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
-                    <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
-                  </SelectContent>
-                </Select>
-                {hasPermission('manage_colleges') && (
-                  <Button onClick={() => openAdd('college')} className="bg-gold text-gold-foreground">
-                    <Plus className="h-4 w-4 me-1" />{t('common.add')}
-                  </Button>
-                )}
-              </div>
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {processData(colleges
-                .filter(c => {
-                  if (role === 'super_admin') return true;
-                  if (role === 'university_admin') return c.university_id === userRole.university_id;
-                  if (role === 'college_admin') return c.id === userRole.college_id;
-                  return false;
-                }))
-                .map(c => (
-                  <Card key={c.id} className="relative">
-                    <CardContent className="flex items-center justify-between p-4 overflow-hidden">
-                      {c.is_pinned === 1 && (
-                        <div className="absolute top-0 right-0 p-1 bg-gold/10 rounded-bl-lg">
-                          <Pin className="h-3 w-3 text-gold" />
-                        </div>
-                      )}
-                      <div>
-                        <span className="font-semibold">{getName(c)}</span>
-                        {c.universities && <span className="block text-xs text-muted-foreground">{getName(c.universities)}</span>}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit('college', c)}><Edit className="h-4 w-4" /></Button>
-                        {(role === 'super_admin' || role === 'university_admin') && (
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete('colleges', c.id)}>
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          </TabsContent>
-        )}
-
-        {/* Departments */}
-        {hasPermission('manage_departments') && (
-          <TabsContent value="departments">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">{t('dashboard.manage_departments')}</h2>
-              {hasPermission('manage_departments') && role !== 'department_admin' && (
-                <Button onClick={() => openAdd('department')} className="bg-gold text-gold-foreground"><Plus className="h-4 w-4 me-1" />{t('common.add')}</Button>
-              )}
-            </div>
-            <div className="grid gap-3 md:grid-cols-2">
-              {departments
-                .filter(d => {
-                  if (role === 'super_admin') return true;
-                  if (role === 'university_admin') return d.university_id === userRole.university_id;
-                  if (role === 'college_admin') return d.college_id === userRole.college_id;
-                  if (role === 'department_admin') return d.id === userRole.department_id;
-                  return false;
-                })
-                .map(d => (
-                  <Card key={d.id}>
-                    <CardContent className="flex items-center justify-between p-4">
-                      <div>
-                        <span className="font-semibold">{getName(d)}</span>
-                        {d.colleges && <span className="block text-xs text-muted-foreground">{getName(d.colleges)}</span>}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEdit('department', d)}><Edit className="h-4 w-4" /></Button>
-                        {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete('departments', d.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-            </div>
-          </TabsContent>
-        )}
-
-        {/* Announcements */}
-        {
-          hasPermission('manage_announcements') && (
-            <TabsContent value="announcements">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-                <h2 className="text-xl font-bold">{t('dashboard.manage_announcements')}</h2>
-                <div className="flex flex-wrap gap-3">
-                  <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
-                    <SelectTrigger className="w-[180px]">
-                      <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
-                      <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
-                      <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Button onClick={() => openAdd('announcement')} className="bg-gold text-gold-foreground">
-                    <Plus className="h-4 w-4 me-1" />{t('common.add')}
-                  </Button>
+              <div>
+                <h1 className="text-4xl font-black text-primary tracking-tight">
+                  {t('dashboard.title')}
+                </h1>
+                <div className="flex items-center gap-3 mt-3">
+                  <span className="h-2 w-2 rounded-full bg-gold animate-pulse" />
+                  <p className="text-sm font-black text-primary/60 uppercase tracking-[0.2em]">
+                    {language === 'ar' ? `الدور: ${role === 'super_admin' ? 'مدير الموقع' : role === 'university_admin' ? 'مدير جامعة' : role === 'college_admin' ? 'مدير كلية' : 'مدير قسم'}` : `Role: ${role?.replace('_', ' ')}`}
+                  </p>
                 </div>
               </div>
-              <div className="grid gap-4 md:grid-cols-2">
-                {processData(announcements).map((a: any) => (
-                  <Card key={a.id} className="relative">
-                    <CardContent className="p-4 overflow-hidden">
-                      {a.is_pinned === 1 && (
-                        <div className="absolute top-0 right-0 p-1 bg-gold/10 rounded-bl-lg">
-                          <Pin className="h-3 w-3 text-gold" />
-                        </div>
+            </div>
+
+            <div className="flex items-center gap-3 bg-white p-2 rounded-[1.5rem] shadow-xl shadow-primary/5 border border-slate-50">
+              <Button variant="ghost" className="h-12 px-6 rounded-xl font-bold text-primary/60 hover:text-primary hover:bg-slate-50 transition-all gap-2" onClick={() => navigate('/')}>
+                <LogOut className="h-5 w-5 rotate-180" />
+                {language === 'ar' ? 'الرئيسية' : 'Main'}
+              </Button>
+              <Button className="h-12 px-6 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20 hover:scale-105 transition-all gap-2">
+                <UserCog className="h-5 w-5" />
+                {t('nav.profile')}
+              </Button>
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 gap-4 mb-10 md:grid-cols-3 lg:grid-cols-6">
+            {statCards.map(s => (
+              <Card key={s.key} className="card-premium group hover:scale-105 transition-all duration-300 border-none shadow-xl shadow-primary/5">
+                <CardContent className="flex flex-col items-center p-6 text-center">
+                  <div className="mb-4 p-4 rounded-2xl bg-primary/5 group-hover:bg-primary group-hover:text-white transition-all duration-500">
+                    <s.icon className="h-6 w-6 text-primary group-hover:text-white" />
+                  </div>
+                  <span className="text-3xl font-black text-primary mb-1">{stats[s.key as keyof typeof stats]}</span>
+                  <span className="text-[10px] font-bold text-primary/40 uppercase tracking-widest leading-tight">{s.label}</span>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          {/* Management Tabs */}
+          <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-primary/5 border border-white/50 overflow-hidden">
+            <Tabs defaultValue={role === 'super_admin' ? 'users' : 'admins'} className="w-full">
+              <div className="px-6 pt-6 border-b border-primary/5 bg-slate-50/30">
+                <TabsList className="flex flex-wrap gap-2 h-auto mb-4 bg-transparent p-0">
+                  {hasPermission('manage_users') && role === 'super_admin' && (
+                    <TabsTrigger
+                      value="users"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <Users className="h-4 w-4" />
+                      {language === 'ar' ? 'المستخدمين' : 'Users'}
+                    </TabsTrigger>
+                  )}
+                  {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
+                    <TabsTrigger
+                      value="admins"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <UserCog className="h-4 w-4" />
+                      {t('dashboard.manage_admins')}
+                    </TabsTrigger>
+                  )}
+                  {role === 'super_admin' && hasPermission('advanced_settings') && (
+                    <TabsTrigger
+                      value="permissions"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <Shield className="h-4 w-4" />
+                      {language === 'ar' ? 'الأدوار' : 'Roles'}
+                    </TabsTrigger>
+                  )}
+                  {(role === 'super_admin' || role === 'university_admin') && (
+                    <TabsTrigger
+                      value="universities"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <Building2 className="h-4 w-4" />
+                      {t('nav.universities')}
+                    </TabsTrigger>
+                  )}
+                  {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && hasPermission('manage_colleges') && (
+                    <TabsTrigger
+                      value="colleges"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      {t('universities.colleges')}
+                    </TabsTrigger>
+                  )}
+                  {hasPermission('manage_departments') && (
+                    <TabsTrigger
+                      value="departments"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <FileText className="h-4 w-4" />
+                      {t('universities.departments')}
+                    </TabsTrigger>
+                  )}
+                  {role === 'super_admin' && (
+                    <TabsTrigger
+                      value="matrix"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-gold data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <Check className="h-4 w-4" />
+                      {language === 'ar' ? 'مصفوفة' : 'Matrix'}
+                    </TabsTrigger>
+                  )}
+                  {hasPermission('manage_announcements') && (
+                    <TabsTrigger
+                      value="announcements"
+                      className="h-12 px-6 rounded-xl font-bold data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-xl transition-all gap-2"
+                    >
+                      <Megaphone className="h-4 w-4" />
+                      {t('nav.announcements')}
+                    </TabsTrigger>
+                  )}
+                  {hasPermission('manage_jobs') && (role === 'college_admin' || role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="jobs"><Briefcase className="h-4 w-4 me-1" />{t('nav.jobs')}</TabsTrigger>}
+                  {hasPermission('manage_graduates') && <TabsTrigger value="graduates"><GraduationCap className="h-4 w-4 me-1" />{t('nav.graduates')}</TabsTrigger>}
+                  {hasPermission('manage_research') && <TabsTrigger value="research"><FileText className="h-4 w-4 me-1" />{t('nav.research')}</TabsTrigger>}
+                  {hasPermission('manage_fees') && (role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="fees"><DollarSign className="h-4 w-4 me-1" />{t('nav.fees')}</TabsTrigger>}
+                  {role === 'super_admin' && <TabsTrigger value="about_mgmt"><Info className="h-4 w-4 me-1" />{language === 'ar' ? 'صفحة من نحن' : 'About Page'}</TabsTrigger>}
+                  {role === 'super_admin' && <TabsTrigger value="error_logs" className="text-red-500 data-[state=active]:bg-destructive data-[state=active]:text-white"><AlertTriangle className="h-4 w-4 me-1" />{language === 'ar' ? 'سجل الأخطاء' : 'Error Logs'}</TabsTrigger>}
+                  <TabsTrigger value="security"><Shield className="h-4 w-4 me-1" />{language === 'ar' ? 'الأمان' : 'Security'}</TabsTrigger>
+                </TabsList>
+              </div>
+
+              {/* User Management */}
+              {role === 'super_admin' && (
+                <TabsContent value="users">
+                  <UserManagementTable onAddAdmin={() => {
+                    const adminsTab = document.querySelector('[data-value="admins"]') as HTMLElement;
+                    adminsTab?.click();
+                  }} />
+                </TabsContent>
+              )}
+
+              {/* Admins */}
+              {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
+                <TabsContent value="admins">
+                  <AdminManagement universities={universities} colleges={colleges} departments={departments} />
+                </TabsContent>
+              )}
+
+              {/* Roles & Permissions */}
+              {role === 'super_admin' && (
+                <TabsContent value="permissions">
+                  <RolePermissions />
+                </TabsContent>
+              )}
+
+              {/* Permissions Matrix */}
+              {role === 'super_admin' && (
+                <TabsContent value="matrix">
+                  <PermissionsMatrix />
+                </TabsContent>
+              )}
+
+              {/* Universities */}
+              {(role === 'super_admin' || role === 'university_admin') && (
+                <TabsContent value="universities" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_universities')}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة جميع الجامعات المسجلة في النظام' : 'Manage all registered universities in the system'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                        <SelectTrigger className="w-[180px] h-12 rounded-xl border-primary/10 font-bold">
+                          <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-primary/10">
+                          <SelectItem value="newest" className="font-bold">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
+                          <SelectItem value="oldest" className="font-bold">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
+                          <SelectItem value="name" className="font-bold">{isAr ? 'الاسم' : 'Name'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {role === 'super_admin' && (
+                        <Button onClick={() => openAdd('university')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                          <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                        </Button>
                       )}
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-bold">{language === 'ar' ? a.title_ar : a.title_en}</h3>
-                          <span className="text-xs text-muted-foreground mr-2">{t(`scopes.${a.scope}`)}</span>
-                        </div>
-                        {(role === 'super_admin' || a.created_by === user.id) && (
-                          <div className="flex gap-1">
-                            <Button variant="outline" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" onClick={() => openEdit('announcement', a)}>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {processData(universities
+                      .filter(u => role === 'super_admin' || u.id === userRole.university_id))
+                      .map(u => (
+                        <Card key={u.id} className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg">
+                          <CardContent className="flex items-center justify-between p-6 relative overflow-hidden">
+                            {u.is_pinned === 1 && (
+                              <div className="absolute top-0 right-0 p-1.5 bg-gold rounded-bl-xl shadow-lg">
+                                <Pin className="h-3 w-3 text-white fill-white" />
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="font-black text-primary text-lg leading-tight mb-1">{getName(u)}</span>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-tight">
+                                {language === 'ar' ? 'جامعة معتمدة' : 'Accredited University'}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('university', u)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              {role === 'super_admin' && (
+                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('universities', u.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* Colleges */}
+              {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && hasPermission('manage_colleges') && (
+                <TabsContent value="colleges" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_colleges')}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة الكليات والأقسام التابعة لها' : 'Manage colleges and their departments'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                        <SelectTrigger className="w-[180px] h-12 rounded-xl border-primary/10 font-bold">
+                          <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-primary/10">
+                          <SelectItem value="newest" className="font-bold">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
+                          <SelectItem value="oldest" className="font-bold">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
+                          <SelectItem value="name" className="font-bold">{isAr ? 'الاسم' : 'Name'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {(role === 'super_admin' || role === 'university_admin') && (
+                        <Button onClick={() => openAdd('college')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                          <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {processData(colleges
+                      .filter(c => role === 'super_admin' || (role === 'university_admin' && c.university_id === userRole.university_id) || (role === 'college_admin' && c.id === userRole.college_id)))
+                      .map(c => (
+                        <Card key={c.id} className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg">
+                          <CardContent className="flex items-center justify-between p-6 relative overflow-hidden">
+                            {c.is_pinned === 1 && (
+                              <div className="absolute top-0 right-0 p-1.5 bg-gold rounded-bl-xl shadow-lg">
+                                <Pin className="h-3 w-3 text-white fill-white" />
+                              </div>
+                            )}
+                            <div className="flex flex-col">
+                              <span className="font-black text-primary text-lg leading-tight mb-1">{getName(c)}</span>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-tight">
+                                {universities.find(u => u.id === c.university_id)?.name_ar || ''}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('college', c)}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              {(role === 'super_admin' || role === 'university_admin') && (
+                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('colleges', c.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* Departments */}
+              {hasPermission('manage_departments') && (
+                <TabsContent value="departments">
+                  <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold">{t('dashboard.manage_departments')}</h2>
+                    {hasPermission('manage_departments') && role !== 'department_admin' && (
+                      <Button onClick={() => openAdd('department')} className="bg-gold text-gold-foreground"><Plus className="h-4 w-4 me-1" />{t('common.add')}</Button>
+                    )}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {departments
+                      .filter(d => {
+                        if (role === 'super_admin') return true;
+                        if (role === 'university_admin') return d.university_id === userRole.university_id;
+                        if (role === 'college_admin') return d.college_id === userRole.college_id;
+                        if (role === 'department_admin') return d.id === userRole.department_id;
+                        return false;
+                      })
+                      .map(d => (
+                        <Card key={d.id}>
+                          <CardContent className="flex items-center justify-between p-4">
+                            <div>
+                              <span className="font-semibold">{getName(d)}</span>
+                              {d.colleges && <span className="block text-xs text-muted-foreground">{getName(d.colleges)}</span>}
+                            </div>
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" onClick={() => openEdit('department', d)}><Edit className="h-4 w-4" /></Button>
+                              {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
+                                <Button variant="ghost" size="icon" onClick={() => handleDelete('departments', d.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* Announcements */}
+              {
+                hasPermission('manage_announcements') && (
+                  <TabsContent value="announcements" className="p-6">
+                    <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                      <div>
+                        <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_announcements')}</h2>
+                        <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة الإعلانات والأخبار الأكاديمية' : 'Manage academic news and announcements'}</p>
+                      </div>
+                      <div className="flex flex-wrap gap-3">
+                        <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                          <SelectTrigger className="w-[180px] h-12 rounded-xl border-primary/10 font-bold">
+                            <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl border-primary/10">
+                            <SelectItem value="newest" className="font-bold">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
+                            <SelectItem value="oldest" className="font-bold">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
+                            <SelectItem value="name" className="font-bold">{isAr ? 'العنوان' : 'Title'}</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button onClick={() => openAdd('announcement')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                          <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid gap-6">
+                      {processData(announcements).map(a => (
+                        <Card key={a.id} className="card-premium group hover:translate-y-[-4px] transition-all duration-300 border-none shadow-lg overflow-hidden">
+                          <CardContent className="p-0">
+                            <div className="flex flex-col md:flex-row">
+                              {a.image_url && (
+                                <div className="w-full md:w-48 h-32 md:h-auto overflow-hidden relative">
+                                  <img src={a.image_url.startsWith('http') ? a.image_url : `http://localhost:5000${a.image_url}`} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                  {a.is_pinned === 1 && (
+                                    <div className="absolute top-0 right-0 p-1.5 bg-gold shadow-lg">
+                                      <Pin className="h-3 w-3 text-white fill-white" />
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              <div className="flex-1 p-6 flex flex-col justify-between">
+                                <div className="flex justify-between items-start gap-4">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="px-2.5 py-1 rounded-lg bg-primary/5 text-[10px] font-black text-primary/60 uppercase tracking-wider">
+                                        {a.scope === 'global' ? (language === 'ar' ? 'عام' : 'Global') :
+                                          a.scope === 'university' ? (language === 'ar' ? 'جامعي' : 'University') :
+                                            a.scope === 'college' ? (language === 'ar' ? 'كلي' : 'College') : (language === 'ar' ? 'قسمي' : 'Department')}
+                                      </span>
+                                      <span className="text-[10px] font-bold text-primary/20 uppercase tracking-[0.2em]">
+                                        {new Date(a.created_at).toLocaleDateString(language === 'ar' ? 'ar-IQ' : 'en-US')}
+                                      </span>
+                                    </div>
+                                    <h3 className="text-xl font-black text-primary leading-tight">{language === 'ar' ? a.title_ar : a.title_en}</h3>
+                                    <p className="text-sm text-primary/40 font-bold mt-2 line-clamp-2">{language === 'ar' ? a.content_ar : a.content_en}</p>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('announcement', a)}>
+                                      <Edit className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('announcements', a.id)}>
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  </TabsContent>
+                )
+              }
+
+              {/* Jobs Management */}
+              {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && hasPermission('manage_jobs') && (
+                <TabsContent value="jobs" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_jobs')}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة فرص العمل والتقديمات' : 'Manage job opportunities and applications'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button onClick={() => openAdd('job')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    {jobs.map((j: any) => (
+                      <Card key={j.id} className="card-premium group hover:scale-[1.01] transition-all duration-300 border-none shadow-lg">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-start mb-4">
+                            <div className="flex flex-col">
+                              <h3 className="font-black text-primary text-lg leading-tight mb-1">{language === 'ar' ? j.title_ar : j.title_en}</h3>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">
+                                {colleges.find(c => c.id === j.college_id)?.name_ar || ''}
+                              </span>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('job', j)} title={t('common.edit')}>
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('jobs', j.id)} title={t('common.delete')}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between mt-6">
+                            <Button
+                              onClick={() => loadJobApplications(j.id)}
+                              className="h-10 px-5 rounded-xl bg-primary/5 text-primary text-xs font-black hover:bg-primary hover:text-white transition-all gap-2"
+                            >
+                              <Users className="h-4 w-4" />
+                              {language === 'ar' ? 'عرض المتقدمين' : 'View Applicants'}
+                            </Button>
+                            <div className="flex items-center gap-2 text-[10px] font-black text-primary/20 uppercase tracking-widest">
+                              <Briefcase className="h-3 w-3" />
+                              {j.deadline ? new Date(j.deadline).toLocaleDateString(language === 'ar' ? 'ar-IQ' : 'en-US') : (language === 'ar' ? 'بدون موعد' : 'No deadline')}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* Graduates */}
+              {hasPermission('manage_graduates') && (
+                <TabsContent value="graduates" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_graduates')}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة بيانات الخريجين وسجلاتهم' : 'Manage graduate data and records'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                        <SelectTrigger className="w-[150px] h-12 rounded-xl border-primary/10 font-bold">
+                          <SelectValue placeholder={isAr ? 'الترتيب' : 'Sort'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-primary/10">
+                          <SelectItem value="newest" className="font-bold">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
+                          <SelectItem value="oldest" className="font-bold">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
+                          <SelectItem value="name" className="font-bold">{isAr ? 'الاسم' : 'Name'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={() => openAdd('graduate')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+                    {role === 'super_admin' && (
+                      <Select value={uniFilter} onValueChange={(v) => { setUniFilter(v); setCollegeFilter('all'); setDeptFilter('all'); }}>
+                        <SelectTrigger className="w-[200px] h-11 rounded-xl border-white bg-white shadow-sm font-bold">
+                          <SelectValue placeholder={isAr ? 'كل الجامعات' : 'All Universities'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="all">{isAr ? 'كل الجامعات' : 'All Universities'}</SelectItem>
+                          {universities.map(u => <SelectItem key={u.id} value={u.id}>{getName(u)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {(role === 'super_admin' || role === 'university_admin') && (
+                      <Select value={collegeFilter} onValueChange={(v) => { setCollegeFilter(v); setDeptFilter('all'); }}>
+                        <SelectTrigger className="w-[200px] h-11 rounded-xl border-white bg-white shadow-sm font-bold">
+                          <SelectValue placeholder={isAr ? 'كل الكليات' : 'All Colleges'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="all">{isAr ? 'كل الكليات' : 'All Colleges'}</SelectItem>
+                          {colleges
+                            .filter(c => uniFilter === 'all' || c.university_id === uniFilter)
+                            .map(c => <SelectItem key={c.id} value={c.id}>{getName(c)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Select value={deptFilter} onValueChange={setDeptFilter}>
+                      <SelectTrigger className="w-[200px] h-11 rounded-xl border-white bg-white shadow-sm font-bold">
+                        <SelectValue placeholder={isAr ? 'كل الأقسام' : 'All Departments'} />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="all">{isAr ? 'كل الأقسام' : 'All Departments'}</SelectItem>
+                        {departments
+                          .filter(d => collegeFilter === 'all' || d.college_id === collegeFilter)
+                          .map(d => <SelectItem key={d.id} value={d.id}>{getName(d)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {processData(graduates).map((g: any) => (
+                      <Card key={g.id} className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg">
+                        <CardContent className="flex items-center justify-between p-6">
+                          <div className="flex flex-col">
+                            <span className="font-black text-primary text-lg leading-tight mb-1">{language === 'ar' ? g.full_name_ar : (g.full_name_en || g.full_name_ar)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-md bg-primary/5 text-[10px] font-black text-primary/60 uppercase tracking-wider">
+                                {g.graduation_year}
+                              </span>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-tight truncate max-w-[120px]">
+                                {departments.find(d => d.id === g.department_id)?.name_ar || ''}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('graduate', g)}>
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete('announcements', a.id)}>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('graduates', g.id)}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-2">{language === 'ar' ? a.content_ar : a.content_en}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </TabsContent>
-          )
-        }
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+              )}
 
-        {/* Jobs */}
-        <TabsContent value="jobs">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
-            <h2 className="text-xl font-bold">{t('dashboard.manage_jobs')}</h2>
-            <div className="flex flex-wrap gap-3">
-              <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={isAr ? 'ترتيب حسب' : 'Sort by'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
-                  <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
-                  <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={() => openAdd('job')} className="bg-gold text-gold-foreground">
-                <Plus className="h-4 w-4 me-1" />{t('common.add')}
-              </Button>
-            </div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2">
-            {processData(jobs).map((j: any) => (
-              <Card key={j.id} className="relative">
-                <CardContent className="p-4 overflow-hidden">
-                  {j.is_pinned === 1 && (
-                    <div className="absolute top-0 right-0 p-1 bg-gold/10 rounded-bl-lg">
-                      <Pin className="h-3 w-3 text-gold" />
+              {/* Research */}
+              {hasPermission('manage_research') && (
+                <TabsContent value="research" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_research')}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة الأبحاث والأوراق العلمية' : 'Manage scientific research and papers'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
+                        <SelectTrigger className="w-[150px] h-12 rounded-xl border-primary/10 font-bold">
+                          <SelectValue placeholder={isAr ? 'الترتيب' : 'Sort'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl border-primary/10">
+                          <SelectItem value="newest" className="font-bold">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
+                          <SelectItem value="oldest" className="font-bold">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
+                          <SelectItem value="name" className="font-bold">{isAr ? 'الاسم' : 'Name'}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button onClick={() => openAdd('research')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap gap-3 mb-8 p-6 bg-slate-50 rounded-[2rem] border border-slate-100 shadow-inner">
+                    {role === 'super_admin' && (
+                      <Select value={uniFilter} onValueChange={(v) => { setUniFilter(v); setCollegeFilter('all'); setDeptFilter('all'); }}>
+                        <SelectTrigger className="w-[200px] h-11 rounded-xl border-white bg-white shadow-sm font-bold">
+                          <SelectValue placeholder={isAr ? 'كل الجامعات' : 'All Universities'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="all">{isAr ? 'كل الجامعات' : 'All Universities'}</SelectItem>
+                          {universities.map(u => <SelectItem key={u.id} value={u.id}>{getName(u)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    {(role === 'super_admin' || role === 'university_admin') && (
+                      <Select value={collegeFilter} onValueChange={(v) => { setCollegeFilter(v); setDeptFilter('all'); }}>
+                        <SelectTrigger className="w-[200px] h-11 rounded-xl border-white bg-white shadow-sm font-bold">
+                          <SelectValue placeholder={isAr ? 'كل الكليات' : 'All Colleges'} />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-xl">
+                          <SelectItem value="all">{isAr ? 'كل الكليات' : 'All Colleges'}</SelectItem>
+                          {colleges
+                            .filter(c => uniFilter === 'all' || c.university_id === uniFilter)
+                            .map(c => <SelectItem key={c.id} value={c.id}>{getName(c)}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    )}
+
+                    <Select value={deptFilter} onValueChange={setDeptFilter}>
+                      <SelectTrigger className="w-[200px] h-11 rounded-xl border-white bg-white shadow-sm font-bold">
+                        <SelectValue placeholder={isAr ? 'كل الأقسام' : 'All Departments'} />
+                      </SelectTrigger>
+                      <SelectContent className="rounded-xl">
+                        <SelectItem value="all">{isAr ? 'كل الأقسام' : 'All Departments'}</SelectItem>
+                        {departments
+                          .filter(d => collegeFilter === 'all' || d.college_id === collegeFilter)
+                          .map(d => <SelectItem key={d.id} value={d.id}>{getName(d)}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {processData(research).map((r: any) => (
+                      <Card key={r.id} className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg">
+                        <CardContent className="flex items-center justify-between p-6">
+                          <div className="flex flex-col flex-1 min-w-0 me-4">
+                            <span className="font-black text-primary text-lg leading-tight mb-1 truncate">{language === 'ar' ? r.title_ar : (r.title_en || r.title_ar)}</span>
+                            <div className="flex items-center gap-2">
+                              <span className="px-2 py-0.5 rounded-md bg-primary/5 text-[10px] font-black text-primary/60 uppercase tracking-wider truncate max-w-[100px]">
+                                {r.author_name}
+                              </span>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-tight truncate max-w-[120px]">
+                                {departments.find(d => d.id === r.department_id)?.name_ar || ''}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('research', r)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('research', r.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* Fees */}
+              {hasPermission('manage_fees') && (
+                <TabsContent value="fees" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{t('dashboard.manage_fees')}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'إدارة الرسوم الدراسية والتكاليف' : 'Manage academic fees and costs'}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      <Button onClick={() => openAdd('fee')} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" />{t('common.add')}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {fees.map((f: any) => (
+                      <Card key={f.id} className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg">
+                        <CardContent className="flex items-center justify-between p-6">
+                          <div className="flex flex-col">
+                            <span className="font-black text-primary text-lg leading-tight mb-1">{f.amount?.toLocaleString()} {language === 'ar' ? 'د.ع' : 'IQD'}</span>
+                            <div className="flex items-center gap-2">
+                              <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider ${f.fee_type === 'public' ? 'bg-primary/5 text-primary/60' : 'bg-gold/10 text-gold'}`}>
+                                {f.fee_type === 'public' ? t('fees.public') : t('fees.private')}
+                              </span>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-tight truncate max-w-[120px]">
+                                {departments.find(d => d.id === f.department_id)?.name_ar || ''}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => openEdit('fee', f)}>
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => handleDelete('fees', f.id)}>
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                </TabsContent>
+              )}
+
+              {/* About Page Management */}
+              {role === 'super_admin' && (
+                <TabsContent value="about_mgmt" className="p-6">
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
+                    <div>
+                      <h2 className="text-2xl font-black text-primary mb-1">{language === 'ar' ? 'إدارة صفحة "من نحن"' : 'Manage About Us'}</h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'تعديل بيانات المشروع والمطور' : 'Edit project and developer information'}</p>
+                    </div>
+                    <Button onClick={() => {
+                      if (aboutData) openEdit('about', aboutData);
+                      else openAdd('about');
+                    }} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                      <Edit className="h-5 w-5 me-2" />{language === 'ar' ? 'تعديل المحتوى' : 'Edit Content'}
+                    </Button>
+                  </div>
+                  {aboutData ? (
+                    <Card className="card-premium border-none shadow-xl rounded-[2rem] overflow-hidden">
+                      <CardContent className="p-8 space-y-8">
+                        <div className="relative">
+                          <div className="absolute -left-4 top-0 bottom-0 w-1 bg-gold/30 rounded-full" />
+                          <h3 className="text-xl font-black text-primary mb-4 flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-gold/10 flex items-center justify-center">
+                              <Info className="h-4 w-4 text-gold" />
+                            </div>
+                            {language === 'ar' ? 'عن المشروع' : 'About Project'}
+                          </h3>
+                          <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                            <p className="font-black text-primary mb-2 text-lg">{getName(aboutData)}</p>
+                            <p className="text-primary/60 font-bold leading-relaxed whitespace-pre-wrap">{language === 'ar' ? aboutData.content_ar : aboutData.content_en}</p>
+                          </div>
+                        </div>
+
+                        <div className="relative">
+                          <div className="absolute -left-4 top-0 bottom-0 w-1 bg-primary/20 rounded-full" />
+                          <h3 className="text-xl font-black text-primary mb-4 flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-lg bg-primary/5 flex items-center justify-center">
+                              <Users className="h-4 w-4 text-primary" />
+                            </div>
+                            {language === 'ar' ? 'بيانات المطور' : 'Developer Details'}
+                          </h3>
+                          <div className="bg-slate-50/50 p-6 rounded-2xl border border-slate-100">
+                            <p className="font-black text-primary mb-1 text-lg">{language === 'ar' ? aboutData.developer_name_ar : aboutData.developer_name_en}</p>
+                            <p className="text-primary/40 font-bold text-sm italic">{language === 'ar' ? aboutData.developer_bio_ar : aboutData.developer_bio_en}</p>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                      <Info className="h-20 w-20 text-primary/5 mx-auto mb-6" />
+                      <p className="text-primary/40 text-xl font-black">{language === 'ar' ? 'لا يوجد بيانات حالياً' : 'No data available'}</p>
+                      <p className="text-primary/20 font-bold mt-2">{language === 'ar' ? 'اضغط على زر التعديل لإضافة محتوى' : 'Click the edit button to add content'}</p>
                     </div>
                   )}
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold">{language === 'ar' ? j.title_ar : j.title_en}</h3>
-                    <div className="flex gap-1">
-                      <Button variant="outline" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" onClick={() => loadJobApplications(j.id)}>
-                        <Users className="h-4 w-4" />
-                      </Button>
+                </TabsContent>
+              )}
 
-                      {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
-                        <>
-                          <Button variant="outline" size="icon" className="h-8 w-8 text-blue-500 hover:text-blue-700 hover:bg-blue-50" onClick={() => openEdit('job', j)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                          <Button variant="outline" size="icon" className="h-8 w-8 text-destructive hover:text-red-700 hover:bg-red-50" onClick={() => handleDelete('jobs', j.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">{language === 'ar' ? j.description_ar : j.description_en}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Graduates */}
-        <TabsContent value="graduates">
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">{t('dashboard.manage_graduates')}</h2>
-              <Button onClick={() => openAdd('graduate')} className="bg-gold text-gold-foreground">
-                <Plus className="h-4 w-4 me-1" />{t('common.add')}
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-xl">
-              <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder={isAr ? 'الترتيب' : 'Sort'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
-                  <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
-                  <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
-                </SelectContent>
-              </Select>
-
+              {/* Error Logs */}
               {role === 'super_admin' && (
-                <Select value={uniFilter} onValueChange={(v) => { setUniFilter(v); setCollegeFilter('all'); setDeptFilter('all'); }}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={isAr ? 'كل الجامعات' : 'All Universities'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{isAr ? 'كل الجامعات' : 'All Universities'}</SelectItem>
-                    {universities.map(u => <SelectItem key={u.id} value={u.id}>{getName(u)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {(role === 'super_admin' || role === 'university_admin') && (
-                <Select value={collegeFilter} onValueChange={(v) => { setCollegeFilter(v); setDeptFilter('all'); }}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={isAr ? 'كل الكليات' : 'All Colleges'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{isAr ? 'كل الكليات' : 'All Colleges'}</SelectItem>
-                    {colleges
-                      .filter(c => uniFilter === 'all' || c.university_id === uniFilter)
-                      .map(c => <SelectItem key={c.id} value={c.id}>{getName(c)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-
-              <Select value={deptFilter} onValueChange={setDeptFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={isAr ? 'كل الأقسام' : 'All Departments'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{isAr ? 'كل الأقسام' : 'All Departments'}</SelectItem>
-                  {departments
-                    .filter(d => collegeFilter === 'all' || d.college_id === collegeFilter)
-                    .map(d => <SelectItem key={d.id} value={d.id}>{getName(d)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {processData(graduates).map((g: any) => (
-              <Card key={g.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <span className="font-semibold">{language === 'ar' ? g.full_name_ar : (g.full_name_en || g.full_name_ar)}</span>
-                    <span className="block text-xs text-muted-foreground">{g.graduation_year} - {departments.find(d => d.id === g.department_id)?.name_ar || ''}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit('graduate', g)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete('graduates', g.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* Research */}
-        <TabsContent value="research">
-          <div className="flex flex-col gap-4 mb-6">
-            <div className="flex justify-between items-center">
-              <h2 className="text-xl font-bold">{t('dashboard.manage_research')}</h2>
-              <Button onClick={() => openAdd('research')} className="bg-gold text-gold-foreground">
-                <Plus className="h-4 w-4 me-1" />{t('common.add')}
-              </Button>
-            </div>
-
-            <div className="flex flex-wrap gap-3 p-4 bg-muted/30 rounded-xl">
-              <Select value={sortOrder} onValueChange={(v: any) => setSortOrder(v)}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder={isAr ? 'الترتيب' : 'Sort'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
-                  <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
-                  <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {role === 'super_admin' && (
-                <Select value={uniFilter} onValueChange={(v) => { setUniFilter(v); setCollegeFilter('all'); setDeptFilter('all'); }}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={isAr ? 'كل الجامعات' : 'All Universities'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{isAr ? 'كل الجامعات' : 'All Universities'}</SelectItem>
-                    {universities.map(u => <SelectItem key={u.id} value={u.id}>{getName(u)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {(role === 'super_admin' || role === 'university_admin') && (
-                <Select value={collegeFilter} onValueChange={(v) => { setCollegeFilter(v); setDeptFilter('all'); }}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder={isAr ? 'كل الكليات' : 'All Colleges'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{isAr ? 'كل الكليات' : 'All Colleges'}</SelectItem>
-                    {colleges
-                      .filter(c => uniFilter === 'all' || c.university_id === uniFilter)
-                      .map(c => <SelectItem key={c.id} value={c.id}>{getName(c)}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-
-              <Select value={deptFilter} onValueChange={setDeptFilter}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={isAr ? 'كل الأقسام' : 'All Departments'} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">{isAr ? 'كل الأقسام' : 'All Departments'}</SelectItem>
-                  {departments
-                    .filter(d => collegeFilter === 'all' || d.college_id === collegeFilter)
-                    .map(d => <SelectItem key={d.id} value={d.id}>{getName(d)}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {processData(research).map((r: any) => (
-              <Card key={r.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex-1 min-w-0 me-2">
-                    <span className="font-semibold block truncate text-sm">{language === 'ar' ? r.title_ar : (r.title_en || r.title_ar)}</span>
-                    <span className="block text-xs text-muted-foreground truncate">{r.author_name} - {departments.find(d => d.id === r.department_id)?.name_ar || ''}</span>
-                  </div>
-                  <div className="flex gap-1 shrink-0">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit('research', r)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete('research', r.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="fees">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">{t('dashboard.manage_fees')}</h2>
-            <Button onClick={() => openAdd('fee')} className="bg-gold text-gold-foreground"><Plus className="h-4 w-4 me-1" />{t('common.add')}</Button>
-          </div>
-          <div className="grid gap-3 md:grid-cols-2">
-            {fees.map((f: any) => (
-              <Card key={f.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div>
-                    <span className="font-semibold">{f.amount?.toLocaleString()} {f.currency}</span>
-                    <span className="block text-xs text-muted-foreground">{f.fee_type === 'public' ? t('fees.public') : t('fees.private')} - {departments.find(d => d.id === f.department_id)?.name_ar || ''}</span>
-                  </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" onClick={() => openEdit('fee', f)}><Edit className="h-4 w-4" /></Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete('fees', f.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </TabsContent>
-
-        {/* About Page Management */}
-        {
-          role === 'super_admin' && (
-            <TabsContent value="about_mgmt">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">{language === 'ar' ? 'إدارة صفحة "من نحن"' : 'Manage About Us'}</h2>
-                <Button onClick={() => {
-                  if (aboutData) {
-                    openEdit('about', aboutData);
-                  } else {
-                    openAdd('about');
-                  }
-                }} className="bg-gold text-gold-foreground">
-                  <Edit className="h-4 w-4 me-1" />{language === 'ar' ? 'تعديل المحتوى' : 'Edit Content'}
-                </Button>
-              </div>
-              {aboutData ? (
-                <Card>
-                  <CardContent className="p-6 space-y-4">
+                <TabsContent value="error_logs" className="p-6">
+                  <div className="flex justify-between items-center mb-8">
                     <div>
-                      <h3 className="font-bold text-gold mb-2">{language === 'ar' ? 'عن المشروع:' : 'About Project:'}</h3>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap">{getName(aboutData)}</p>
-                      <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-2">{language === 'ar' ? aboutData.content_ar : aboutData.content_en}</p>
+                      <h2 className="text-2xl font-black text-red-500 mb-1 flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
+                          <AlertTriangle className="h-6 w-6 text-red-500" />
+                        </div>
+                        {language === 'ar' ? 'سجل الأخطاء النظامية' : 'System Error Logs'}
+                      </h2>
+                      <p className="text-sm text-primary/40 font-bold">{language === 'ar' ? 'مراقبة أخطاء النظام والبرمجيات' : 'Monitor system and software errors'}</p>
                     </div>
-                    <div className="pt-4 border-t">
-                      <h3 className="font-bold text-gold mb-2">{language === 'ar' ? 'المطور:' : 'Developer:'}</h3>
-                      <p className="text-sm font-semibold">{language === 'ar' ? aboutData.developer_name_ar : aboutData.developer_name_en}</p>
-                      <p className="text-xs text-muted-foreground mt-1">{language === 'ar' ? aboutData.developer_bio_ar : aboutData.developer_bio_en}</p>
+                  </div>
+                  {errorLogs.length === 0 ? (
+                    <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                      <ShieldCheck className="h-20 w-20 text-green-500/10 mx-auto mb-6" />
+                      <p className="text-green-600/40 text-xl font-black">{language === 'ar' ? 'النظام يعمل بشكل مثالي' : 'System is running perfectly'}</p>
                     </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <p className="text-center text-muted-foreground py-8">{language === 'ar' ? 'لا يوجد بيانات حالياً، اضغط على تعديل لإضافة البيانات' : 'No data available, click Edit to add content'}</p>
+                  ) : (
+                    <div className="space-y-4">
+                      {errorLogs.map((log: any) => (
+                        <Card key={log.id} className="card-premium border-none border-s-4 border-s-red-500 shadow-lg overflow-hidden group hover:translate-x-1 transition-all">
+                          <CardContent className="p-6">
+                            <div className="flex justify-between items-start gap-4 mb-4">
+                              <div className="flex-1">
+                                <span className="font-black text-red-600 text-lg">{log.message}</span>
+                                <div className="flex items-center gap-3 mt-1">
+                                  <span className="px-2 py-0.5 rounded-md bg-red-50 text-[10px] font-black text-red-500 uppercase tracking-wider">
+                                    {log.source || 'CLIENT'}
+                                  </span>
+                                  <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">
+                                    {new Date(log.created_at).toLocaleString(language === 'ar' ? 'ar-IQ' : 'en-US')}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="bg-slate-900 p-4 rounded-xl font-mono text-[11px] text-red-400 overflow-auto max-h-40 whitespace-pre-wrap shadow-inner border border-white/5 selection:bg-red-500 selection:text-white">
+                              {log.stack_trace || 'No stack trace details'}
+                            </div>
+                            <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center gap-4">
+                              <div className="flex items-center gap-2">
+                                <Users className="h-3 w-3 text-primary/20" />
+                                <span className="text-[10px] font-black text-primary/40 uppercase tracking-widest leading-none">
+                                  {log.user_name ? `${log.user_name}` : (language === 'ar' ? 'مستخدم مجهول' : 'Anonymous')}
+                                </span>
+                              </div>
+                              <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">{log.user_id}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
               )}
-            </TabsContent>
-          )
-        }
 
-        {/* Error Logs */}
-        {role === 'super_admin' && (
-          <TabsContent value="error_logs">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold flex items-center gap-2 text-destructive"><AlertTriangle className="h-5 w-5" />{language === 'ar' ? 'سجل الأخطاء' : 'Error Logs'}</h2>
-            </div>
-            {errorLogs.length === 0 ? (
-              <p className="text-center text-muted-foreground py-8">{language === 'ar' ? 'لا توجد أخطاء مسجلة حالياً' : 'No errors logged currently'}</p>
-            ) : (
-              <div className="space-y-3">
-                {errorLogs.map((log: any) => (
-                  <Card key={log.id} className="border-l-4 border-l-destructive">
-                    <CardContent className="p-4 flex flex-col gap-2">
-                      <div className="flex justify-between items-start">
-                        <span className="font-bold text-destructive">{log.message}</span>
-                        <span className="text-xs text-muted-foreground shrink-0">{new Date(log.created_at).toLocaleString(language === 'ar' ? 'ar-IQ' : 'en-US')}</span>
-                      </div>
-                      <div className="text-xs text-muted-foreground bg-muted p-2 rounded-md font-mono overflow-auto max-h-32 whitespace-pre-wrap">
-                        {log.stack_trace || 'No stack trace available'}
-                      </div>
-                      <div className="text-xs text-muted-foreground flex justify-between mt-1 pt-2 border-t">
-                        <span><span className="font-semibold">{language === 'ar' ? 'المصدر:' : 'Source:'}</span> {log.source}</span>
-                        <span><span className="font-semibold">{language === 'ar' ? 'المستخدم:' : 'User ID:'}</span> {log.user_name ? `${log.user_name} (${log.user_email || 'No email'})` : log.user_id || 'Unknown/Anonymous'}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        )}
-
-        {/* Security - Change Password */}
-        <TabsContent value="security">
-          <SecurityTab userId={user?.id || ''} language={language} />
-        </TabsContent>
-
-      </Tabs>
+              {/* Security - Change Password */}
+              <TabsContent value="security" className="p-6">
+                <div className="max-w-xl mx-auto">
+                  <div className="text-center mb-10">
+                    <div className="h-20 w-20 rounded-3xl bg-primary/5 flex items-center justify-center mx-auto mb-6 shadow-sm border border-primary/5">
+                      <Lock className="h-10 w-10 text-primary" />
+                    </div>
+                    <h2 className="text-3xl font-black text-primary mb-2">{language === 'ar' ? 'إعدادات الأمان' : 'Security Settings'}</h2>
+                    <p className="text-primary/40 font-bold">{language === 'ar' ? 'تحديث كلمة المرور الخاصة بك' : 'Update your account password'}</p>
+                  </div>
+                  <div className="card-premium p-8 rounded-[2.5rem] border-none shadow-2xl relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.03]">
+                      <Shield className="h-32 w-32 text-primary" />
+                    </div>
+                    <SecurityTab userId={user?.id || ''} language={language} />
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+      </div>
 
       {/* Add/Edit Dialog */}
-      < Dialog open={dialogOpen} onOpenChange={setDialogOpen} >
-        <DialogContent className="max-h-[80vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>{editId ? t('common.edit') : t('common.add')} - {formTitle[activeForm]}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto card-premium border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden" aria-describedby={undefined}>
+          <div className="bg-primary p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-10">
+              <Plus className="h-24 w-24" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-black text-white">{editId ? t('common.edit') : t('common.add')} - {formTitle[activeForm]}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="p-8 space-y-6">
             {renderForm()}
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={loading}>{t('common.cancel')}</Button>
-              <Button onClick={handleSave} className="bg-gold text-gold-foreground" disabled={loading}>
-                {loading ? t('common.loading') : (editId ? t('common.save') : t('common.add'))}
+            <div className="flex gap-4 justify-end pt-6">
+              <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={loading} className="h-12 px-8 rounded-xl font-bold text-primary/40 hover:text-primary transition-all">
+                {t('common.cancel')}
+              </Button>
+              <Button onClick={handleSave} className="h-12 px-8 rounded-xl bg-primary text-white font-bold shadow-xl shadow-primary/20 transition-all hover:scale-105 active:scale-95" disabled={loading}>
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    {t('common.loading')}
+                  </div>
+                ) : (editId ? t('common.save') : t('common.add'))}
               </Button>
             </div>
           </div>
         </DialogContent>
-      </Dialog >
+      </Dialog>
 
       {/* Job Applications Dialog */}
       <Dialog open={!!viewingJobId} onOpenChange={(open) => !open && setViewingJobId(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto" aria-describedby={undefined}>
-          <DialogHeader>
-            <DialogTitle>{language === 'ar' ? 'المتقدمين للوظيفة' : 'Job Applicants'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto card-premium border-none shadow-2xl rounded-[2rem] p-0 overflow-hidden" aria-describedby={undefined}>
+          <div className="bg-gold p-8 text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 opacity-20">
+              <Users className="h-24 w-24" />
+            </div>
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-black text-white">{language === 'ar' ? 'المتقدمين للوظيفة' : 'Job Applicants'}</DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="p-8 space-y-4">
             {loadingApps ? (
-              <p className="text-center text-muted-foreground py-8">{t('common.loading')}</p>
+              <div className="py-20 text-center">
+                <div className="h-12 w-12 rounded-full border-4 border-gold/20 border-t-gold animate-spin mx-auto mb-4" />
+                <p className="font-black text-gold/40">{t('common.loading')}</p>
+              </div>
             ) : jobApplications.length === 0 ? (
-              <div className="text-center py-10 bg-muted/30 rounded-lg border-dashed border-2">
-                <Users className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-50" />
-                <p className="text-muted-foreground font-medium">{language === 'ar' ? 'لا يوجد متقدمين حتى الآن' : 'No applicants yet'}</p>
+              <div className="text-center py-20 bg-slate-50 rounded-[2.5rem] border-2 border-dashed border-slate-200">
+                <Users className="h-20 w-20 text-primary/10 mx-auto mb-4" />
+                <p className="text-primary/40 text-xl font-black">{language === 'ar' ? 'لا يوجد متقدمين حتى الآن' : 'No applicants yet'}</p>
               </div>
             ) : (
-              <div className="grid gap-3">
+              <div className="grid gap-4">
                 {jobApplications.map(app => (
-                  <Card key={app.id} className="overflow-hidden">
-                    <CardContent className="p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-                      <div>
-                        <h4 className="font-bold text-foreground">{app.applicant_name || (language === 'ar' ? 'مستخدم غير معروف' : 'Unknown User')}</h4>
-                        <p className="text-xs text-muted-foreground mt-0.5">{app.applicant_email}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <span className="text-xs text-muted-foreground">
-                            {new Date(app.created_at).toLocaleDateString(language === 'ar' ? 'ar-IQ' : 'en-US')}
-                          </span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${app.status === 'approved' ? 'bg-green-100 text-green-700' :
-                            app.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                  <Card key={app.id} className="overflow-hidden border-slate-100 shadow-sm hover:shadow-md transition-all rounded-[1.5rem] card-premium border-none">
+                    <CardContent className="p-6 flex flex-col sm:flex-row gap-6 items-start sm:items-center justify-between">
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-black text-primary text-xl truncate">{app.applicant_name || (language === 'ar' ? 'مستخدم غير معروف' : 'Unknown User')}</h4>
+                        <p className="text-sm text-primary/40 font-bold mt-1 truncate">{app.applicant_email}</p>
+                        <div className="flex flex-wrap items-center gap-4 mt-6">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3 text-primary/20" />
+                            <span className="text-[10px] font-black text-primary/30 uppercase tracking-widest">
+                              {new Date(app.created_at).toLocaleDateString(language === 'ar' ? 'ar-IQ' : 'en-US')}
+                            </span>
+                          </div>
+                          <span className={`text-[10px] px-3 py-1 rounded-lg font-black uppercase tracking-wider ${app.status === 'approved' ? 'bg-green-100 text-green-700' :
+                            app.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-primary/5 text-primary/60'
                             }`}>
                             {app.status === 'approved' ? (language === 'ar' ? 'مقبول' : 'Approved') :
                               app.status === 'rejected' ? (language === 'ar' ? 'مرفوض' : 'Rejected') :
@@ -1404,23 +1666,24 @@ const Dashboard: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t sm:border-0 border-border/50">
+                      <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
                         <a
                           href={app.file_url.startsWith('http') ? app.file_url : `http://localhost:5000${app.file_url}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-xs font-semibold text-primary hover:underline bg-primary/10 px-3 py-1.5 rounded-md flex-1 sm:flex-none text-center"
+                          className="h-11 px-6 rounded-xl bg-primary text-white text-xs font-black shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center justify-center flex-1 sm:flex-none"
                         >
+                          <FileText className="h-4 w-4 me-2" />
                           {language === 'ar' ? 'عرض السيرة' : 'View CV'}
                         </a>
                         <Select value={app.status} onValueChange={(val) => handleApplicationStatus(app.id, val)}>
-                          <SelectTrigger className="h-8 text-xs w-[110px] flex-1 sm:flex-none">
+                          <SelectTrigger className="h-11 text-xs w-[130px] rounded-xl border-slate-200 font-bold flex-1 sm:flex-none transition-all shadow-sm">
                             <SelectValue placeholder="Status" />
                           </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="pending">{language === 'ar' ? 'قيد الانتظار' : 'Pending'}</SelectItem>
-                            <SelectItem value="approved">{language === 'ar' ? 'قبول' : 'Approve'}</SelectItem>
-                            <SelectItem value="rejected">{language === 'ar' ? 'رفض' : 'Reject'}</SelectItem>
+                          <SelectContent className="rounded-xl border-primary/10">
+                            <SelectItem value="pending" className="font-bold">{language === 'ar' ? 'قيد الانتظار' : 'Pending'}</SelectItem>
+                            <SelectItem value="approved" className="font-bold text-green-600">{language === 'ar' ? 'قبول' : 'Approve'}</SelectItem>
+                            <SelectItem value="rejected" className="font-bold text-red-600">{language === 'ar' ? 'رفض' : 'Reject'}</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -1432,8 +1695,7 @@ const Dashboard: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-    </div >
+    </>
   );
 };
 

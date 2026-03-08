@@ -72,44 +72,96 @@ const Profile: React.FC = () => {
   const initials = profile?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || 'U';
 
   return (
-    <div className="container mx-auto max-w-lg px-4 py-8 animate-fade-in">
-      <Card>
-        <CardHeader className="text-center">
-          <div className="relative mx-auto mb-4">
-            <Avatar className="h-24 w-24 mx-auto">
-              {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="avatar" />}
-              <AvatarFallback className="bg-primary text-primary-foreground text-2xl">{initials}</AvatarFallback>
-            </Avatar>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="absolute bottom-0 right-1/2 translate-x-6 translate-y-1 flex h-8 w-8 items-center justify-center rounded-full bg-gold text-gold-foreground shadow-md hover:opacity-90 transition-opacity"
-            >
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
-            </button>
-            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+    <div className="min-h-[90vh] pb-20 pt-10 px-4 animate-fade-in relative overflow-hidden">
+      <div className="absolute inset-0 gradient-academic opacity-[0.02] z-0" />
+
+      <div className="container mx-auto max-w-lg relative z-10">
+        <Card className="card-premium overflow-hidden bg-white/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/10">
+          <div className="h-32 gradient-academic relative">
+            <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm" />
           </div>
-          <CardTitle>{t('nav.profile')}</CardTitle>
-          <p className="text-sm text-gold font-semibold">{roleLabel}</p>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label>{t('auth.email')}</Label>
-            <Input value={user?.email || ''} disabled />
-          </div>
-          <div className="space-y-2">
-            <Label>{t('auth.full_name')}</Label>
-            <Input value={fullName} onChange={e => setFullName(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label>{language === 'ar' ? 'الهاتف' : 'Phone'}</Label>
-            <Input value={phone} onChange={e => setPhone(e.target.value)} />
-          </div>
-          <Button onClick={handleSave} className="w-full bg-gold text-gold-foreground" disabled={loading}>
-            {loading ? t('common.loading') : t('common.save')}
-          </Button>
-        </CardContent>
-      </Card>
+
+          <CardHeader className="text-center relative -mt-16 pb-6 px-8">
+            <div className="relative mx-auto mb-6 group">
+              <Avatar className="h-32 w-32 mx-auto border-8 border-white shadow-2xl transition-transform duration-500 group-hover:scale-105">
+                {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="avatar" className="object-cover" />}
+                <AvatarFallback className="bg-primary text-white text-4xl font-black">{initials}</AvatarFallback>
+              </Avatar>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-gold text-white shadow-xl hover:bg-primary transition-all duration-300 border-4 border-white active:scale-90"
+              >
+                {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+              </button>
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+            </div>
+
+            <CardTitle className="text-3xl font-black text-primary tracking-tight">{t('nav.profile')}</CardTitle>
+            <div className="inline-flex items-center gap-2 mt-3 px-4 py-1.5 rounded-full bg-gold/10 text-gold border border-gold/20">
+              <span className="w-2 h-2 rounded-full bg-gold animate-pulse" />
+              <p className="text-sm font-black uppercase tracking-wider">{roleLabel}</p>
+            </div>
+          </CardHeader>
+
+          <CardContent className="space-y-6 px-8 pb-10">
+            <div className="grid gap-6">
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-primary/80 ms-1 uppercase tracking-wider">{t('auth.email')}</Label>
+                <div className="relative">
+                  <Input
+                    value={user?.email || ''}
+                    disabled
+                    className="h-14 rounded-2xl border-2 border-border/20 bg-slate-50/50 text-slate-500 font-bold opacity-100 cursor-not-allowed"
+                  />
+                  <div className="absolute inset-y-0 end-4 flex items-center pointer-events-none opacity-20">
+                    <User className="h-5 w-5 text-primary" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-primary/80 ms-1 uppercase tracking-wider">{t('auth.full_name')}</Label>
+                <Input
+                  value={fullName}
+                  onChange={e => setFullName(e.target.value)}
+                  placeholder={language === 'ar' ? 'الاسم الكامل' : 'Full Name'}
+                  className="h-14 rounded-2xl border-2 border-border/30 bg-white shadow-sm focus-visible:ring-primary/10 focus-visible:border-primary/40 transition-all font-bold text-primary"
+                />
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-bold text-primary/80 ms-1 uppercase tracking-wider">{language === 'ar' ? 'رقم الهاتف' : 'Phone Number'}</Label>
+                <Input
+                  value={phone}
+                  onChange={e => setPhone(e.target.value)}
+                  placeholder="+964..."
+                  className="h-14 rounded-2xl border-2 border-border/30 bg-white shadow-sm focus-visible:ring-primary/10 focus-visible:border-primary/40 transition-all font-bold text-primary"
+                />
+              </div>
+            </div>
+
+            <div className="pt-4">
+              <Button
+                onClick={handleSave}
+                className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98]"
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center gap-2">
+                    <span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                    {t('common.loading')}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span>{t('common.save')}</span>
+                  </div>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };

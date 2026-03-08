@@ -81,25 +81,34 @@ const Jobs: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-16 animate-fade-in min-h-[80vh]">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
-        <div className="space-y-4">
-          <Badge variant="outline" className="px-5 py-1.5 rounded-full border-primary/40 text-primary bg-primary/10 mb-4 font-extrabold text-xs uppercase tracking-widest shadow-sm">
-            {isAr ? 'فرص وظيفية' : 'Career Opportunities'}
-          </Badge>
-          <h1 className="text-4xl md:text-6xl heading-premium mb-6">
-            {t('jobs.title')}
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-xl">
-            {isAr ? 'انضم إلى فريق العمل المتميز في جامعتنا وساهم في بناء مستقبل التعليم.'
-              : 'Join the distinguished team at our university and contribute to building the future of education.'}
-          </p>
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-16 relative p-12 rounded-[3rem] border border-border/50 bg-white/50 backdrop-blur-md overflow-hidden shadow-2xl shadow-primary/5">
+        <div className="absolute inset-0 gradient-academic opacity-[0.03] z-0" />
+
+        <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-10">
+          <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-white shadow-2xl p-6 flex items-center justify-center border-4 border-slate-50 group hover:rotate-3 transition-transform duration-500">
+            <Briefcase className="h-16 w-16 text-primary/10 group-hover:text-primary transition-colors" />
+          </div>
+
+          <div className="flex-1">
+            <Badge variant="outline" className="px-6 py-2 rounded-full border-gold/30 text-gold bg-gold/5 mb-8 font-bold text-sm uppercase tracking-[0.2em] shadow-sm inline-flex">
+              {isAr ? 'فرص وظيفية' : 'Career Opportunities'}
+            </Badge>
+            <h1 className="text-4xl md:text-7xl font-bold text-primary mb-6">
+              {t('jobs.title')}
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
+              {isAr ? 'انضم إلى فريق العمل المتميز في جامعتنا وساهم في بناء مستقبل التعليم.'
+                : 'Join the distinguished team at our university and contribute to building the future of education.'}
+            </p>
+          </div>
         </div>
 
-        <div className="relative w-full md:w-96">
-          <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="relative w-full lg:w-96 group z-10">
+          <Search className="absolute start-8 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={isAr ? 'ابحث عن مسمى وظيفي أو جهة...' : 'Search for job title or entity...'}
-            className="h-16 ps-16 pe-6 text-lg rounded-2xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
+            className="h-20 ps-20 pe-8 text-xl rounded-[2rem] border-2 border-border/30 shadow-2xl focus-visible:ring-primary/10 bg-white/80 backdrop-blur-md transition-all group-focus-within:border-primary/30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
@@ -107,62 +116,62 @@ const Jobs: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-10 md:grid-cols-2">
           {[1, 2, 3, 4].map(i => (
-            <div key={i} className="h-64 bg-muted/20 animate-pulse rounded-[2rem]" />
+            <div key={i} className="h-96 bg-slate-50/50 animate-pulse rounded-[3rem] border border-border/30" />
           ))}
         </div>
       ) : filteredJobs.length > 0 ? (
-        <div className="grid gap-8 md:grid-cols-2">
+        <div className="grid gap-10 md:grid-cols-2">
           {filteredJobs.map(j => (
-            <Card key={j.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+            <Card key={j.id} className="card-premium group relative bg-white border border-border/50 overflow-hidden flex flex-col h-full hover:border-primary/30">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 z-0" />
 
-              <CardContent className="p-8 flex flex-col h-full relative z-10">
+              <CardContent className="p-10 flex flex-col h-full relative z-10">
                 <div className="flex items-start justify-between mb-8">
-                  <div className="h-16 w-16 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-3 shadow-inner">
+                  <div className="h-20 w-20 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-4 shadow-inner">
                     {j.universities?.logo_url ? (
                       <img src={j.universities.logo_url.startsWith('http') ? j.universities.logo_url : `http://localhost:5000${j.universities.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                     ) : (
-                      <Briefcase className="h-8 w-8 text-primary group-hover:text-white transition-colors" />
+                      <Briefcase className="h-10 w-10 text-primary group-hover:text-white transition-colors" />
                     )}
                   </div>
                   {j.deadline && (
-                    <div className="flex items-center gap-2 text-[10px] font-extrabold text-destructive bg-destructive/5 px-4 py-2 rounded-full uppercase tracking-widest border border-destructive/10">
-                      <Calendar className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-2 text-[10px] font-bold text-destructive bg-destructive/5 px-4 py-2 rounded-full uppercase tracking-widest border border-destructive/20 shadow-sm">
+                      <Calendar className="h-4 w-4" />
                       <span>{t('jobs.deadline')}: {new Date(j.deadline).toLocaleDateString(isAr ? 'ar-EG' : 'en-US')}</span>
                     </div>
                   )}
                 </div>
 
                 <div className="mb-6">
-                  <Badge variant="outline" className="text-[10px] uppercase font-extrabold px-4 py-1.5 rounded-full border-primary/30 text-primary bg-primary/10 mb-3 tracking-wider shadow-sm">
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold px-4 py-1.5 rounded-full border-primary/20 text-primary bg-primary/5 mb-4 tracking-wider shadow-sm">
                     {language === 'ar'
                       ? `${j.universities?.name_ar || ''} ${j.colleges ? `> ${j.colleges.name_ar}` : ''}`
                       : `${j.universities?.name_en || j.universities?.name_ar || ''} ${j.colleges ? `> ${j.colleges.name_en || j.colleges.name_ar}` : ''}`}
                   </Badge>
-                  <h3 className="text-2xl font-extrabold text-foreground leading-tight group-hover:text-primary transition-colors mb-2">
+                  <h3 className="text-2xl md:text-4xl font-bold text-primary leading-tight group-hover:text-gold transition-colors mb-4">
                     {isAr ? j.title_ar : (j.title_en || j.title_ar)}
                   </h3>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-3 rounded-2xl">
-                    <MapPin className="h-4 w-4 text-primary/60" />
+                <div className="flex flex-wrap gap-4 mb-8">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-slate-50 px-4 py-2.5 rounded-2xl border border-border/30">
+                    <MapPin className="h-4 w-4 text-gold" />
                     <span className="font-bold">{isAr ? 'عن بعد' : 'Remote'}</span>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 p-3 rounded-2xl">
-                    <Clock className="h-4 w-4 text-primary/60" />
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground bg-slate-50 px-4 py-2.5 rounded-2xl border border-border/30">
+                    <Clock className="h-4 w-4 text-gold" />
                     <span className="font-bold">{isAr ? 'دوام كامل' : 'Full-time'}</span>
                   </div>
                 </div>
 
-                <p className="text-muted-foreground text-sm leading-relaxed mb-8 line-clamp-3">
+                <p className="text-muted-foreground text-lg leading-relaxed mb-10 line-clamp-3">
                   {isAr ? j.description_ar : (j.description_en || j.description_ar)}
                 </p>
 
                 <Button
-                  className="w-full h-14 rounded-2xl text-lg font-extrabold shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all transform active:scale-95 mt-auto bg-primary"
+                  className="w-full h-16 rounded-2xl text-lg font-bold shadow-2xl shadow-primary/20 hover:bg-primary/90 transition-all transform active:scale-95 mt-auto bg-primary text-primary-foreground"
                   onClick={() => handleApplyClick(j.id)}
                 >
                   {isAr ? 'التقديم لهذه الوظيفة' : 'Apply for this Job'}
@@ -172,31 +181,33 @@ const Jobs: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-card/20 rounded-[3rem] border border-dashed border-border/40">
-          <Briefcase className="h-20 w-20 text-muted-foreground mb-6 opacity-20" />
-          <h3 className="text-2xl font-bold text-foreground mb-2">{isAr ? 'لا توجد وظائف متاحة' : 'No Jobs Available'}</h3>
-          <p className="text-muted-foreground max-w-sm">
+        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
+          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
+            <Briefcase className="h-12 w-12 text-primary/10" />
+          </div>
+          <h3 className="text-4xl font-bold text-primary mb-6">{isAr ? 'لا توجد وظائف متاحة' : 'No Jobs Available'}</h3>
+          <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
             {searchTerm ? (isAr ? 'حاول البحث بكلمات أخرى.' : 'Try searching for other keywords.') : t('jobs.no_jobs')}
           </p>
         </div>
       )}
 
       <Dialog open={!!selectedJob} onOpenChange={(open) => { if (!open) { setSelectedJob(null); setCvFile(null); } }}>
-        <DialogContent className="sm:max-w-md rounded-[2rem] p-8 border-none shadow-2xl overflow-hidden" aria-describedby={undefined}>
-          <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary via-primary/50 to-primary" />
+        <DialogContent className="sm:max-w-md rounded-[3rem] p-10 border-none shadow-2xl overflow-hidden bg-white" aria-describedby={undefined}>
+          <div className="absolute top-0 left-0 w-full h-3 gradient-academic" />
           <DialogHeader>
-            <DialogTitle className="text-2xl font-black text-center mb-2">
+            <DialogTitle className="text-3xl font-bold text-primary text-center mb-4">
               {isAr ? 'إرسال طلب تقديم' : 'Submit Application'}
             </DialogTitle>
-            <DialogDescription className="text-center text-muted-foreground">
+            <DialogDescription className="text-center text-muted-foreground text-lg leading-relaxed">
               {isAr ? 'يرجى إرفاق سيرتك الذاتية (CV) للبدء في عملية التوظيف.'
                 : 'Please attach your CV to start the hiring process.'}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="mt-8 space-y-6">
+          <div className="mt-10 space-y-8">
             <div
-              className={`relative py-10 flex flex-col items-center justify-center border-2 border-dashed rounded-[2rem] transition-all duration-300 ${cvFile ? 'border-primary bg-primary/5' : 'border-border/60 bg-muted/20 hover:bg-muted/30'}`}
+              className={`relative py-12 flex flex-col items-center justify-center border-4 border-dashed rounded-[2.5rem] transition-all duration-300 ${cvFile ? 'border-primary bg-primary/5' : 'border-border/30 bg-slate-50/50 hover:bg-slate-50'}`}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
@@ -210,32 +221,32 @@ const Jobs: React.FC = () => {
                 accept=".pdf,.doc,.docx"
                 onChange={(e) => setCvFile(e.target.files?.[0] || null)}
               />
-              <label htmlFor="cv-upload" className="cursor-pointer flex flex-col items-center gap-4 w-full">
-                <div className={`h-16 w-16 rounded-full flex items-center justify-center transition-all ${cvFile ? 'bg-primary text-white scale-110' : 'bg-background text-muted-foreground shadow-sm'}`}>
-                  <Upload className="h-8 w-8" />
+              <label htmlFor="cv-upload" className="cursor-pointer flex flex-col items-center gap-6 w-full">
+                <div className={`h-20 w-20 rounded-full flex items-center justify-center transition-all shadow-xl ${cvFile ? 'bg-primary text-primary-foreground scale-110' : 'bg-white text-muted-foreground'}`}>
+                  <Upload className="h-10 w-10" />
                 </div>
-                <div className="text-center px-4">
-                  <span className="text-lg font-bold text-foreground block mb-1">
+                <div className="text-center px-6">
+                  <span className="text-xl font-bold text-primary block mb-2">
                     {cvFile ? cvFile.name : (isAr ? 'اختر ملف السيرة الذاتية' : 'Select CV file')}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-base text-muted-foreground">
                     {cvFile ? (isAr ? 'تم اختيار الملف بنجاح' : 'File selected successfully') : (isAr ? 'أو قم بسحب الملف هنا' : 'or drag and drop here')}
                   </span>
                 </div>
               </label>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-4">
               <Button
-                className="w-full h-12 rounded-xl text-lg font-bold shadow-lg shadow-primary/20"
+                className="w-full h-16 rounded-2xl text-xl font-bold shadow-2xl shadow-primary/20 bg-primary text-primary-foreground hover:bg-primary/90"
                 onClick={handleApply}
                 disabled={!cvFile || isApplying}
               >
-                {isApplying ? <div className="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent" /> : (isAr ? 'إرسال الطلب الآن' : 'Submit Now')}
+                {isApplying ? <div className="animate-spin rounded-full h-7 w-7 border-4 border-white border-t-transparent" /> : (isAr ? 'إرسال الطلب الآن' : 'Submit Now')}
               </Button>
               <Button
                 variant="ghost"
-                className="w-full text-muted-foreground h-12 rounded-xl"
+                className="w-full text-muted-foreground h-14 rounded-2xl text-lg hover:bg-primary/5 hover:text-primary"
                 onClick={() => { setSelectedJob(null); setCvFile(null); }}
               >
                 {t('common.cancel')}

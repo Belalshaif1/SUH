@@ -82,14 +82,14 @@ const Graduates: React.FC = () => {
   });
 
   return (
-    <div className="container mx-auto px-4 py-16 animate-in fade-in duration-1000 min-h-[80vh]">
-      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-12 bg-gradient-to-br from-primary/10 via-primary/5 to-transparent p-12 rounded-[3.5rem] border border-primary/5 relative overflow-hidden shadow-2xl shadow-primary/5">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-gold/10 rounded-full -mr-32 -mt-32 blur-3xl opacity-50" />
+    <div className="container mx-auto px-4 py-16 animate-fade-in min-h-[80vh]">
+      {/* Header Section */}
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-16 relative p-12 rounded-[3rem] border border-border/50 bg-white/50 backdrop-blur-md overflow-hidden shadow-2xl shadow-primary/5">
+        <div className="absolute inset-0 gradient-academic opacity-[0.03] z-0" />
 
         <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-10">
-          {/* Entity Logo */}
-          {(selectedDept !== 'all' || selectedCollege !== 'all' || selectedUni !== 'all') && (
-            <div className="shrink-0 h-36 w-36 rounded-[2.5rem] bg-white shadow-2xl p-5 flex items-center justify-center border-4 border-white group hover:scale-105 transition-transform duration-500">
+          {(selectedDept !== 'all' || selectedCollege !== 'all' || selectedUni !== 'all') ? (
+            <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-white shadow-2xl p-6 flex items-center justify-center border-4 border-slate-50 group hover:rotate-3 transition-transform duration-500">
               <img
                 src={(
                   (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
@@ -108,86 +108,91 @@ const Graduates: React.FC = () => {
                 className="w-full h-full object-contain"
               />
             </div>
+          ) : (
+            <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-white shadow-2xl p-6 flex items-center justify-center border-4 border-slate-50 group hover:rotate-3 transition-transform duration-500">
+              <GraduationCap className="h-16 w-16 text-primary/10 group-hover:text-primary transition-colors" />
+            </div>
           )}
 
-          <div>
-            <Badge variant="outline" className="px-5 py-1.5 rounded-full border-primary/40 text-primary bg-primary/10 mb-4 font-extrabold text-xs uppercase tracking-widest shadow-sm inline-flex">
+          <div className="flex-1">
+            <Badge variant="outline" className="px-6 py-2 rounded-full border-gold/30 text-gold bg-gold/5 mb-8 font-bold text-sm uppercase tracking-[0.2em] shadow-sm inline-flex">
               {isAr ? 'خريجون متميزون' : 'Distinguished Graduates'}
             </Badge>
-            <h1 className="text-4xl md:text-6xl heading-premium mb-6">
+            <h1 className="text-4xl md:text-7xl font-bold text-primary mb-6">
               {t('graduates.title')}
             </h1>
-            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl font-medium">
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
               {isAr ? 'قائمة المبدعين الذين تخرجوا من جامعتنا وتركوا بصمة علمية مميزة.' : 'List of creative minds who graduated from our university and left a distinguished scientific mark.'}
             </p>
           </div>
         </div>
 
         <div className="relative w-full lg:w-96 group z-10">
-          <Search className="absolute start-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
+          <Search className="absolute start-8 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={isAr ? 'بحث عن خريج...' : 'Search for graduate...'}
-            className="h-16 ps-16 pe-6 text-lg rounded-2xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
+            className="h-20 ps-20 pe-8 text-xl rounded-[2rem] border-2 border-border/30 shadow-2xl focus-visible:ring-primary/10 bg-white/80 backdrop-blur-md transition-all group-focus-within:border-primary/30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4 mb-12 p-6 bg-slate-50/50 rounded-3xl border border-slate-100">
-        <div className="flex items-center gap-2 px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200">
-          <Filter className="h-4 w-4 text-primary" />
-          <span className="text-xs font-extrabold uppercase text-muted-foreground tracking-widest">{isAr ? 'تصفية حسب:' : 'Filter By:'}</span>
+      {/* Filters Area */}
+      <div className="flex flex-wrap items-center gap-6 mb-16 p-8 bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-border/50 shadow-xl shadow-primary/5">
+        <div className="flex items-center gap-3 px-5 py-2.5 bg-primary text-primary-foreground rounded-2xl shadow-lg shadow-primary/10">
+          <Filter className="h-5 w-5" />
+          <span className="text-xs font-bold uppercase tracking-widest">{isAr ? 'تصفية حسب:' : 'Filter By:'}</span>
         </div>
 
-        <Select value={selectedUni} onValueChange={setSelectedUni}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
-            <SelectValue placeholder={isAr ? 'الجامعة' : 'University'} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'كل الجامعات' : 'All Universities'}</SelectItem>
-            {universities.map(u => (
-              <SelectItem key={u.id} value={u.id}>{isAr ? u.name_ar : (u.name_en || u.name_ar)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex flex-wrap gap-4 flex-1">
+          <Select value={selectedUni} onValueChange={setSelectedUni}>
+            <SelectTrigger className="w-full md:w-[220px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectValue placeholder={isAr ? 'الجامعة' : 'University'} />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              <SelectItem value="all">{isAr ? 'كل الجامعات' : 'All Universities'}</SelectItem>
+              {universities.map(u => (
+                <SelectItem key={u.id} value={u.id}>{isAr ? u.name_ar : (u.name_en || u.name_ar)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={selectedCollege} onValueChange={setSelectedCollege} disabled={selectedUni === 'all'}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
-            <SelectValue placeholder={isAr ? 'الكلية' : 'College'} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'كل الكليات' : 'All Colleges'}</SelectItem>
-            {colleges.map(c => (
-              <SelectItem key={c.id} value={c.id}>{isAr ? c.name_ar : (c.name_en || c.name_ar)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select value={selectedCollege} onValueChange={setSelectedCollege} disabled={selectedUni === 'all'}>
+            <SelectTrigger className="w-full md:w-[220px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectValue placeholder={isAr ? 'الكلية' : 'College'} />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              <SelectItem value="all">{isAr ? 'كل الكليات' : 'All Colleges'}</SelectItem>
+              {colleges.map(c => (
+                <SelectItem key={c.id} value={c.id}>{isAr ? c.name_ar : (c.name_en || c.name_ar)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
 
-        <Select value={selectedDept} onValueChange={setSelectedDept} disabled={selectedCollege === 'all'}>
-          <SelectTrigger className="w-full md:w-[200px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
-            <SelectValue placeholder={isAr ? 'القسم' : 'Department'} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{isAr ? 'كل الأقسام' : 'All Departments'}</SelectItem>
-            {departments.map(d => (
-              <SelectItem key={d.id} value={d.id}>{isAr ? d.name_ar : (d.name_en || d.name_ar)}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          <Select value={selectedDept} onValueChange={setSelectedDept} disabled={selectedCollege === 'all'}>
+            <SelectTrigger className="w-full md:w-[220px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectValue placeholder={isAr ? 'القسم' : 'Department'} />
+            </SelectTrigger>
+            <SelectContent className="rounded-2xl">
+              <SelectItem value="all">{isAr ? 'كل الأقسام' : 'All Departments'}</SelectItem>
+              {departments.map(d => (
+                <SelectItem key={d.id} value={d.id}>{isAr ? d.name_ar : (d.name_en || d.name_ar)}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        <div className="ms-auto flex items-center gap-4 w-full md:w-auto">
-          <div className="h-8 w-[1px] bg-slate-200 hidden md:block" />
-          <div className="flex items-center gap-2 text-xs font-extrabold uppercase text-muted-foreground whitespace-nowrap tracking-widest">
-            <SortAsc className="h-4 w-4 text-primary" />
+        <div className="flex items-center gap-4 w-full md:w-auto border-t md:border-t-0 md:border-l border-border/30 md:ps-6 pt-6 md:pt-0">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase text-muted-foreground whitespace-nowrap">
+            <SortAsc className="h-5 w-5 text-gold" />
             {isAr ? 'ترتيب:' : 'Sort:'}
           </div>
           <Select value={sortOrder} onValueChange={setSortOrder}>
-            <SelectTrigger className="w-full md:w-[150px] h-12 bg-white border-slate-200 rounded-xl shadow-sm focus:ring-primary/20">
+            <SelectTrigger className="w-full md:w-[160px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-2xl">
               <SelectItem value="newest">{isAr ? 'الأحدث' : 'Newest'}</SelectItem>
               <SelectItem value="oldest">{isAr ? 'الأقدم' : 'Oldest'}</SelectItem>
               <SelectItem value="name">{isAr ? 'الاسم' : 'Name'}</SelectItem>
@@ -197,18 +202,18 @@ const Graduates: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {[1, 2, 3, 4, 5, 6].map(i => (
-            <div key={i} className="h-48 bg-muted/20 animate-pulse rounded-[3rem]" />
+            <div key={i} className="h-64 bg-slate-50/50 animate-pulse rounded-[3rem] border border-border/30" />
           ))}
         </div>
       ) : filteredGraduates.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
           {filteredGraduates.map(g => (
-            <Card key={g.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
+            <Card key={g.id} className="card-premium group relative bg-white border border-border/50 overflow-hidden flex flex-col h-full hover:border-primary/30">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 z-0" />
 
-              <CardContent className="p-8 flex flex-col h-full relative z-10">
+              <CardContent className="p-10 flex flex-col h-full relative z-10">
                 <div className="flex items-start justify-between mb-8">
                   <div className="h-16 w-16 rounded-2xl bg-primary/5 shadow-inner flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-3">
                     {g.department_logo_url || g.college_logo_url ? (
@@ -218,32 +223,32 @@ const Graduates: React.FC = () => {
                     )}
                   </div>
                   {g.gpa && (
-                    <Badge variant="outline" className="border-primary/30 text-primary bg-primary/10 font-extrabold text-xs px-4 py-1.5 rounded-full shadow-sm tracking-widest uppercase">
+                    <Badge variant="outline" className="border-gold/30 text-gold bg-gold/5 font-bold text-xs px-4 py-1.5 rounded-full shadow-sm tracking-widest uppercase">
                       {g.gpa} GPA
                     </Badge>
                   )}
                 </div>
 
                 <div className="mb-6">
-                  <Badge variant="outline" className="text-[10px] uppercase font-extrabold px-4 py-1.5 rounded-full border-primary/30 text-primary bg-primary/10 mb-4 break-words max-w-full block w-fit shadow-sm tracking-widest">
+                  <Badge variant="outline" className="text-[10px] uppercase font-bold px-4 py-1.5 rounded-full border-primary/20 text-primary bg-primary/5 mb-4 break-words max-w-full block w-fit shadow-sm tracking-widest">
                     {isAr
                       ? `${g.university_name_ar || ''} > ${g.college_name_ar || ''} > ${g.department_name_ar || g.department_name || ''}`
                       : `${g.university_name_en || g.university_name_ar || ''} > ${g.college_name_en || g.college_name_ar || ''} > ${g.department_name_en || g.department_name_ar || g.department_name || ''}`
                     }
                   </Badge>
-                  <h3 className="text-2xl font-extrabold text-foreground mb-1 group-hover:text-primary transition-colors duration-300 leading-tight">
+                  <h3 className="text-2xl font-bold text-primary mb-2 group-hover:text-gold transition-colors duration-300 leading-tight">
                     {isAr ? g.full_name_ar : (g.full_name_en || g.full_name_ar)}
                   </h3>
                 </div>
 
                 <div className="space-y-4 mb-4 mt-auto">
-                  <div className="flex items-center gap-3 text-sm font-extrabold text-muted-foreground bg-slate-50 p-3 rounded-2xl shadow-sm">
-                    <Calendar className="h-4 w-4 text-primary" />
+                  <div className="flex items-center gap-3 text-sm font-bold text-muted-foreground bg-slate-50 p-3 rounded-2xl border border-border/30 shadow-sm">
+                    <Calendar className="h-4 w-4 text-gold" />
                     <span className="tracking-wider uppercase">{isAr ? 'دفعة' : 'Class of'} {g.graduation_year}</span>
                   </div>
                   {(g.specialization_ar || g.specialization_en) && (
-                    <div className="flex items-center gap-3 text-sm font-extrabold text-muted-foreground bg-slate-50 p-3 rounded-2xl shadow-sm">
-                      <Award className="h-4 w-4 text-primary" />
+                    <div className="flex items-center gap-3 text-sm font-bold text-muted-foreground bg-slate-50 p-3 rounded-2xl border border-border/30 shadow-sm">
+                      <Award className="h-4 w-4 text-gold" />
                       <span className="line-clamp-1 truncate">{isAr ? g.specialization_ar : (g.specialization_en || g.specialization_ar)}</span>
                     </div>
                   )}
@@ -253,12 +258,12 @@ const Graduates: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-gold/20 shadow-inner">
-          <div className="h-24 w-24 rounded-full bg-gold/5 flex items-center justify-center mb-8 animate-bounce">
-            <GraduationCap className="h-12 w-12 text-gold/20" />
+        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
+          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
+            <GraduationCap className="h-12 w-12 text-primary/10" />
           </div>
-          <h3 className="text-4xl font-black text-foreground mb-4 tracking-tight">{isAr ? 'لا توجد نتائج' : 'No Results Found'}</h3>
-          <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
+          <h3 className="text-4xl font-bold text-primary mb-6 tracking-tight">{isAr ? 'لا توجد نتائج' : 'No Results Found'}</h3>
+          <p className="text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
             {searchTerm
               ? (isAr ? `لم نجد أي خريجين يطابقون "${searchTerm}". جرب أسماء أخرى.` : `We couldn't find any graduates matching "${searchTerm}". Try different names.`)
               : (isAr ? 'لا يوجد خريجون مسجلون في هذا القسم حالياً. يرجى مراجعة التصنيفات الأخرى.' : 'No graduates registered in this section yet. Please check other categories.')}

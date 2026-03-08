@@ -7,86 +7,84 @@
 
 @layer base {
   :root {
-    /* Refined Comfortable Palette */
-    --background: 210 33% 99%;
-    /* Softer off-white */
-    --foreground: 222 47% 11%;
+    /* Exact Academic Palette - Light Mode */
+    --background: 210 20% 98%;
+    --foreground: 220 40% 13%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 40% 13%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 220 40% 13%;
 
-    --primary: 215 70% 22%;
-    /* Richer, deeper Navy */
-    --primary-foreground: 210 40% 98%;
+    --primary: 217 71% 25%;
+    --primary-foreground: 210 20% 98%;
 
-    --secondary: 214 32% 91%;
-    --secondary-foreground: 215 70% 22%;
+    --secondary: 215 25% 93%;
+    --secondary-foreground: 217 71% 25%;
 
-    --muted: 214 30% 94%;
+    --muted: 215 20% 95%;
     --muted-foreground: 215 16% 47%;
 
-    --accent: 43 96% 58%;
-    /* More elegant Gold-Amber */
-    --accent-foreground: 222 47% 11%;
+    --accent: 45 80% 55%;
+    --accent-foreground: 220 40% 13%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 210 20% 98%;
 
-    --border: 214 32% 91%;
-    --input: 214 32% 91%;
-    --ring: 215 70% 22%;
+    --border: 215 25% 90%;
+    --input: 215 25% 90%;
+    --ring: 217 71% 25%;
 
     --radius: 1.25rem;
 
-    --gold: 43 96% 58%;
-    --gold-foreground: 222 47% 11%;
-    --gold-light: 43 96% 92%;
+    --gold: 45 80% 55%;
+    --gold-foreground: 220 40% 13%;
+    --gold-light: 45 80% 92%;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 43 96% 58%;
-    --sidebar-primary-foreground: 222 47% 11%;
-    --sidebar-accent: 215 70% 22%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 215 30% 15%;
-    --sidebar-ring: 43 96% 58%;
+    --sidebar-background: 220 40% 13%;
+    --sidebar-foreground: 210 20% 98%;
+    --sidebar-primary: 45 80% 55%;
+    --sidebar-primary-foreground: 220 40% 13%;
+    --sidebar-accent: 217 71% 25%;
+    --sidebar-accent-foreground: 210 20% 98%;
+    --sidebar-border: 217 30% 15%;
+    --sidebar-ring: 45 80% 55%;
   }
 
   .dark {
-    --background: 222 47% 4%;
-    --foreground: 210 40% 98%;
+    /* Exact Academic Palette - Dark Mode */
+    --background: 220 30% 8%;
+    --foreground: 210 20% 95%;
 
-    --card: 222 47% 7%;
-    --card-foreground: 210 40% 98%;
+    --card: 220 30% 12%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 222 47% 7%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 220 30% 12%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 43 96% 58%;
-    --primary-foreground: 222 47% 4%;
+    --primary: 45 80% 55%;
+    --primary-foreground: 220 30% 8%;
 
-    --secondary: 222 30% 12%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 220 25% 15%;
+    --secondary-foreground: 210 20% 95%;
 
-    --muted: 222 30% 12%;
+    --muted: 220 25% 15%;
     --muted-foreground: 215 20% 65%;
 
-    --accent: 43 96% 58%;
-    --accent-foreground: 222 47% 4%;
+    --accent: 45 80% 55%;
+    --accent-foreground: 220 30% 8%;
 
     --destructive: 0 63% 31%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive-foreground: 210 20% 95%;
 
-    --border: 222 30% 15%;
-    --input: 222 30% 15%;
-    --ring: 43 96% 58%;
+    --border: 220 25% 20%;
+    --input: 220 25% 20%;
+    --ring: 45 80% 55%;
 
-    --gold: 43 96% 58%;
-    --gold-foreground: 222 47% 4%;
-    --gold-light: 43 40% 15%;
+    --gold: 45 80% 55%;
+    --gold-foreground: 220 30% 8%;
+    --gold-light: 45 40% 15%;
   }
 }
 
@@ -100,13 +98,13 @@
     font-family: 'Cairo', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image: radial-gradient(at 0% 0%, hsla(215, 70%, 22%, 0.03) 0, transparent 50%),
-      radial-gradient(at 100% 100%, hsla(43, 96%, 58%, 0.03) 0, transparent 50%);
+    background-image: radial-gradient(at 0% 0%, hsla(217, 71%, 25%, 0.03) 0, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(45, 80%, 55%, 0.03) 0, transparent 50%);
     background-attachment: fixed;
   }
 
   [dir="ltr"] body {
-    font-family: 'Playfair Display', 'Cairo', sans-serif;
+    font-family: 'Cairo', sans-serif;
   }
 
   [dir="ltr"] h1,
@@ -115,7 +113,7 @@
   [dir="ltr"] h4,
   [dir="ltr"] h5,
   [dir="ltr"] h6 {
-    font-family: 'Playfair Display', sans-serif;
+    font-family: 'Cairo', sans-serif;
   }
 
   h1,
@@ -124,10 +122,9 @@
   h4,
   h5,
   h6 {
+    @apply font-bold text-foreground;
     font-family: 'Cairo', sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.025em;
-    @apply text-foreground;
+    letter-spacing: -0.01em;
   }
 
   /* Standardizing Buttons and Interactive Elements */
@@ -161,7 +158,7 @@
   }
 
   .card-premium {
-    @apply rounded-[2.5rem] border-none shadow-[0_20px_50px_rgba(0,0,0,0.05)] transition-all duration-700 hover:shadow-[0_40px_80px_rgba(0,0,0,0.1)] hover:-translate-y-2;
+    @apply rounded-[2.5rem] border-none shadow-[0_20px_50px_rgba(0, 0, 0, 0.05)] transition-all duration-700 hover:shadow-[0_40px_80px_rgba(0, 0, 0, 0.1)] hover:-translate-y-2;
     background: hsl(var(--card));
     backdrop-filter: blur(10px);
   }

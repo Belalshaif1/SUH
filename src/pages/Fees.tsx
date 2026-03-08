@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import apiClient from '@/lib/apiClient';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { DollarSign, Search, Building2, GraduationCap, Filter, CreditCard, Wallet } from 'lucide-react';
@@ -40,36 +40,44 @@ const Fees: React.FC = () => {
   return (
     <div className="container mx-auto px-4 py-16 animate-fade-in min-h-[80vh]">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-16">
-        <div className="space-y-4">
-          <Badge className="bg-gold/10 text-gold hover:bg-gold/20 border-none px-4 py-1 rounded-full font-bold">
-            {isAr ? 'الرسوم الدراسية' : 'Tuition Fees'}
-          </Badge>
-          <h1 className="text-4xl md:text-5xl font-black text-foreground tracking-tight">
-            {t('fees.title')}
-          </h1>
-          <p className="text-muted-foreground text-lg max-w-xl">
-            {isAr ? 'شفافية كاملة في الرسوم الدراسية لمساعدتك في التخطيط لمستقبلك الأكاديمي.'
-              : 'Full transparency in tuition fees to help you plan your academic future.'}
-          </p>
+      <div className="flex flex-col lg:flex-row items-center justify-between gap-12 mb-16 relative p-12 rounded-[3rem] border border-border/50 bg-white/50 backdrop-blur-md overflow-hidden shadow-2xl shadow-primary/5">
+        <div className="absolute inset-0 gradient-academic opacity-[0.03] z-0" />
+
+        <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-10">
+          <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-white shadow-2xl p-6 flex items-center justify-center border-4 border-slate-50 group hover:rotate-3 transition-transform duration-500">
+            <DollarSign className="h-16 w-16 text-primary/10 group-hover:text-primary transition-colors" />
+          </div>
+
+          <div className="flex-1">
+            <Badge variant="outline" className="px-6 py-2 rounded-full border-gold/30 text-gold bg-gold/5 mb-8 font-bold text-sm uppercase tracking-[0.2em] shadow-sm inline-flex">
+              {isAr ? 'الرسوم الدراسية' : 'Tuition Fees'}
+            </Badge>
+            <h1 className="text-4xl md:text-7xl font-bold text-primary mb-6">
+              {t('fees.title')}
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
+              {isAr ? 'شفافية كاملة في الرسوم الدراسية لمساعدتك في التخطيط لمستقبلك الأكاديمي.'
+                : 'Full transparency in tuition fees to help you plan your academic future.'}
+            </p>
+          </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative flex-1 sm:w-80">
-            <Search className="absolute start-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+        <div className="flex flex-col sm:flex-row gap-6 w-full lg:w-auto z-10">
+          <div className="relative flex-1 sm:w-80 group">
+            <Search className="absolute start-6 top-1/2 -translate-y-1/2 h-6 w-6 text-muted-foreground group-focus-within:text-primary transition-colors" />
             <Input
               placeholder={isAr ? 'ابحث عن كلية أو قسم...' : 'Search for college or dept...'}
-              className="ps-12 py-6 bg-card border-border/60 rounded-2xl shadow-sm"
+              className="h-16 ps-16 pe-6 text-lg rounded-2xl border-2 border-border/30 shadow-2xl focus-visible:ring-primary/10 bg-white/80 backdrop-blur-md transition-all group-focus-within:border-primary/30"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full sm:w-44 py-6 rounded-2xl bg-card border-border/60">
-              <Filter className="h-4 w-4 me-2 opacity-50" />
+            <SelectTrigger className="w-full sm:w-48 h-16 rounded-2xl bg-white/80 backdrop-blur-md border-2 border-border/30 shadow-2xl focus:ring-primary/10 transition-all font-bold">
+              <Filter className="h-5 w-5 me-2 text-gold" />
               <SelectValue placeholder={isAr ? 'النوع' : 'Type'} />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="rounded-2xl">
               <SelectItem value="all">{isAr ? 'الكل' : 'All'}</SelectItem>
               <SelectItem value="public">{t('fees.public')}</SelectItem>
               <SelectItem value="private">{t('fees.private')}</SelectItem>
@@ -79,63 +87,67 @@ const Fees: React.FC = () => {
       </div>
 
       {loading ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
           {[1, 2, 3].map(i => (
-            <div key={i} className="h-48 bg-muted/20 animate-pulse rounded-[2rem]" />
+            <div key={i} className="h-64 bg-slate-50/50 animate-pulse rounded-[3rem] border border-border/30" />
           ))}
         </div>
       ) : filteredFees.length > 0 ? (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
           {filteredFees.map(f => (
-            <Card key={f.id} className="group border-border/40 bg-card/40 backdrop-blur-sm hover:shadow-[0_20px_50px_rgba(0,0,0,0.06)] hover:border-gold/30 transition-all duration-500 rounded-[2.5rem] overflow-hidden flex flex-col border">
-              <CardContent className="p-8">
-                <div className="flex justify-between items-start mb-6">
-                  <div className={`p-3 rounded-2xl ${f.fee_type === 'public' ? 'bg-primary/10 text-primary' : 'bg-emerald-500/10 text-emerald-600'}`}>
-                    {f.fee_type === 'public' ? <Building2 className="h-6 w-6" /> : <Wallet className="h-6 w-6" />}
+            <Card key={f.id} className="card-premium group relative bg-white border border-border/50 overflow-hidden flex flex-col h-full hover:border-primary/30">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700 z-0" />
+
+              <CardContent className="p-10 flex flex-col h-full relative z-10">
+                <div className="flex justify-between items-start mb-8">
+                  <div className={`h - 16 w - 16 rounded - 2xl flex items - center justify - center shadow - inner transition - all duration - 500 overflow - hidden ${f.fee_type === 'public' ? 'bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground' : 'bg-gold/5 text-gold group-hover:bg-gold group-hover:text-white'} `}>
+                    {f.fee_type === 'public' ? <Building2 className="h-8 w-8" /> : <Wallet className="h-8 w-8" />}
                   </div>
-                  <Badge variant="outline" className={`rounded-full px-3 ${f.fee_type === 'public' ? 'border-primary/20 text-primary' : 'border-emerald-500/20 text-emerald-600'}`}>
+                  <Badge variant="outline" className={`rounded - full px - 5 py - 2 font - bold uppercase tracking - wider shadow - sm border - 2 ${f.fee_type === 'public' ? 'border-primary/20 text-primary bg-primary/5' : 'border-gold/20 text-gold bg-gold/5'} `}>
                     {f.fee_type === 'public' ? t('fees.public') : t('fees.private')}
                   </Badge>
                 </div>
 
-                <div className="space-y-4 mb-8">
-                  <div>
-                    <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors">
-                      {f.departments ? (isAr ? f.departments.name_ar : (f.departments.name_en || f.departments.name_ar)) : '-'}
-                    </h3>
-                    <p className="text-sm text-muted-foreground flex items-center gap-1.5 mt-1">
-                      <GraduationCap className="h-3.5 w-3.5" />
+                <div className="mb-10 flex-1">
+                  <h3 className="text-2xl font-bold text-primary group-hover:text-gold transition-colors mb-3">
+                    {f.departments ? (isAr ? f.departments.name_ar : (f.departments.name_en || f.departments.name_ar)) : '-'}
+                  </h3>
+                  <div className="flex items-center gap-3 text-muted-foreground bg-slate-50 px-4 py-2.5 rounded-2xl border border-border/30 w-fit">
+                    <GraduationCap className="h-5 w-5 text-gold" />
+                    <span className="font-bold">
                       {f.departments?.colleges ? (isAr ? f.departments.colleges.name_ar : (f.departments.colleges.name_en || f.departments.colleges.name_ar)) : '-'}
-                    </p>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-10 border-t border-border/30 flex justify-between items-end">
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">{isAr ? 'مبلغ القسط' : 'Tuition Amount'}</p>
+                    <div className="text-4xl font-black text-primary group-hover:text-gold transition-colors flex items-baseline gap-2">
+                      {f.amount?.toLocaleString()}
+                      <span className="text-sm font-bold text-muted-foreground">{f.currency}</span>
+                    </div>
+                  </div>
+                  <div className="h-16 w-16 rounded-2xl bg-slate-50 border border-border/30 flex items-center justify-center text-gold shadow-sm group-hover:bg-gold group-hover:text-white group-hover:border-gold group-hover:rotate-12 transition-all duration-500">
+                    <CreditCard className="h-8 w-8" />
                   </div>
                 </div>
               </CardContent>
-              <div className="mt-auto px-8 pb-8 flex justify-between items-end">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">{isAr ? 'مبلغ القسط' : 'Tuition Amount'}</p>
-                  <div className="text-3xl font-black text-gold flex items-baseline gap-1">
-                    {f.amount?.toLocaleString()}
-                    <span className="text-sm font-bold text-muted-foreground">{f.currency}</span>
-                  </div>
-                </div>
-                <div className="h-10 w-10 rounded-full bg-gold/5 flex items-center justify-center text-gold group-hover:bg-gold group-hover:text-white transition-all duration-500">
-                  <CreditCard className="h-5 w-5" />
-                </div>
-              </div>
             </Card>
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-32 text-center bg-card/20 rounded-[3rem] border border-dashed border-border/40">
-          <DollarSign className="h-20 w-20 text-muted-foreground mb-6 opacity-20" />
-          <h3 className="text-2xl font-bold text-foreground mb-2">{isAr ? 'لا يوجد بيانات رسوم' : 'No Fees Data'}</h3>
-          <p className="text-muted-foreground max-w-sm">
+        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
+          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
+            <DollarSign className="h-12 w-12 text-primary/10" />
+          </div>
+          <h3 className="text-4xl font-bold text-primary mb-6">{isAr ? 'لا يوجد بيانات رسوم' : 'No Fees Data'}</h3>
+          <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
             {searchTerm ? (isAr ? 'حاول البحث بكلمات أخرى.' : 'Try searching for other keywords.') : t('fees.no_fees')}
           </p>
         </div>
-      )
-      }
-    </div >
+      )}
+    </div>
   );
 };
 
