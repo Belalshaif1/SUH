@@ -78,6 +78,6 @@ app.get('/api/health', (req, res) => {
 });
 
 // البدء في تشغيل الخادم والانتظار لاستقبال الطلبات على المنفذ المحدد
-app.listen(PORT, () => {
-    console.log(`✅ الخادم يعمل بنجاح على الرابط: http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`✅ الخادم يعمل بنجاح على المنفذ: ${PORT}`);
 });
