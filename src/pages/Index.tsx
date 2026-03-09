@@ -47,11 +47,11 @@ const Index: React.FC = () => {
   }, []);
 
   const statItems = [
-    { key: 'universities', icon: Building2, color: 'text-primary' },
+    { key: 'universities', icon: Building2, color: 'text-gold' },
     { key: 'colleges', icon: BookOpen, color: 'text-gold' },
-    { key: 'departments', icon: FileText, color: 'text-primary' },
+    { key: 'departments', icon: FileText, color: 'text-gold' },
     { key: 'graduates', icon: GraduationCap, color: 'text-gold' },
-    { key: 'research', icon: FileText, color: 'text-primary' },
+    { key: 'research', icon: FileText, color: 'text-gold' },
   ];
 
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
@@ -59,21 +59,25 @@ const Index: React.FC = () => {
   return (
     <div className="animate-fade-in">
       {/* Hero Section */}
-      <section className="relative py-32 text-center overflow-hidden min-h-[70vh] flex items-center bg-slate-50/50">
-        <div className="absolute inset-0 gradient-academic opacity-[0.03]" />
+      <section className="relative py-32 text-center overflow-hidden min-h-[80vh] flex items-center bg-primary text-white">
+        <div className="absolute inset-0 gradient-academic opacity-100" />
+        {/* Decorative Glass Orbs for depth (as seen in premium designs) */}
+        <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
+
         <div className="container mx-auto px-4 relative z-10">
-          <Badge variant="outline" className="px-6 py-2 rounded-full border-gold/30 text-gold bg-gold/5 mb-10 font-bold text-sm uppercase tracking-[0.2em] shadow-sm backdrop-blur-sm">
+          <Badge variant="outline" className="px-6 py-2 rounded-full border-white/20 text-gold bg-white/5 mb-10 font-bold text-sm uppercase tracking-[0.2em] shadow-sm backdrop-blur-sm">
             <GraduationCap className="h-5 w-5 me-2 inline" />
             {isAr ? 'منصة التعليم الجامعي الذكي' : 'SMART UNIVERSITY PLATFORM'}
           </Badge>
-          <h1 className="mb-10 text-5xl md:text-8xl font-bold tracking-tight text-primary leading-[1.1]">
+          <h1 className="mb-10 text-5xl md:text-8xl font-black tracking-tight text-white leading-[1.1]">
             {t('home.welcome')}
           </h1>
-          <p className="mx-auto mb-12 max-w-3xl text-xl md:text-2xl text-muted-foreground leading-relaxed">
+          <p className="mx-auto mb-12 max-w-3xl text-xl md:text-2xl text-white/70 font-medium leading-relaxed">
             {t('home.subtitle')}
           </p>
           <Link to="/universities">
-            <Button size="lg" className="h-16 px-12 bg-primary text-primary-foreground hover:bg-primary/90 rounded-2xl shadow-xl shadow-primary/20 text-xl font-bold transition-all hover:scale-105 active:scale-95 group">
+            <Button size="lg" className="h-16 px-12 bg-gold text-gold-foreground hover:bg-gold/90 rounded-2xl shadow-xl shadow-gold/20 text-xl font-black transition-all hover:scale-105 active:scale-95 group border-none">
               {t('home.explore')}
               <Arrow className="ms-3 h-7 w-7 transition-transform group-hover:translate-x-2" />
             </Button>
@@ -88,7 +92,7 @@ const Index: React.FC = () => {
             <Card key={item.key} className="card-premium border border-border/50 bg-white/80 backdrop-blur-md">
               <CardContent className="flex flex-col items-center p-8 text-center">
                 <div className="p-4 rounded-2xl bg-primary/5 mb-4 group-hover:bg-primary/10 transition-colors">
-                  <item.icon className={`h-8 w-8 text-primary`} />
+                  <item.icon className={`h-8 w-8 ${item.color}`} />
                 </div>
                 <span className="text-4xl font-bold text-primary mb-1">{stats[item.key as keyof typeof stats]}</span>
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">

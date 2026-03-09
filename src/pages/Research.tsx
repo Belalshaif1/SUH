@@ -125,7 +125,7 @@ const Research: React.FC = () => {
         </div>
 
         {/* Filters Area */}
-        <div className="flex flex-wrap items-center gap-6 mb-16 p-8 bg-white/50 backdrop-blur-md rounded-[2.5rem] border border-border/50 shadow-xl shadow-primary/5">
+        <div className="flex flex-wrap items-center gap-6 mb-16 p-8 bg-background/50 backdrop-blur-md rounded-[2.5rem] border border-border/50 shadow-xl shadow-primary/5">
           <div className="flex items-center gap-3 px-5 py-2.5 bg-primary text-primary-foreground rounded-2xl shadow-lg shadow-primary/10">
             <Filter className="h-5 w-5" />
             <span className="text-xs font-bold uppercase tracking-widest">{isAr ? 'تصفية حسب:' : 'Filter By:'}</span>
@@ -133,7 +133,7 @@ const Research: React.FC = () => {
 
           <div className="flex flex-wrap gap-4 flex-1">
             <Select value={selectedUni} onValueChange={setSelectedUni}>
-              <SelectTrigger className="w-full md:w-[220px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectTrigger className="w-full md:w-[220px] h-14 bg-background border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all text-foreground">
                 <SelectValue placeholder={isAr ? 'الجامعة' : 'University'} />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
@@ -145,7 +145,7 @@ const Research: React.FC = () => {
             </Select>
 
             <Select value={selectedCollege} onValueChange={setSelectedCollege} disabled={selectedUni === 'all'}>
-              <SelectTrigger className="w-full md:w-[220px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectTrigger className="w-full md:w-[220px] h-14 bg-background border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all text-foreground">
                 <SelectValue placeholder={isAr ? 'الكلية' : 'College'} />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
@@ -157,7 +157,7 @@ const Research: React.FC = () => {
             </Select>
 
             <Select value={selectedDept} onValueChange={setSelectedDept} disabled={selectedCollege === 'all'}>
-              <SelectTrigger className="w-full md:w-[220px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectTrigger className="w-full md:w-[220px] h-14 bg-background border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all text-foreground">
                 <SelectValue placeholder={isAr ? 'القسم' : 'Department'} />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">
@@ -175,7 +175,7 @@ const Research: React.FC = () => {
               {isAr ? 'ترتيب:' : 'Sort:'}
             </div>
             <Select value={sortOrder} onValueChange={setSortOrder}>
-              <SelectTrigger className="w-full md:w-[160px] h-14 bg-white border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all">
+              <SelectTrigger className="w-full md:w-[160px] h-14 bg-background border-border/50 rounded-2xl shadow-sm focus:ring-primary/10 transition-all text-foreground">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-2xl">

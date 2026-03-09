@@ -253,7 +253,7 @@ const Universities: React.FC = () => {
                 placeholder={t('universities.search')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="h-16 ps-20 pe-8 text-lg rounded-3xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-white"
+                className="h-16 ps-20 pe-8 text-lg rounded-3xl border-none shadow-2xl focus-visible:ring-2 focus-visible:ring-primary/20 bg-background text-foreground"
               />
             </div>
           </div>

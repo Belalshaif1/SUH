@@ -108,7 +108,7 @@ const Jobs: React.FC = () => {
           <Search className="absolute start-8 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             placeholder={isAr ? 'ابحث عن مسمى وظيفي أو جهة...' : 'Search for job title or entity...'}
-            className="h-20 ps-20 pe-8 text-xl rounded-[2rem] border-2 border-border/30 shadow-2xl focus-visible:ring-primary/10 bg-white/80 backdrop-blur-md transition-all group-focus-within:border-primary/30"
+            className="h-20 ps-20 pe-8 text-xl rounded-[2rem] border-2 border-border/30 shadow-2xl focus-visible:ring-primary/10 bg-background/80 text-foreground backdrop-blur-md transition-all group-focus-within:border-primary/30"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
