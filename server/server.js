@@ -73,7 +73,7 @@ app.use('/api/sync', syncRoutes); // ربط مسارات المزامنة
 
 
 // نقطة فحص سريعة للتأكد من أن السيرفر يعمل بشكل سليم
-app.get('/api/health', (req, res) => {
+app.get('/api', (req, res) => {
     res.json({ status: 'ok', message: 'Server is running', timestamp: new Date() });
 });
 
