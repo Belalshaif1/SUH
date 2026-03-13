@@ -7,12 +7,11 @@ const { authenticateToken, checkPermission } = require('../middleware/auth');
 // Get applications for a specific job (For Admins)
 router.get('/job/:jobId', authenticateToken, async (req, res) => {
     try {
-        // First check if user is authorized to view this job's applications
         const job = await db.getAsync(`
             SELECT j.id, c.university_id, j.college_id 
             FROM jobs j 
             JOIN colleges c ON j.college_id = c.id 
-            WHERE j.id = ?`, [req.params.jobId]);
+            WHERE j.id = $1`, [req.params.jobId]);
 
         if (!job) return res.status(404).json({ error: 'Job not found' });
 
@@ -29,12 +28,13 @@ router.get('/job/:jobId', authenticateToken, async (req, res) => {
             SELECT a.*, u.full_name as applicant_name, u.email as applicant_email 
             FROM job_applications a 
             JOIN users u ON a.user_id = u.id 
-            WHERE a.job_id = ? 
+            WHERE a.job_id = $1 
             ORDER BY a.created_at DESC`, [req.params.jobId]);
 
         res.json(applications);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get job applications error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -47,45 +47,46 @@ router.post('/', authenticateToken, async (req, res) => {
             return res.status(400).json({ error: 'Missing job_id or file_url' });
         }
 
-        // optionally check if already applied
-        const existing = await db.getAsync('SELECT id FROM job_applications WHERE job_id = ? AND user_id = ?', [job_id, req.user.id]);
+        const existing = await db.getAsync(
+            'SELECT id FROM job_applications WHERE job_id = $1 AND user_id = $2',
+            [job_id, req.user.id]
+        );
         if (existing) {
             return res.status(400).json({ error: 'You have already applied for this job' });
         }
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO job_applications (id, job_id, user_id, file_url, status) VALUES (?, ?, ?, ?, ?)',
+            'INSERT INTO job_applications (id, job_id, user_id, file_url, status) VALUES ($1, $2, $3, $4, $5)',
             [id, job_id, req.user.id, file_url, 'pending']
         );
 
-        // إرسال إشعار للمدير الذي تتبع له الوظيفة
         const jobInfo = await db.getAsync(`
             SELECT j.title_ar, j.college_id, c.university_id 
             FROM jobs j 
             JOIN colleges c ON j.college_id = c.id 
-            WHERE j.id = ?`, [job_id]);
+            WHERE j.id = $1`, [job_id]);
 
         if (jobInfo) {
-            // البحث عن مدراء الكلية أو مدراء الجامعة لهذه الوظيفة
             const admins = await db.query(`
                 SELECT id FROM users 
-                WHERE (role = 'college_admin' AND college_id = ?) 
-                OR (role = 'university_admin' AND university_id = ?)
+                WHERE (role = 'college_admin' AND college_id = $1) 
+                OR (role = 'university_admin' AND university_id = $2)
                 OR (role = 'super_admin')`, [jobInfo.college_id, jobInfo.university_id]);
 
             for (const admin of admins) {
                 const msgId = uuidv4();
                 await db.runAsync(
-                    `INSERT INTO messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)`,
-                    [msgId, req.user.id, admin.id, `هناك طلب تقديم جديد على وظيفة: ${jobInfo.title_ar} من المستخدم: ${req.user.full_name || 'غير معروف'}`]
+                    'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES ($1, $2, $3, $4)',
+                    [msgId, req.user.id, admin.id, `هناك طلب تقديم جديد على وظيفة: ${jobInfo.title_ar}`]
                 );
             }
         }
 
         res.json({ id, success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Apply for job error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -93,28 +94,30 @@ router.post('/', authenticateToken, async (req, res) => {
 router.put('/:id/status', authenticateToken, async (req, res) => {
     try {
         const { status } = req.body;
-        // Basic protection handled by UI normally, but strictly speaking should check job scope
         const target = await db.getAsync(`
             SELECT a.*, j.title_ar as job_title, j.college_id 
             FROM job_applications a 
             JOIN jobs j ON a.job_id = j.id 
-            WHERE a.id = ?`, [req.params.id]);
+            WHERE a.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Application not found' });
 
-        await db.runAsync('UPDATE job_applications SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?', [status, req.params.id]);
+        await db.runAsync(
+            'UPDATE job_applications SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [status, req.params.id]
+        );
 
-        // إرسال إشعار لمقدم الطلب (القبول أو الرفض)
         const statusText = status === 'accepted' ? 'قبول' : 'رفض';
         const msgId = uuidv4();
         await db.runAsync(
-            `INSERT INTO messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)`,
+            'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES ($1, $2, $3, $4)',
             [msgId, req.user.id, target.user_id, `تم ${statusText} طلبك للوظيفة: ${target.job_title}`]
         );
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update application status error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

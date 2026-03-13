@@ -5,8 +5,6 @@ const { v4: uuidv4 } = require('uuid');
 const db = require('../db');
 const { authenticateToken, isAdmin } = require('../middleware/auth');
 
-// Middleware to check if user can manage other admins
-// Super admin can manage all. University admin can manage college/dept admins in their uni, etc.
 const canManageRole = (managerRole, targetRole) => {
     if (managerRole === 'super_admin') return true;
     if (managerRole === 'university_admin' && (targetRole === 'college_admin' || targetRole === 'department_admin')) return true;
@@ -17,18 +15,19 @@ const canManageRole = (managerRole, targetRole) => {
 // Get all admins
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
     try {
-        let sql = 'SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != "user"';
+        let sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != 'user'";
         let params = [];
 
         if (req.user.role !== 'super_admin') {
-            sql += ' AND (created_by = ? OR (university_id = ? AND ? IS NOT NULL) OR (college_id = ? AND ? IS NOT NULL) OR (department_id = ? AND ? IS NOT NULL))';
+            sql += ' AND (created_by = $1 OR (university_id = $2 AND $3 IS NOT NULL) OR (college_id = $4 AND $5 IS NOT NULL) OR (department_id = $6 AND $7 IS NOT NULL))';
             params.push(req.user.id, req.user.university_id, req.user.university_id, req.user.college_id, req.user.college_id, req.user.department_id, req.user.department_id);
         }
 
         const admins = await db.query(sql, params);
         res.json(admins);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get admins error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -41,29 +40,29 @@ router.post('/', authenticateToken, isAdmin, async (req, res) => {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
-        const existing = await db.getAsync('SELECT id FROM users WHERE email = ?', [email]);
+        const existing = await db.getAsync('SELECT id FROM users WHERE email = $1', [email]);
         if (existing) return res.status(400).json({ error: 'Email already exists' });
 
         const id = uuidv4();
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         await db.runAsync(
-            `INSERT INTO users (id, email, password, full_name, role, university_id, college_id, department_id, created_by, is_active) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, email, hashedPassword, full_name, role, university_id || null, college_id || null, department_id || null, req.user.id, 1]
+            'INSERT INTO users (id, email, password, full_name, role, university_id, college_id, department_id, created_by, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1)',
+            [id, email, hashedPassword, full_name, role, university_id || null, college_id || null, department_id || null, req.user.id]
         );
 
         res.status(201).json({ success: true, id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create admin error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Update Admin Details/Role/Access
+// Update Admin
 router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { full_name, email, role, university_id, college_id, department_id } = req.body;
-        const target = await db.getAsync('SELECT role FROM users WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT role FROM users WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Admin not found' });
         if (!canManageRole(req.user.role, target.role)) {
@@ -71,13 +70,14 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
         }
 
         await db.runAsync(
-            'UPDATE users SET full_name = ?, email = ?, role = ?, university_id = ?, college_id = ?, department_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE users SET full_name = $1, email = $2, role = $3, university_id = $4, college_id = $5, department_id = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7',
             [full_name, email, role, university_id || null, college_id || null, department_id || null, req.params.id]
         );
 
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update admin error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -85,17 +85,21 @@ router.put('/:id', authenticateToken, isAdmin, async (req, res) => {
 router.patch('/:id/toggle', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { is_active } = req.body;
-        const target = await db.getAsync('SELECT role FROM users WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT role FROM users WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Admin not found' });
         if (!canManageRole(req.user.role, target.role)) {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
-        await db.runAsync('UPDATE users SET is_active = ? WHERE id = ?', [is_active ? 1 : 0, req.params.id]);
+        await db.runAsync(
+            'UPDATE users SET is_active = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [is_active ? 1 : 0, req.params.id]
+        );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Toggle admin error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -103,35 +107,44 @@ router.patch('/:id/toggle', authenticateToken, isAdmin, async (req, res) => {
 router.post('/:id/password', authenticateToken, isAdmin, async (req, res) => {
     try {
         const { new_password } = req.body;
-        const target = await db.getAsync('SELECT role FROM users WHERE id = ?', [req.params.id]);
+        if (!new_password || new_password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        const target = await db.getAsync('SELECT role FROM users WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Admin not found' });
         if (!canManageRole(req.user.role, target.role)) {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
-        const hashedPassword = await bcrypt.hash(new_password, 10);
-        await db.runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.params.id]);
+        const hashedPassword = await bcrypt.hash(new_password, 12);
+        await db.runAsync(
+            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [hashedPassword, req.params.id]
+        );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Change admin password error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Delete Admin
 router.delete('/:id', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const target = await db.getAsync('SELECT role FROM users WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT role FROM users WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Admin not found' });
         if (!canManageRole(req.user.role, target.role)) {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
-        await db.runAsync('DELETE FROM users WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM users WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete admin error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

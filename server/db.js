@@ -32,7 +32,7 @@ async function createTables() {
     try {
         await client.query('BEGIN');
 
-        // 1. جدول المستخدمين
+        // 1. جدول المستخدمين (مع دعم reset_token للأمان)
         await client.query(`CREATE TABLE IF NOT EXISTS users (
             id UUID PRIMARY KEY, 
             email TEXT UNIQUE, 
@@ -45,10 +45,34 @@ async function createTables() {
             university_id UUID, 
             college_id UUID, 
             department_id UUID, 
+            reset_token TEXT,
+            reset_token_expires TIMESTAMPTZ,
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
             updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
             created_by UUID 
         )`);
+
+        // إضافة عمود reset_token إذا لم يكن موجودًا
+        await client.query(`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='reset_token') THEN
+                    ALTER TABLE users ADD COLUMN reset_token TEXT;
+                END IF;
+            END
+            $$;
+        `);
+
+        // إضافة عمود reset_token_expires إذا لم يكن موجودًا
+        await client.query(`
+            DO $$
+            BEGIN
+                IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='reset_token_expires') THEN
+                    ALTER TABLE users ADD COLUMN reset_token_expires TIMESTAMPTZ;
+                END IF;
+            END
+            $$;
+        `);
 
         // 2. جدول الجامعات
         await client.query(`CREATE TABLE IF NOT EXISTS universities (
@@ -248,6 +272,14 @@ async function createTables() {
         )`);
 
         await client.query('COMMIT');
+
+        // إضافة الأعمدة الجديدة للجداول الموجودة (للتوافق مع قواعد البيانات القديمة)
+        try {
+            await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT`);
+            await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token_expires TIMESTAMPTZ`);
+        } catch (e) {
+            // الأعمدة موجودة بالفعل
+        }
 
         // إدراج البيانات الأساسية بعد اكتمال إنشاء الجداول
         await insertDefaultData();

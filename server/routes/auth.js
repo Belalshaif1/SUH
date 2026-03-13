@@ -2,14 +2,15 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const db = require('../db');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
 // Helper to get merged permissions
 async function getEffectivePermissions(userId, role) {
-    const rolePerms = await db.query('SELECT permission_key, is_enabled FROM role_permissions WHERE role = ?', [role]);
-    const userOverrides = await db.query('SELECT permission_key, is_enabled FROM user_permissions WHERE user_id = ?', [userId]);
+    const rolePerms = await db.query('SELECT permission_key, is_enabled FROM role_permissions WHERE role = $1', [role]);
+    const userOverrides = await db.query('SELECT permission_key, is_enabled FROM user_permissions WHERE user_id = $1', [userId]);
 
     const permissions = {};
     rolePerms.forEach(p => {
@@ -25,7 +26,14 @@ async function getEffectivePermissions(userId, role) {
 router.post('/login', async (req, res) => {
     try {
         const { identifier, password } = req.body;
-        const user = await db.getAsync('SELECT * FROM users WHERE email = ? OR phone = ?', [identifier, identifier]);
+        if (!identifier || !password) {
+            return res.status(400).json({ error: 'Identifier and password are required' });
+        }
+
+        const user = await db.getAsync(
+            'SELECT * FROM users WHERE email = $1 OR phone = $2',
+            [identifier, identifier]
+        );
 
         if (!user) {
             return res.status(400).json({ error: 'Invalid credentials' });
@@ -65,7 +73,8 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Login error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -78,13 +87,16 @@ router.post('/register', async (req, res) => {
         if (!email && !phone) {
             return res.status(400).json({ error: 'Email or Phone is required' });
         }
+        if (!password || password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
 
         // Check if user already exists
         let existingUser;
         if (email) {
-            existingUser = await db.getAsync('SELECT id FROM users WHERE email = ?', [email]);
+            existingUser = await db.getAsync('SELECT id FROM users WHERE email = $1', [email]);
         } else if (phone) {
-            existingUser = await db.getAsync('SELECT id FROM users WHERE phone = ?', [phone]);
+            existingUser = await db.getAsync('SELECT id FROM users WHERE phone = $1', [phone]);
         }
 
         if (existingUser) {
@@ -92,16 +104,17 @@ router.post('/register', async (req, res) => {
         }
 
         const userId = uuidv4();
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         await db.runAsync(
-            'INSERT INTO users (id, email, phone, password, full_name, role, is_active) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO users (id, email, phone, password, full_name, role, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)',
             [userId, email || null, phone || null, hashedPassword, full_name, 'user', 1]
         );
 
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Register error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -110,25 +123,30 @@ router.put('/update', require('../middleware/auth').authenticateToken, async (re
     try {
         const { full_name, phone, avatar_url } = req.body;
         await db.runAsync(
-            'UPDATE users SET full_name = ?, phone = ?, avatar_url = ? WHERE id = ?',
+            'UPDATE users SET full_name = $1, phone = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
             [full_name, phone, avatar_url, req.user.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update profile error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Get User Profile
 router.get('/me', require('../middleware/auth').authenticateToken, async (req, res) => {
     try {
-        const user = await db.getAsync('SELECT id, email, full_name, avatar_url, phone, role, is_active, university_id, college_id, department_id FROM users WHERE id = ?', [req.user.id]);
+        const user = await db.getAsync(
+            'SELECT id, email, full_name, avatar_url, phone, role, is_active, university_id, college_id, department_id FROM users WHERE id = $1',
+            [req.user.id]
+        );
         if (!user) return res.status(404).json({ error: 'User not found' });
 
         const permissions = await getEffectivePermissions(user.id, user.role);
         res.json({ ...user, permissions });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get me error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -136,11 +154,18 @@ router.get('/me', require('../middleware/auth').authenticateToken, async (req, r
 router.post('/update-password', require('../middleware/auth').authenticateToken, async (req, res) => {
     try {
         const { new_password } = req.body;
-        const hashedPassword = await bcrypt.hash(new_password, 10);
-        await db.runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, req.user.id]);
+        if (!new_password || new_password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+        const hashedPassword = await bcrypt.hash(new_password, 12);
+        await db.runAsync(
+            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [hashedPassword, req.user.id]
+        );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update password error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -151,7 +176,7 @@ router.get('/users', require('../middleware/auth').authenticateToken, require('.
         let params = [];
 
         if (req.user.role !== 'super_admin') {
-            sql += ' WHERE (university_id = ? AND ? IS NOT NULL) OR (college_id = ? AND ? IS NOT NULL) OR (department_id = ? AND ? IS NOT NULL) OR (created_by = ?)';
+            sql += ' WHERE (university_id = $1 AND $2 IS NOT NULL) OR (college_id = $3 AND $4 IS NOT NULL) OR (department_id = $5 AND $6 IS NOT NULL) OR (created_by = $7)';
             params.push(
                 req.user.university_id, req.user.university_id,
                 req.user.college_id, req.user.college_id,
@@ -164,7 +189,8 @@ router.get('/users', require('../middleware/auth').authenticateToken, require('.
         const users = await db.query(sql, params);
         res.json(users);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get users error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -172,11 +198,13 @@ router.get('/users', require('../middleware/auth').authenticateToken, require('.
 router.put('/users/:id', require('../middleware/auth').authenticateToken, require('../middleware/auth').checkPermission('manage_users'), async (req, res) => {
     try {
         const { full_name, role, is_active, phone } = req.body;
-        const target = await db.getAsync('SELECT role, university_id, college_id, department_id FROM users WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync(
+            'SELECT role, university_id, college_id, department_id FROM users WHERE id = $1',
+            [req.params.id]
+        );
 
         if (!target) return res.status(404).json({ error: 'User not found' });
 
-        // Scope check for non-super-admins
         if (req.user.role !== 'super_admin') {
             const hasAccess = (target.university_id === req.user.university_id && req.user.university_id) ||
                 (target.college_id === req.user.college_id && req.user.college_id) ||
@@ -185,12 +213,13 @@ router.put('/users/:id', require('../middleware/auth').authenticateToken, requir
         }
 
         await db.runAsync(
-            'UPDATE users SET full_name = ?, role = ?, is_active = ?, phone = ? WHERE id = ?',
+            'UPDATE users SET full_name = $1, role = $2, is_active = $3, phone = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5',
             [full_name, role, is_active ? 1 : 0, phone, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update user error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -199,7 +228,6 @@ router.post('/users', require('../middleware/auth').authenticateToken, require('
     try {
         const { email, password, full_name, role, phone, university_id, college_id, department_id } = req.body;
 
-        // Ensure non-super-admins only create within their scope
         if (req.user.role !== 'super_admin') {
             if (university_id !== req.user.university_id && college_id !== req.user.college_id && department_id !== req.user.department_id) {
                 return res.status(403).json({ error: 'Access denied: Cannot create user outside your scope' });
@@ -207,27 +235,31 @@ router.post('/users', require('../middleware/auth').authenticateToken, require('
         }
         const { v4: uuidv4 } = require('uuid');
 
-        const existingUser = await db.getAsync('SELECT id FROM users WHERE email = ?', [email]);
+        const existingUser = await db.getAsync('SELECT id FROM users WHERE email = $1', [email]);
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
         const userId = uuidv4();
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await bcrypt.hash(password, 12);
 
         await db.runAsync(
-            'INSERT INTO users (id, email, password, full_name, role, phone, university_id, college_id, department_id, is_active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)',
+            'INSERT INTO users (id, email, password, full_name, role, phone, university_id, college_id, department_id, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1)',
             [userId, email, hashedPassword, full_name, role || 'user', phone, university_id, college_id, department_id]
         );
 
         res.status(201).json({ id: userId, message: 'User created successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create user error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Delete user (Admin only, scope-check)
 router.delete('/users/:id', require('../middleware/auth').authenticateToken, require('../middleware/auth').checkPermission('manage_users'), async (req, res) => {
     try {
-        const target = await db.getAsync('SELECT id, university_id, college_id, department_id FROM users WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync(
+            'SELECT id, university_id, college_id, department_id FROM users WHERE id = $1',
+            [req.params.id]
+        );
         if (!target) return res.status(404).json({ error: 'User not found' });
 
         if (req.user.role !== 'super_admin') {
@@ -237,10 +269,11 @@ router.delete('/users/:id', require('../middleware/auth').authenticateToken, req
             if (!hasAccess) return res.status(403).json({ error: 'Access denied: Out of scope' });
         }
 
-        await db.runAsync('DELETE FROM users WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM users WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete user error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -251,11 +284,17 @@ router.put('/change-password/:userId', require('../middleware/auth').authenticat
         const targetId = req.params.userId;
         const isSelf = req.user.id === targetId;
 
-        const target = await db.getAsync('SELECT id, password, university_id, college_id, department_id, role, created_by FROM users WHERE id = ?', [targetId]);
+        if (!newPassword || newPassword.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
+        }
+
+        const target = await db.getAsync(
+            'SELECT id, password, university_id, college_id, department_id, role, created_by FROM users WHERE id = $1',
+            [targetId]
+        );
         if (!target) return res.status(404).json({ error: 'User not found' });
 
         if (!isSelf) {
-            // Check hierarchy if not self
             if (req.user.role !== 'super_admin') {
                 const isAdminOfTarget = target.created_by === req.user.id ||
                     (req.user.role === 'university_admin' && target.university_id === req.user.university_id) ||
@@ -266,42 +305,60 @@ router.put('/change-password/:userId', require('../middleware/auth').authenticat
                 }
             }
         } else {
-            // If self, verify old password
             if (!oldPassword) return res.status(400).json({ error: 'Old password required' });
             const valid = await bcrypt.compare(oldPassword, target.password);
             if (!valid) return res.status(400).json({ error: 'Incorrect old password' });
         }
 
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        await db.runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, targetId]);
+        const hashedPassword = await bcrypt.hash(newPassword, 12);
+        await db.runAsync(
+            'UPDATE users SET password = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [hashedPassword, targetId]
+        );
 
         res.json({ success: true, message: 'Password updated successfully' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Change password error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Forgot Password
+// Forgot Password - إرسال token عشوائي آمن
 router.post('/forgot-password', async (req, res) => {
     try {
-        const { identifier } = req.body; // email or phone
-        const user = await db.getAsync('SELECT id, email, phone FROM users WHERE email = ? OR phone = ?', [identifier, identifier]);
+        const { identifier } = req.body;
+        if (!identifier) return res.status(400).json({ error: 'Identifier is required' });
 
+        const user = await db.getAsync(
+            'SELECT id, email, phone FROM users WHERE email = $1 OR phone = $2',
+            [identifier, identifier]
+        );
+
+        // لأمان أعلى: لا نكشف إذا كان المستخدم موجوداً أم لا
         if (!user) {
-            return res.status(404).json({ error: 'User not found' });
+            return res.json({ success: true, message: 'If the account exists, a reset code has been sent.' });
         }
 
-        // Mock sending code
-        const mockCode = '1234';
-        console.log(`[MOCK AUTH] Sending code ${mockCode} to ${user.email || user.phone}`);
+        // توليد كود عشوائي آمن (6 أرقام)
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const resetExpires = new Date(Date.now() + 15 * 60 * 1000); // صلاحية 15 دقيقة
+
+        await db.runAsync(
+            'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
+            [resetCode, resetExpires.toISOString(), user.id]
+        );
+
+        // في بيئة الإنتاج: أرسل البريد الإلكتروني أو SMS
+        console.log(`[RESET CODE] User: ${user.email || user.phone} | Code: ${resetCode} | Expires: ${resetExpires.toISOString()}`);
 
         res.json({
             success: true,
             message: 'Verification code sent',
-            context_id: user.id // In real app, this would be a temp session ID
+            context_id: user.id
         });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Forgot password error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -309,14 +366,29 @@ router.post('/forgot-password', async (req, res) => {
 router.post('/verify-code', async (req, res) => {
     try {
         const { context_id, code } = req.body;
+        if (!context_id || !code) return res.status(400).json({ error: 'context_id and code are required' });
 
-        if (code === '1234') {
-            res.json({ success: true, message: 'Code verified' });
-        } else {
-            res.status(400).json({ error: 'Invalid verification code' });
+        const user = await db.getAsync(
+            'SELECT id, reset_token, reset_token_expires FROM users WHERE id = $1',
+            [context_id]
+        );
+
+        if (!user || !user.reset_token) {
+            return res.status(400).json({ error: 'Invalid or expired verification code' });
         }
+
+        if (new Date() > new Date(user.reset_token_expires)) {
+            return res.status(400).json({ error: 'Verification code has expired' });
+        }
+
+        if (user.reset_token !== code) {
+            return res.status(400).json({ error: 'Invalid verification code' });
+        }
+
+        res.json({ success: true, message: 'Code verified' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Verify code error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -324,17 +396,42 @@ router.post('/verify-code', async (req, res) => {
 router.post('/reset-password', async (req, res) => {
     try {
         const { context_id, code, new_password } = req.body;
-
-        if (code !== '1234') {
-            return res.status(400).json({ error: 'Invalid or expired code' });
+        if (!context_id || !code || !new_password) {
+            return res.status(400).json({ error: 'All fields are required' });
+        }
+        if (new_password.length < 6) {
+            return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
-        const hashedPassword = await bcrypt.hash(new_password, 10);
-        await db.runAsync('UPDATE users SET password = ? WHERE id = ?', [hashedPassword, context_id]);
+        const user = await db.getAsync(
+            'SELECT id, reset_token, reset_token_expires FROM users WHERE id = $1',
+            [context_id]
+        );
+
+        if (!user || !user.reset_token) {
+            return res.status(400).json({ error: 'Invalid or expired reset code' });
+        }
+
+        if (new Date() > new Date(user.reset_token_expires)) {
+            return res.status(400).json({ error: 'Reset code has expired. Please request a new one.' });
+        }
+
+        if (user.reset_token !== code) {
+            return res.status(400).json({ error: 'Invalid reset code' });
+        }
+
+        const hashedPassword = await bcrypt.hash(new_password, 12);
+
+        // حذف الكود بعد الاستخدام + تحديث كلمة المرور
+        await db.runAsync(
+            'UPDATE users SET password = $1, reset_token = NULL, reset_token_expires = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+            [hashedPassword, context_id]
+        );
 
         res.json({ success: true, message: 'Password reset successful' });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Reset password error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

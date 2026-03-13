@@ -8,7 +8,7 @@ const { authenticateToken, checkPermission } = require('../middleware/auth');
 // Get all jobs
 router.get('/', async (req, res) => {
     try {
-        let query = `
+        const query = `
             SELECT j.*, 
                    c.name_ar as college_name_ar, c.name_en as college_name_en,
                    u.name_ar as uni_name_ar, u.name_en as uni_name_en
@@ -26,7 +26,8 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get jobs error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -35,9 +36,8 @@ router.post('/', authenticateToken, checkPermission('manage_jobs'), async (req, 
     try {
         const { college_id, title_ar, title_en, description_ar, description_en, requirements_ar, requirements_en, is_active, deadline, is_pinned } = req.body;
 
-        // Scope check
         if (req.user.role !== 'super_admin') {
-            const college = await db.getAsync('SELECT university_id FROM colleges WHERE id = ?', [college_id]);
+            const college = await db.getAsync('SELECT university_id FROM colleges WHERE id = $1', [college_id]);
             if (!college) return res.status(400).json({ error: 'Invalid college' });
 
             if (req.user.university_id && college.university_id !== req.user.university_id) {
@@ -47,12 +47,13 @@ router.post('/', authenticateToken, checkPermission('manage_jobs'), async (req, 
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO jobs (id, college_id, title_ar, title_en, description_ar, description_en, requirements_ar, requirements_en, is_active, deadline, is_pinned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, college_id, title_ar, title_en, description_ar, description_en, requirements_ar, requirements_en, is_active, deadline, is_pinned || 0]
+            'INSERT INTO jobs (id, college_id, title_ar, title_en, description_ar, description_en, requirements_ar, requirements_en, is_active, deadline, is_pinned) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [id, college_id, title_ar, title_en, description_ar, description_en, requirements_ar, requirements_en, is_active ?? 1, deadline, is_pinned || 0]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create job error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -64,7 +65,7 @@ router.put('/:id', authenticateToken, checkPermission('manage_jobs'), async (req
             SELECT j.id, c.university_id, j.college_id 
             FROM jobs j 
             JOIN colleges c ON j.college_id = c.id 
-            WHERE j.id = ?`, [req.params.id]);
+            WHERE j.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Job not found' });
 
@@ -78,12 +79,13 @@ router.put('/:id', authenticateToken, checkPermission('manage_jobs'), async (req
         }
 
         await db.runAsync(
-            'UPDATE jobs SET title_ar = ?, title_en = ?, description_ar = ?, description_en = ?, requirements_ar = ?, requirements_en = ?, is_active = ?, deadline = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE jobs SET title_ar = $1, title_en = $2, description_ar = $3, description_en = $4, requirements_ar = $5, requirements_en = $6, is_active = $7, deadline = $8, is_pinned = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10',
             [title_ar, title_en, description_ar, description_en, requirements_ar, requirements_en, is_active, deadline, is_pinned || 0, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update job error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -94,7 +96,7 @@ router.delete('/:id', authenticateToken, checkPermission('manage_jobs'), async (
             SELECT j.id, c.university_id, j.college_id 
             FROM jobs j 
             JOIN colleges c ON j.college_id = c.id 
-            WHERE j.id = ?`, [req.params.id]);
+            WHERE j.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Job not found' });
 
@@ -107,10 +109,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_jobs'), async (
             }
         }
 
-        await db.runAsync('DELETE FROM jobs WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM jobs WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete job error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

@@ -20,9 +20,8 @@ router.get('/', async (req, res) => {
             ORDER BY a.is_pinned DESC, a.created_at DESC`;
         const params = [];
 
-        // Add limit support
         if (req.query.limit) {
-            query += ' LIMIT ?';
+            query += ' LIMIT $1';
             params.push(parseInt(req.query.limit));
         }
 
@@ -36,18 +35,20 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get announcements error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Get single announcement
 router.get('/:id', async (req, res) => {
     try {
-        const announcement = await db.getAsync('SELECT * FROM announcements WHERE id = ?', [req.params.id]);
+        const announcement = await db.getAsync('SELECT * FROM announcements WHERE id = $1', [req.params.id]);
         if (!announcement) return res.status(404).json({ error: 'Announcement not found' });
         res.json(announcement);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get announcement error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -56,12 +57,10 @@ router.post('/', authenticateToken, checkPermission('manage_announcements'), asy
     try {
         const { title_ar, title_en, content_ar, content_en, image_url, file_url, is_pinned } = req.body;
 
-        // Auto-assign scope based on user role
         let effectiveUniversityId = req.body.university_id || null;
         let effectiveCollegeId = req.body.college_id || null;
 
         if (req.user.role !== 'super_admin') {
-            // Force-assign the user's own scope (don't allow sending arbitrary IDs)
             effectiveUniversityId = req.user.university_id || null;
             effectiveCollegeId = req.user.college_id || null;
         }
@@ -72,12 +71,13 @@ router.post('/', authenticateToken, checkPermission('manage_announcements'), asy
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO announcements (id, title_ar, title_en, content_ar, content_en, scope, university_id, college_id, image_url, file_url, is_pinned, created_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO announcements (id, title_ar, title_en, content_ar, content_en, scope, university_id, college_id, image_url, file_url, is_pinned, created_by) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
             [id, title_ar, title_en, content_ar, content_en, scope, effectiveUniversityId, effectiveCollegeId, image_url || null, file_url || null, is_pinned || 0, req.user.id]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create announcement error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -85,11 +85,10 @@ router.post('/', authenticateToken, checkPermission('manage_announcements'), asy
 router.put('/:id', authenticateToken, checkPermission('manage_announcements'), async (req, res) => {
     try {
         const { title_ar, title_en, content_ar, content_en, scope, university_id, college_id, image_url, file_url, is_pinned } = req.body;
-        const target = await db.getAsync('SELECT created_by, university_id FROM announcements WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT created_by, university_id FROM announcements WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Announcement not found' });
 
-        // Hierarchy/Ownership check
         if (req.user.role !== 'super_admin') {
             const isOwner = target.created_by === req.user.id;
             const isUniAdmin = req.user.role === 'university_admin' && target.university_id === req.user.university_id;
@@ -99,19 +98,20 @@ router.put('/:id', authenticateToken, checkPermission('manage_announcements'), a
         }
 
         await db.runAsync(
-            'UPDATE announcements SET title_ar = ?, title_en = ?, content_ar = ?, content_en = ?, scope = ?, university_id = ?, college_id = ?, image_url = ?, file_url = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE announcements SET title_ar = $1, title_en = $2, content_ar = $3, content_en = $4, scope = $5, university_id = $6, college_id = $7, image_url = $8, file_url = $9, is_pinned = $10, updated_at = CURRENT_TIMESTAMP WHERE id = $11',
             [title_ar, title_en, content_ar, content_en, scope, university_id || null, college_id || null, image_url, file_url, is_pinned || 0, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update announcement error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Delete announcement
 router.delete('/:id', authenticateToken, checkPermission('manage_announcements'), async (req, res) => {
     try {
-        const target = await db.getAsync('SELECT created_by, university_id FROM announcements WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT created_by, university_id FROM announcements WHERE id = $1', [req.params.id]);
         if (!target) return res.status(404).json({ error: 'Announcement not found' });
 
         if (req.user.role !== 'super_admin') {
@@ -122,10 +122,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_announcements')
             }
         }
 
-        await db.runAsync('DELETE FROM announcements WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM announcements WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete announcement error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

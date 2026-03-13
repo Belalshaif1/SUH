@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
         let params = [];
 
         if (req.query.university_id) {
-            query += ' WHERE c.university_id = ?';
+            query += ' WHERE c.university_id = $1';
             params.push(req.query.university_id);
         }
 
@@ -26,18 +26,20 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get colleges error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Get single college
 router.get('/:id', async (req, res) => {
     try {
-        const college = await db.getAsync('SELECT * FROM colleges WHERE id = ?', [req.params.id]);
+        const college = await db.getAsync('SELECT * FROM colleges WHERE id = $1', [req.params.id]);
         if (!college) return res.status(404).json({ error: 'College not found' });
         res.json(college);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get college error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -46,7 +48,6 @@ router.post('/', authenticateToken, checkPermission('manage_colleges'), async (r
     try {
         const { university_id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned } = req.body;
 
-        // Scope check: Non-superadmins can only create colleges for THEIR university
         if (req.user.role !== 'super_admin') {
             const effectiveUniId = req.user.university_id;
             if (!effectiveUniId || effectiveUniId !== university_id) {
@@ -56,12 +57,13 @@ router.post('/', authenticateToken, checkPermission('manage_colleges'), async (r
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO colleges (id, university_id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO colleges (id, university_id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
             [id, university_id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned || 0]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create college error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -69,7 +71,7 @@ router.post('/', authenticateToken, checkPermission('manage_colleges'), async (r
 router.put('/:id', authenticateToken, checkPermission('manage_colleges'), async (req, res) => {
     try {
         const { name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned } = req.body;
-        const target = await db.getAsync('SELECT university_id FROM colleges WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT university_id FROM colleges WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'College not found' });
 
@@ -83,19 +85,20 @@ router.put('/:id', authenticateToken, checkPermission('manage_colleges'), async 
         }
 
         await db.runAsync(
-            'UPDATE colleges SET name_ar = ?, name_en = ?, description_ar = ?, description_en = ?, guide_pdf_url = ?, logo_url = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE colleges SET name_ar = $1, name_en = $2, description_ar = $3, description_en = $4, guide_pdf_url = $5, logo_url = $6, is_pinned = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $8',
             [name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned || 0, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update college error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Delete college
 router.delete('/:id', authenticateToken, checkPermission('manage_colleges'), async (req, res) => {
     try {
-        const target = await db.getAsync('SELECT university_id FROM colleges WHERE id = ?', [req.params.id]);
+        const target = await db.getAsync('SELECT university_id FROM colleges WHERE id = $1', [req.params.id]);
         if (!target) return res.status(404).json({ error: 'College not found' });
 
         if (req.user.role !== 'super_admin') {
@@ -105,10 +108,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_colleges'), asy
             }
         }
 
-        await db.runAsync('DELETE FROM colleges WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM colleges WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete college error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

@@ -10,7 +10,7 @@ router.get('/:userId', async (req, res) => {
             SELECT m.*, u.full_name as sender_name 
             FROM messages m 
             LEFT JOIN users u ON m.sender_id = u.id 
-            WHERE m.sender_id = ? OR m.receiver_id = ? 
+            WHERE m.sender_id = $1 OR m.receiver_id = $2
             ORDER BY m.created_at ASC 
             LIMIT 100
         `;
@@ -23,7 +23,8 @@ router.get('/:userId', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get messages error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -31,29 +32,32 @@ router.get('/:userId', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const { sender_id, receiver_id, content } = req.body;
+        if (!sender_id || !content) {
+            return res.status(400).json({ error: 'sender_id and content are required' });
+        }
+
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES (?, ?, ?, ?)',
+            'INSERT INTO messages (id, sender_id, receiver_id, content) VALUES ($1, $2, $3, $4)',
             [id, sender_id, receiver_id || null, content]
         );
 
-        // Return created message with sender info to match Supabase realtime expected format
-        const query = `
+        const newMessage = await db.getAsync(`
             SELECT m.*, u.full_name as sender_name 
             FROM messages m 
             LEFT JOIN users u ON m.sender_id = u.id 
-            WHERE m.id = ?
-        `;
-        const newMessage = await db.getAsync(query, [id]);
+            WHERE m.id = $1
+        `, [id]);
 
         const formatted = {
             ...newMessage,
-            sender: newMessage.sender_name ? { full_name: newMessage.sender_name } : null
+            sender: newMessage?.sender_name ? { full_name: newMessage.sender_name } : null
         };
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create message error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

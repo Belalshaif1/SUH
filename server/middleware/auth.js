@@ -1,5 +1,3 @@
-const express = require('express');
-const router = express.Router();
 const jwt = require('jsonwebtoken');
 
 // Middleware to verify JWT token
@@ -36,7 +34,7 @@ const checkPermission = (permissionKey) => {
         try {
             // 1. Check User Overrides
             const override = await db.getAsync(
-                'SELECT is_enabled FROM user_permissions WHERE user_id = ? AND permission_key = ?',
+                'SELECT is_enabled FROM user_permissions WHERE user_id = $1 AND permission_key = $2',
                 [req.user.id, permissionKey]
             );
 
@@ -47,7 +45,7 @@ const checkPermission = (permissionKey) => {
 
             // 2. Check Role Permissions
             const rolePerm = await db.getAsync(
-                'SELECT is_enabled FROM role_permissions WHERE role = ? AND permission_key = ?',
+                'SELECT is_enabled FROM role_permissions WHERE role = $1 AND permission_key = $2',
                 [req.user.role, permissionKey]
             );
 
@@ -55,7 +53,7 @@ const checkPermission = (permissionKey) => {
 
             res.status(403).json({ error: `Permission denied: ${permissionKey}` });
         } catch (err) {
-            res.status(500).json({ error: err.message });
+            res.status(500).json({ error: 'Internal server error' });
         }
     };
 };

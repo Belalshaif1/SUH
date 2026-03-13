@@ -20,17 +20,18 @@ router.get('/', async (req, res) => {
             LEFT JOIN universities u ON c.university_id = u.id
             WHERE 1=1`;
         const params = [];
+        let paramIdx = 1;
 
         if (req.query.department_id) {
-            query += ' AND r.department_id = ?';
+            query += ` AND r.department_id = $${paramIdx++}`;
             params.push(req.query.department_id);
         }
         if (req.query.college_id) {
-            query += ' AND d.college_id = ?';
+            query += ` AND d.college_id = $${paramIdx++}`;
             params.push(req.query.college_id);
         }
         if (req.query.university_id) {
-            query += ' AND c.university_id = ?';
+            query += ` AND c.university_id = $${paramIdx++}`;
             params.push(req.query.university_id);
         }
 
@@ -39,7 +40,7 @@ router.get('/', async (req, res) => {
 
         const formatted = researchList.map(r => ({
             ...r,
-            students: r.students ? JSON.parse(r.students) : [],
+            students: r.students ? (typeof r.students === 'string' ? JSON.parse(r.students) : r.students) : [],
             departments: r.department_name_ar ? {
                 name_ar: r.department_name_ar,
                 name_en: r.department_name_en,
@@ -58,7 +59,8 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get research error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -67,13 +69,12 @@ router.post('/', authenticateToken, checkPermission('manage_research'), async (r
     try {
         const { department_id, title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, students } = req.body;
 
-        // Scope check
         if (req.user.role !== 'super_admin') {
             const dept = await db.getAsync(`
                 SELECT d.id, c.university_id, d.college_id 
                 FROM departments d 
                 JOIN colleges c ON d.college_id = c.id 
-                WHERE d.id = ?`, [department_id]);
+                WHERE d.id = $1`, [department_id]);
 
             if (!dept) return res.status(400).json({ error: 'Invalid department' });
 
@@ -90,12 +91,13 @@ router.post('/', authenticateToken, checkPermission('manage_research'), async (r
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO research (id, department_id, title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, students) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [id, department_id, title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, JSON.stringify(students || [])]
+            'INSERT INTO research (id, department_id, title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, students) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)',
+            [id, department_id, title_ar, title_en, abstract_ar, abstract_en, author_name, published ?? 1, publish_date, pdf_url, JSON.stringify(students || [])]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create research error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -108,7 +110,7 @@ router.put('/:id', authenticateToken, checkPermission('manage_research'), async 
             FROM research r 
             JOIN departments d ON r.department_id = d.id 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE r.id = ?`, [req.params.id]);
+            WHERE r.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Research not found' });
 
@@ -125,12 +127,13 @@ router.put('/:id', authenticateToken, checkPermission('manage_research'), async 
         }
 
         await db.runAsync(
-            'UPDATE research SET title_ar = ?, title_en = ?, abstract_ar = ?, abstract_en = ?, author_name = ?, published = ?, publish_date = ?, pdf_url = ?, students = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE research SET title_ar = $1, title_en = $2, abstract_ar = $3, abstract_en = $4, author_name = $5, published = $6, publish_date = $7, pdf_url = $8, students = $9, updated_at = CURRENT_TIMESTAMP WHERE id = $10',
             [title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, JSON.stringify(students || []), req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update research error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -142,7 +145,7 @@ router.delete('/:id', authenticateToken, checkPermission('manage_research'), asy
             FROM research r 
             JOIN departments d ON r.department_id = d.id 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE r.id = ?`, [req.params.id]);
+            WHERE r.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Research not found' });
 
@@ -156,10 +159,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_research'), asy
             }
         }
 
-        await db.runAsync('DELETE FROM research WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM research WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete research error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

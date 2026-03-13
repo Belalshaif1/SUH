@@ -8,7 +8,7 @@ const { authenticateToken, checkPermission } = require('../middleware/auth');
 // Get all universities
 router.get('/', async (req, res) => {
     try {
-        let orderBy = 'is_pinned DESC, name_ar ASC'; // Default
+        let orderBy = 'is_pinned DESC, name_ar ASC';
         const { sort } = req.query;
 
         if (sort === 'newest') {
@@ -22,18 +22,20 @@ router.get('/', async (req, res) => {
         const universities = await db.query(`SELECT * FROM universities ORDER BY ${orderBy}`);
         res.json(universities);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get universities error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Get single university
 router.get('/:id', async (req, res) => {
     try {
-        const university = await db.getAsync('SELECT * FROM universities WHERE id = ?', [req.params.id]);
+        const university = await db.getAsync('SELECT * FROM universities WHERE id = $1', [req.params.id]);
         if (!university) return res.status(404).json({ error: 'University not found' });
         res.json(university);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get university error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -43,12 +45,13 @@ router.post('/', authenticateToken, checkPermission('manage_universities'), asyn
         const { name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned } = req.body;
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO universities (id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO universities (id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
             [id, name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned || 0]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create university error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -59,23 +62,22 @@ router.put('/:id', authenticateToken, async (req, res) => {
 
         const { name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned } = req.body;
 
-        // Hierarchy check
         if (req.user.role !== 'super_admin' && req.user.university_id !== req.params.id) {
             return res.status(403).json({ error: 'Access denied: Cannot update other university' });
         }
 
-        // Non-university admins need the permission
         if (req.user.role !== 'super_admin' && req.user.role !== 'university_admin') {
             return res.status(403).json({ error: 'Access denied' });
         }
 
         await db.runAsync(
-            'UPDATE universities SET name_ar = ?, name_en = ?, description_ar = ?, description_en = ?, guide_pdf_url = ?, logo_url = ?, is_pinned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE universities SET name_ar = $1, name_en = $2, description_ar = $3, description_en = $4, guide_pdf_url = $5, logo_url = $6, is_pinned = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $8',
             [name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned || 0, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update university error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -85,10 +87,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_universities'),
         if (req.user.role !== 'super_admin') {
             return res.status(403).json({ error: 'Access denied: Only Super Admin can delete universities' });
         }
-        await db.runAsync('DELETE FROM universities WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM universities WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete university error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

@@ -20,17 +20,18 @@ router.get('/', async (req, res) => {
             LEFT JOIN universities u ON c.university_id = u.id
             WHERE 1=1`;
         const params = [];
+        let paramIdx = 1;
 
         if (req.query.department_id) {
-            query += ' AND g.department_id = ?';
+            query += ` AND g.department_id = $${paramIdx++}`;
             params.push(req.query.department_id);
         }
         if (req.query.college_id) {
-            query += ' AND d.college_id = ?';
+            query += ` AND d.college_id = $${paramIdx++}`;
             params.push(req.query.college_id);
         }
         if (req.query.university_id) {
-            query += ' AND c.university_id = ?';
+            query += ` AND c.university_id = $${paramIdx++}`;
             params.push(req.query.university_id);
         }
 
@@ -57,7 +58,8 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get graduates error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -66,13 +68,12 @@ router.post('/', authenticateToken, checkPermission('manage_graduates'), async (
     try {
         const { department_id, full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en } = req.body;
 
-        // Scope check
         if (req.user.role !== 'super_admin') {
             const dept = await db.getAsync(`
                 SELECT d.id, c.university_id, d.college_id 
                 FROM departments d 
                 JOIN colleges c ON d.college_id = c.id 
-                WHERE d.id = ?`, [department_id]);
+                WHERE d.id = $1`, [department_id]);
 
             if (!dept) return res.status(400).json({ error: 'Invalid department' });
 
@@ -89,12 +90,13 @@ router.post('/', authenticateToken, checkPermission('manage_graduates'), async (
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO graduates (id, department_id, full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO graduates (id, department_id, full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
             [id, department_id, full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create graduate error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -107,7 +109,7 @@ router.put('/:id', authenticateToken, checkPermission('manage_graduates'), async
             FROM graduates g 
             JOIN departments d ON g.department_id = d.id 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE g.id = ?`, [req.params.id]);
+            WHERE g.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Graduate not found' });
 
@@ -124,12 +126,13 @@ router.put('/:id', authenticateToken, checkPermission('manage_graduates'), async
         }
 
         await db.runAsync(
-            'UPDATE graduates SET full_name_ar = ?, full_name_en = ?, graduation_year = ?, gpa = ?, specialization_ar = ?, specialization_en = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE graduates SET full_name_ar = $1, full_name_en = $2, graduation_year = $3, gpa = $4, specialization_ar = $5, specialization_en = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7',
             [full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update graduate error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -141,7 +144,7 @@ router.delete('/:id', authenticateToken, checkPermission('manage_graduates'), as
             FROM graduates g 
             JOIN departments d ON g.department_id = d.id 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE g.id = ?`, [req.params.id]);
+            WHERE g.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Graduate not found' });
 
@@ -155,10 +158,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_graduates'), as
             }
         }
 
-        await db.runAsync('DELETE FROM graduates WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM graduates WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete graduate error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

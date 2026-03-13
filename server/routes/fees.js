@@ -8,7 +8,7 @@ const { authenticateToken, checkPermission } = require('../middleware/auth');
 // Get all fees
 router.get('/', async (req, res) => {
     try {
-        let query = `
+        const query = `
             SELECT f.*, 
                    d.name_ar as department_name_ar, d.name_en as department_name_en, 
                    c.name_ar as college_name_ar, c.name_en as college_name_en 
@@ -33,7 +33,8 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get fees error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -42,13 +43,12 @@ router.post('/', authenticateToken, checkPermission('manage_fees'), async (req, 
     try {
         const { department_id, fee_type, amount, currency, academic_year } = req.body;
 
-        // Scope check
         if (req.user.role !== 'super_admin') {
             const dept = await db.getAsync(`
                 SELECT d.id, c.university_id, d.college_id 
                 FROM departments d 
                 JOIN colleges c ON d.college_id = c.id 
-                WHERE d.id = ?`, [department_id]);
+                WHERE d.id = $1`, [department_id]);
 
             if (!dept) return res.status(400).json({ error: 'Invalid department' });
 
@@ -62,12 +62,13 @@ router.post('/', authenticateToken, checkPermission('manage_fees'), async (req, 
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO fees (id, department_id, fee_type, amount, currency, academic_year) VALUES (?, ?, ?, ?, ?, ?)',
+            'INSERT INTO fees (id, department_id, fee_type, amount, currency, academic_year) VALUES ($1, $2, $3, $4, $5, $6)',
             [id, department_id, fee_type, amount, currency, academic_year]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create fee error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -80,7 +81,7 @@ router.put('/:id', authenticateToken, checkPermission('manage_fees'), async (req
             FROM fees f 
             JOIN departments d ON f.department_id = d.id 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE f.id = ?`, [req.params.id]);
+            WHERE f.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Fee not found' });
 
@@ -97,12 +98,13 @@ router.put('/:id', authenticateToken, checkPermission('manage_fees'), async (req
         }
 
         await db.runAsync(
-            'UPDATE fees SET fee_type = ?, amount = ?, currency = ?, academic_year = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE fees SET fee_type = $1, amount = $2, currency = $3, academic_year = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5',
             [fee_type, amount, currency, academic_year, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update fee error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -114,7 +116,7 @@ router.delete('/:id', authenticateToken, checkPermission('manage_fees'), async (
             FROM fees f 
             JOIN departments d ON f.department_id = d.id 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE f.id = ?`, [req.params.id]);
+            WHERE f.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Fee not found' });
 
@@ -127,10 +129,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_fees'), async (
             }
         }
 
-        await db.runAsync('DELETE FROM fees WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM fees WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete fee error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 

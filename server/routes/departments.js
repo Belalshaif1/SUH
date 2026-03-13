@@ -12,7 +12,7 @@ router.get('/', async (req, res) => {
         let params = [];
 
         if (req.query.college_id) {
-            query += ' WHERE d.college_id = ?';
+            query += ' WHERE d.college_id = $1';
             params.push(req.query.college_id);
         }
 
@@ -26,18 +26,20 @@ router.get('/', async (req, res) => {
 
         res.json(formatted);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get departments error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
 // Get single department
 router.get('/:id', async (req, res) => {
     try {
-        const department = await db.getAsync('SELECT * FROM departments WHERE id = ?', [req.params.id]);
+        const department = await db.getAsync('SELECT * FROM departments WHERE id = $1', [req.params.id]);
         if (!department) return res.status(404).json({ error: 'Department not found' });
         res.json(department);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Get department error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -46,9 +48,8 @@ router.post('/', authenticateToken, checkPermission('manage_departments'), async
     try {
         const { college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url } = req.body;
 
-        // Scope check
         if (req.user.role !== 'super_admin') {
-            const college = await db.getAsync('SELECT university_id FROM colleges WHERE id = ?', [college_id]);
+            const college = await db.getAsync('SELECT university_id FROM colleges WHERE id = $1', [college_id]);
             if (!college) return res.status(400).json({ error: 'Invalid college' });
 
             if (req.user.university_id && college.university_id !== req.user.university_id) {
@@ -61,12 +62,13 @@ router.post('/', authenticateToken, checkPermission('manage_departments'), async
 
         const id = uuidv4();
         await db.runAsync(
-            'INSERT INTO departments (id, college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO departments (id, college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
             [id, college_id, name_ar, name_en, description_ar, description_en, study_plan_url, logo_url]
         );
         res.json({ id });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create department error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -78,7 +80,7 @@ router.put('/:id', authenticateToken, checkPermission('manage_departments'), asy
             SELECT d.id, c.university_id, d.college_id 
             FROM departments d 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE d.id = ?`, [req.params.id]);
+            WHERE d.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Department not found' });
 
@@ -93,12 +95,13 @@ router.put('/:id', authenticateToken, checkPermission('manage_departments'), asy
         }
 
         await db.runAsync(
-            'UPDATE departments SET name_ar = ?, name_en = ?, description_ar = ?, description_en = ?, study_plan_url = ?, logo_url = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+            'UPDATE departments SET name_ar = $1, name_en = $2, description_ar = $3, description_en = $4, study_plan_url = $5, logo_url = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7',
             [name_ar, name_en, description_ar, description_en, study_plan_url, logo_url, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Update department error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
@@ -109,7 +112,7 @@ router.delete('/:id', authenticateToken, checkPermission('manage_departments'), 
             SELECT d.id, c.university_id, d.college_id 
             FROM departments d 
             JOIN colleges c ON d.college_id = c.id 
-            WHERE d.id = ?`, [req.params.id]);
+            WHERE d.id = $1`, [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Department not found' });
 
@@ -122,10 +125,11 @@ router.delete('/:id', authenticateToken, checkPermission('manage_departments'), 
             }
         }
 
-        await db.runAsync('DELETE FROM departments WHERE id = ?', [req.params.id]);
+        await db.runAsync('DELETE FROM departments WHERE id = $1', [req.params.id]);
         res.json({ success: true });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Delete department error:', err);
+        res.status(500).json({ error: 'Internal server error' });
     }
 });
 
