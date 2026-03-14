@@ -31,15 +31,16 @@ const PORT = process.env.PORT || 5000;
 
 // CORS: السماح فقط بالمصادر المعروفة
 const allowedOrigins = process.env.NODE_ENV === 'production'
-    ? (process.env.ALLOWED_ORIGINS || '').split(',')
+    ? (process.env.ALLOWED_ORIGINS || 'https://smartuniversity.vercel.app').split(',').map(o => o.trim())
     : ['http://localhost:8080', 'http://localhost:5173', 'http://127.0.0.1:8080', 'http://localhost:3000'];
 
 app.use(cors({
     origin: (origin, callback) => {
         // السماح بالطلبات التي ليس لها origin (مثل Postman) أو الـ origins المسموح بها
-        if (!origin || allowedOrigins.includes(origin)) {
+        if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
             callback(null, true);
         } else {
+            console.error(`CORS rejected origin: ${origin}`);
             callback(new Error('Not allowed by CORS'));
         }
     },
