@@ -20,15 +20,25 @@ interface CollegeTabProps {
     onEdit: (item: College) => void; // Trigger for edit modal
     onDelete: (id: string) => void; // Trigger for delete action
     processData: (data: any[]) => any[]; // Business logic wrapper for sorting/pinning
+    role?: string;
+    userRole?: any;
 }
 
 export const CollegeTab: React.FC<CollegeTabProps> = ({
-    colleges, onAdd, onEdit, onDelete, processData
+    colleges, onAdd, onEdit, onDelete, processData, role, userRole
 }) => {
     const { t, language } = useLanguage(); // Current language settings
 
+    // Filter based on role
+    const filteredColleges = colleges.filter(c => {
+        if (role === 'super_admin') return true;
+        if (role === 'university_admin') return c.university_id === userRole?.university_id;
+        if (role === 'college_admin') return c.id === userRole?.college_id;
+        return false;
+    });
+
     // Process data before rendering (apply pinning and sort order)
-    const processedList = processData(colleges);
+    const processedList = processData(filteredColleges);
 
     return (
         <div className="p-6"> {/* Container with standard admin board padding */}
@@ -43,10 +53,12 @@ export const CollegeTab: React.FC<CollegeTabProps> = ({
                         {language === 'ar' ? 'إدارة الكليات والأقسام العلمية' : 'Manage academic colleges and departments'}
                     </p>
                 </div>
-                {/* Primary Action - Styled with shadow and hover effects */}
-                <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
-                    <Plus className="h-5 w-5 me-2" /> {t('common.add')}
-                </Button>
+                {/* Primary Action - Only for Super/University Admins */}
+                {(role === 'super_admin' || role === 'university_admin') && (
+                    <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" /> {t('common.add')}
+                    </Button>
+                )}
             </div>
 
             {/* --- Colleges Grid --- */}
@@ -82,10 +94,12 @@ export const CollegeTab: React.FC<CollegeTabProps> = ({
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(c)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                {/* Delete Button - Highlighted with red on hover */}
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(c.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {/* Delete Button - Only for Super Admins */}
+                                {role === 'super_admin' && (
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(c.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

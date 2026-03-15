@@ -20,15 +20,26 @@ interface DepartmentTabProps {
     onEdit: (item: Department) => void; // Function to trigger edit dialog
     onDelete: (id: string) => void; // Function to handle deletion
     processData: (data: any[]) => any[]; // Utility for sorting and filtering logic
+    role?: string;
+    userRole?: any;
 }
 
 export const DepartmentTab: React.FC<DepartmentTabProps> = ({
-    departments, onAdd, onEdit, onDelete, processData
+    departments, onAdd, onEdit, onDelete, processData, role, userRole
 }) => {
     const { t, language } = useLanguage(); // Current language and localization tool
 
+    // Filter based on role
+    const filteredDeps = departments.filter(d => {
+        if (role === 'super_admin') return true;
+        if (role === 'university_admin') return true; // Could further filter if needed
+        if (role === 'college_admin') return d.college_id === userRole?.college_id;
+        if (role === 'department_admin') return d.id === userRole?.department_id;
+        return false;
+    });
+
     // Apply sorting rules before rendering
-    const processedList = processData(departments);
+    const processedList = processData(filteredDeps);
 
     return (
         <div className="p-6"> {/* Standardized padding for admin views */}
@@ -41,9 +52,12 @@ export const DepartmentTab: React.FC<DepartmentTabProps> = ({
                         {language === 'ar' ? 'إدارة الأقسام العلمية والبرامج الدراسية' : 'Manage academic departments and study programs'}
                     </p>
                 </div>
-                <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
-                    <Plus className="h-5 w-5 me-2" /> {t('common.add')}
-                </Button>
+                {/* Primary Action - restricted by role */}
+                {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
+                    <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" /> {t('common.add')}
+                    </Button>
+                )}
             </div>
 
             {/* --- Departments Grid --- */}
@@ -72,9 +86,11 @@ export const DepartmentTab: React.FC<DepartmentTabProps> = ({
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(d)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(d.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {(role === 'super_admin' || role === 'university_admin') && (
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(d.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

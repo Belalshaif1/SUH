@@ -20,15 +20,24 @@ interface UniversityTabProps {
     onEdit: (item: University) => void; // Trigger for "Edit University" dialog
     onDelete: (id: string) => void; // Trigger for deletion logic
     processData: (data: any[]) => any[]; // Utility to sort/pin data before rendering
+    role?: string;
+    userRole?: any;
 }
 
 export const UniversityTab: React.FC<UniversityTabProps> = ({
-    universities, onAdd, onEdit, onDelete, processData
+    universities, onAdd, onEdit, onDelete, processData, role, userRole
 }) => {
     const { t, language } = useLanguage(); // Access translation function and current language
 
+    // Filter based on role
+    const filteredUnis = universities.filter(u => {
+        if (role === 'super_admin') return true;
+        if (role === 'university_admin') return u.id === userRole?.university_id;
+        return false; // Other admins shouldn't see university tab content or will have empty list
+    });
+
     // Pre-process the list (Handling pinning and sorting)
-    const processedList = processData(universities);
+    const processedList = processData(filteredUnis);
 
     return (
         <div className="p-6"> {/* Main container with standard padding */}
@@ -43,10 +52,12 @@ export const UniversityTab: React.FC<UniversityTabProps> = ({
                         {language === 'ar' ? 'إدارة المؤسسات التعليمية المسجلة' : 'Manage registered educational institutions'}
                     </p>
                 </div>
-                {/* Call to Action Button - Standardized Gold style */}
-                <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
-                    <Plus className="h-5 w-5 me-2" /> {t('common.add')}
-                </Button>
+                {/* Call to Action Button - Only for Super Admins */}
+                {role === 'super_admin' && (
+                    <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                        <Plus className="h-5 w-5 me-2" /> {t('common.add')}
+                    </Button>
+                )}
             </div>
 
             {/* --- Universities Grid --- */}
@@ -81,9 +92,11 @@ export const UniversityTab: React.FC<UniversityTabProps> = ({
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(u)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(u.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {role === 'super_admin' && (
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(u.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

@@ -117,7 +117,7 @@ const Announcements: React.FC = () => {
                   {isAr ? a.title_ar : (a.title_en || a.title_ar)}
                 </h3>
 
-                <p className={`text-muted-foreground text-lg leading-relaxed mb-8 transition-all duration-500 line-clamp-3`}>
+                <p className={`text-muted-foreground text-lg leading-relaxed mb-8 transition-all duration-500 ${expandedId === a.id ? '' : 'line-clamp-3'}`}>
                   {isAr ? a.content_ar : (a.content_en || a.content_ar)}
                 </p>
 
@@ -126,10 +126,10 @@ const Announcements: React.FC = () => {
                   onClick={() => setExpandedId(expandedId === a.id ? null : a.id)}
                 >
                   <span className="text-lg font-bold text-primary group-hover/btn:text-gold transition-colors">
-                    {isAr ? 'اقرأ المزيد' : 'Read More'}
+                    {expandedId === a.id ? (isAr ? 'عرض أقل' : 'Show Less') : (isAr ? 'اقرأ المزيد' : 'Read More')}
                   </span>
-                  <div className="h-14 w-14 rounded-2xl border-2 border-primary/10 bg-slate-50 flex items-center justify-center group-hover/btn:bg-primary group-hover/btn:border-primary transition-all duration-300 transform group-hover/btn:rotate-45 shadow-sm">
-                    <Arrow className={`h-6 w-6 text-primary group-hover/btn:text-white transition-colors-transform duration-300 ${isRTL && isAr ? '' : ''} ${!isAr && isRTL ? 'rotate-180' : ''}`} />
+                  <div className={`h-14 w-14 rounded-2xl border-2 border-primary/10 bg-slate-50 flex items-center justify-center group-hover/btn:bg-primary group-hover/btn:border-primary transition-all duration-300 transform group-hover/btn:rotate-45 shadow-sm ${expandedId === a.id ? 'rotate-180 bg-primary border-primary' : ''}`}>
+                    <Arrow className={`h-6 w-6 transition-all duration-300 ${expandedId === a.id ? 'text-white -rotate-45' : 'text-primary group-hover/btn:text-white'} ${!isAr && isRTL ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
               </CardContent>

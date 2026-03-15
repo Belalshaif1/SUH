@@ -70,9 +70,17 @@ router.put('/:id', authenticateToken, async (req, res) => {
             return res.status(403).json({ error: 'Access denied' });
         }
 
+        const existing = await db.getAsync('SELECT * FROM universities WHERE id = $1', [req.params.id]);
+        if (!existing) return res.status(404).json({ error: 'University not found' });
+
+        // Field protection: Only Super Admin can change names or pin status
+        const final_name_ar = req.user.role === 'super_admin' ? name_ar : existing.name_ar;
+        const final_name_en = req.user.role === 'super_admin' ? name_en : existing.name_en;
+        const final_is_pinned = req.user.role === 'super_admin' ? (is_pinned || 0) : existing.is_pinned;
+
         await db.runAsync(
             'UPDATE universities SET name_ar = $1, name_en = $2, description_ar = $3, description_en = $4, guide_pdf_url = $5, logo_url = $6, is_pinned = $7, updated_at = CURRENT_TIMESTAMP WHERE id = $8',
-            [name_ar, name_en, description_ar, description_en, guide_pdf_url, logo_url, is_pinned || 0, req.params.id]
+            [final_name_ar, final_name_en, description_ar, description_en, guide_pdf_url, logo_url, final_is_pinned, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {

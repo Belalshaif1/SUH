@@ -35,7 +35,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
      * f - Standard Field Generator
      * @description Utility to reduce boilerplate when creating text/textarea fields.
      */
-    const f = (key: string, label: string, type = 'text', required = false, placeholder = '', desc = '') => (
+    const f = (key: string, label: string, type = 'text', required = false, placeholder = '', desc = '', disabled = false) => (
         <div className="space-y-1" key={key}>
             <div className="flex items-center justify-between">
                 <Label className="font-bold text-primary/80">{label}</Label>
@@ -47,6 +47,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                     value={formData[key] || ''}
                     onChange={e => setFormData({ ...formData, [key]: e.target.value })}
                     required={required}
+                    disabled={disabled}
                     className="min-h-[120px] resize-none focus-visible:ring-primary/20 rounded-xl"
                 />
             ) : (
@@ -56,6 +57,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                     value={formData[key] || ''}
                     onChange={e => setFormData({ ...formData, [key]: e.target.value })}
                     required={required}
+                    disabled={disabled}
                     className="h-12 focus-visible:ring-primary/20 rounded-xl"
                 />
             )}
@@ -109,41 +111,62 @@ export const EntityForm: React.FC<EntityFormProps> = ({
     // --- Recursive form logic based on active selection ---
     switch (activeForm) {
         case 'university':
+            const isUniAdmin = role === 'university_admin';
             return (
                 <div className="space-y-6">
-                    {f('name_ar', t('common.name_ar'), 'text', true, 'جامعة الملك فيصل')}
-                    {f('name_en', t('common.name_en'))}
+                    {f('name_ar', t('common.name_ar'), 'text', true, 'جامعة الملك فيصل', '', isUniAdmin)}
+                    {f('name_en', t('common.name_en'), 'text', false, '', '', isUniAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
                     {f('description_en', t('common.description_en'), 'textarea')}
-                    <div className="space-y-2">
-                        <Label className="font-bold">{language === 'ar' ? 'دليل الجامعة (PDF)' : 'University Guide (PDF)'}</Label>
-                        <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _guide_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'دليل الجامعة (PDF)' : 'University Guide (PDF)'}</Label>
+                            <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _guide_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'شعار الجامعة' : 'University Logo'}</Label>
+                            <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _logo_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
                     </div>
                     {pinField()}
                 </div>
             );
 
         case 'college':
+            const isCollegeAdmin = role === 'college_admin';
             return (
                 <div className="space-y-6">
                     {role === 'super_admin' && selectField('university_id', t('nav.universities'), universities)}
-                    {f('name_ar', t('common.name_ar'), 'text', true, 'كلية الهندسة')}
-                    {f('name_en', t('common.name_en'))}
+                    {f('name_ar', t('common.name_ar'), 'text', true, 'كلية الهندسة', '', isCollegeAdmin)}
+                    {f('name_en', t('common.name_en'), 'text', false, '', '', isCollegeAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
                     {f('description_en', t('common.description_en'), 'textarea')}
+                    <div className="space-y-2">
+                        <Label className="font-bold">{language === 'ar' ? 'شعار الكلية' : 'College Logo'}</Label>
+                        <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _logo_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                    </div>
                     {pinField()}
                 </div>
             );
 
         case 'department':
+            const isDeptAdmin = role === 'department_admin';
             return (
                 <div className="space-y-6">
-                    {role !== 'college_admin' && selectField('college_id', t('universities.colleges'), colleges)}
-                    {f('name_ar', t('common.name_ar'), 'text', true, 'قسم هندسة الحاسوب')}
-                    {f('name_en', t('common.name_en'))}
-                    <div className="space-y-2">
-                        <Label className="font-bold">{language === 'ar' ? 'الخطة الدراسية (PDF)' : 'Study Plan (PDF)'}</Label>
-                        <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _plan_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                    {role === 'super_admin' && selectField('college_id', t('universities.colleges'), colleges)}
+                    {f('name_ar', t('common.name_ar'), 'text', true, 'قسم هندسة الحاسوب', '', isDeptAdmin)}
+                    {f('name_en', t('common.name_en'), 'text', false, '', '', isDeptAdmin)}
+                    {f('description_ar', t('common.description_ar'), 'textarea')}
+                    {f('description_en', t('common.description_en'), 'textarea')}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'الخطة الدراسية (PDF)' : 'Study Plan (PDF)'}</Label>
+                            <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _plan_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'شعار القسم' : 'Department Logo'}</Label>
+                            <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _logo_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
                     </div>
                 </div>
             );
@@ -155,6 +178,16 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                     {f('title_en', t('common.title_en'))}
                     {f('content_ar', t('common.content_ar'), 'textarea', true)}
                     {f('content_en', t('common.content_en'), 'textarea')}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'صورة الإعلان' : 'Announcement Image'}</Label>
+                            <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _image_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'ملف مرفق (PDF)' : 'Attachment (PDF)'}</Label>
+                            <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _attachment_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
+                    </div>
                     {selectField('scope', language === 'ar' ? 'نطاق الإعلان' : 'Scope', [
                         { id: 'global', name_ar: 'عام', name_en: 'Global' },
                         { id: 'university', name_ar: 'جامعة', name_en: 'University' },

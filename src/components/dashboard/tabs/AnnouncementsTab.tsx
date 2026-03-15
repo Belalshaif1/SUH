@@ -20,10 +20,11 @@ interface AnnouncementsTabProps {
     onEdit: (item: Announcement) => void; // Trigger for edit modal
     onDelete: (id: string) => void; // Handle deletion
     processData: (data: any[]) => any[]; // Logic for sorting/pinning
+    role?: string;
 }
 
 export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({
-    announcements, onAdd, onEdit, onDelete, processData
+    announcements, onAdd, onEdit, onDelete, processData, role
 }) => {
     const { t, language } = useLanguage(); // User's language preference
 
@@ -106,9 +107,11 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(a)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(a.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
-                                    <Trash2 className="h-4 w-4" />
-                                </Button>
+                                {(role === 'super_admin' || role === 'university_admin') && (
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(a.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                        <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

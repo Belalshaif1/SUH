@@ -94,9 +94,16 @@ router.put('/:id', authenticateToken, checkPermission('manage_departments'), asy
             }
         }
 
+        const existing = await db.getAsync('SELECT * FROM departments WHERE id = $1', [req.params.id]);
+        if (!existing) return res.status(404).json({ error: 'Department not found' });
+
+        // Field protection: Only Super Admin can change names or parent college
+        const final_name_ar = req.user.role === 'super_admin' ? name_ar : existing.name_ar;
+        const final_name_en = req.user.role === 'super_admin' ? name_en : existing.name_en;
+
         await db.runAsync(
             'UPDATE departments SET name_ar = $1, name_en = $2, description_ar = $3, description_en = $4, study_plan_url = $5, logo_url = $6, updated_at = CURRENT_TIMESTAMP WHERE id = $7',
-            [name_ar, name_en, description_ar, description_en, study_plan_url, logo_url, req.params.id]
+            [final_name_ar, final_name_en, description_ar, description_en, study_plan_url, logo_url, req.params.id]
         );
         res.json({ success: true });
     } catch (err) {

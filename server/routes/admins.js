@@ -114,7 +114,7 @@ router.post('/:id/password', authenticateToken, isAdmin, async (req, res) => {
         const target = await db.getAsync('SELECT role FROM users WHERE id = $1', [req.params.id]);
 
         if (!target) return res.status(404).json({ error: 'Admin not found' });
-        if (!canManageRole(req.user.role, target.role)) {
+        if (req.user.id !== req.params.id && !canManageRole(req.user.role, target.role)) {
             return res.status(403).json({ error: 'Permission denied' });
         }
 
