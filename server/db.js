@@ -273,6 +273,38 @@ async function createTables() {
 
         await client.query('COMMIT');
 
+        // Add performance indexes on high-traffic foreign key columns
+        const indexes = [
+            'CREATE INDEX IF NOT EXISTS idx_colleges_university_id ON colleges(university_id)',
+            'CREATE INDEX IF NOT EXISTS idx_departments_college_id ON departments(college_id)',
+            'CREATE INDEX IF NOT EXISTS idx_graduates_department_id ON graduates(department_id)',
+            'CREATE INDEX IF NOT EXISTS idx_research_department_id ON research(department_id)',
+            'CREATE INDEX IF NOT EXISTS idx_jobs_college_id ON jobs(college_id)',
+            'CREATE INDEX IF NOT EXISTS idx_fees_department_id ON fees(department_id)',
+            'CREATE INDEX IF NOT EXISTS idx_announcements_university_id ON announcements(university_id)',
+            'CREATE INDEX IF NOT EXISTS idx_announcements_college_id ON announcements(college_id)',
+            'CREATE INDEX IF NOT EXISTS idx_announcements_created_at ON announcements(created_at DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)',
+            'CREATE INDEX IF NOT EXISTS idx_users_university_id ON users(university_id)',
+            'CREATE INDEX IF NOT EXISTS idx_users_college_id ON users(college_id)',
+            'CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_research_created_at ON research(created_at DESC)',
+        ];
+        for (const idx of indexes) {
+            try { await pool.query(idx); } catch(e) { /* index may already exist */ }
+        }
+
+        // backup_logs table for tracking backup operations
+        await pool.query(`CREATE TABLE IF NOT EXISTS backup_logs (
+            id UUID PRIMARY KEY,
+            filename TEXT NOT NULL,
+            size_bytes BIGINT,
+            status TEXT DEFAULT 'success',
+            triggered_by TEXT DEFAULT 'scheduler',
+            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+        )`);
+
+
         // إضافة الأعمدة الجديدة للجداول الموجودة (للتوافق مع قواعد البيانات القديمة)
         try {
             await pool.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS reset_token TEXT`);
@@ -330,7 +362,8 @@ async function insertDefaultData() {
                             isEnabled = 1;
                         }
                     } else if (role === 'department_admin') {
-                        if (['manage_departments', 'manage_announcements', 'manage_research', 'manage_graduates'].includes(perm)) {
+                        // Per spec: dept_admin manages jobs, fees, research, graduates, announcements
+                        if (['manage_departments', 'manage_announcements', 'manage_jobs', 'manage_research', 'manage_graduates', 'manage_fees'].includes(perm)) {
                             isEnabled = 1;
                         }
                     }

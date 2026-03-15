@@ -12,8 +12,9 @@ import { useAuth } from '@/contexts/AuthContext'; // Auth context
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Navigation tabs
 import {
   UserCog, Shield, Building2, BookOpen, FileText, Megaphone,
-  Briefcase, GraduationCap, DollarSign, Info, AlertTriangle, Users, Check
+  Briefcase, GraduationCap, DollarSign, Info, AlertTriangle, Users, Check, Archive
 } from 'lucide-react'; // Visual icons
+
 
 // --- Custom Hooks (Business Logic) ---
 import { useDashboardData } from '@/hooks/useDashboardData'; // Data fetching & state
@@ -41,6 +42,8 @@ import { GraduatesTab } from '@/components/dashboard/tabs/GraduatesTab';
 import { ResearchTab } from '@/components/dashboard/tabs/ResearchTab';
 import { FeesTab } from '@/components/dashboard/tabs/FeesTab';
 import { ErrorLogsTab } from '@/components/dashboard/tabs/ErrorLogsTab';
+import { BackupTab } from '@/components/dashboard/tabs/BackupTab';
+
 
 /**
  * Dashboard Orchestrator
@@ -100,6 +103,8 @@ const Dashboard: React.FC = () => {
                 {hasPermission('manage_research') && <TabsTrigger value="research" className="tab-trigger-premium"><FileText className="h-4 w-4" />{t('nav.research')}</TabsTrigger>}
                 {hasPermission('manage_fees') && (role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="fees" className="tab-trigger-premium"><DollarSign className="h-4 w-4" />{t('nav.fees')}</TabsTrigger>}
                 {role === 'super_admin' && <TabsTrigger value="error_logs" className="tab-trigger-premium text-red-500"><AlertTriangle className="h-4 w-4" />{language === 'ar' ? 'الأخطاء' : 'Logs'}</TabsTrigger>}
+                {role === 'super_admin' && <TabsTrigger value="backup" className="tab-trigger-premium text-amber-600"><Archive className="h-4 w-4" />{language === 'ar' ? 'النسخ الاحتياطي' : 'Backup'}</TabsTrigger>}
+
 
 
                 <TabsTrigger value="security" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأمان' : 'Security'}</TabsTrigger>
@@ -128,7 +133,9 @@ const Dashboard: React.FC = () => {
             <TabsContent value="research"><ResearchTab research={data.research} onAdd={() => dialogs.openAdd('research')} onEdit={(i) => dialogs.openEdit('research', i)} onDelete={(id, title) => actions.requestDelete('research', id, title)} processData={data.processData} /></TabsContent>
             <TabsContent value="fees"><FeesTab fees={data.fees} departments={data.departments} onAdd={() => dialogs.openAdd('fee')} onEdit={(i) => dialogs.openEdit('fee', i)} onDelete={(id, name) => actions.requestDelete('fees', id, name)} /></TabsContent>
             <TabsContent value="error_logs"><ErrorLogsTab errorLogs={data.errorLogs} /></TabsContent>
+            <TabsContent value="backup"><BackupTab /></TabsContent>
             <TabsContent value="security"><SecurityTab userId={user.id} language={language} /></TabsContent>
+
           </Tabs>
         </div>
       </main>

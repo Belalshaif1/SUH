@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { v4: uuidv4 } = require('uuid');
+const { authenticateToken } = require('../middleware/auth');
 
 // Get about info
 router.get('/', async (req, res) => {
@@ -17,8 +18,11 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Update/Upsert about info
-router.put('/', async (req, res) => {
+// Update/Upsert about info (Super Admin only)
+router.put('/', authenticateToken, async (req, res) => {
+    if (req.user.role !== 'super_admin') {
+        return res.status(403).json({ error: 'Access denied. Super Admin only.' });
+    }
     try {
         const { content_ar, content_en, developer_name_ar, developer_name_en, developer_bio_ar, developer_bio_en, developer_image_url } = req.body;
         const exists = await db.getAsync('SELECT id FROM about_us LIMIT 1');

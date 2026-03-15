@@ -134,14 +134,68 @@ export const useDashboardData = () => {
                     research: research.length,
                     users: 0
                 });
-            }
-            // Note: Logic for college_admin and department_admin omitted here for brevity, 
-            // but would follow the same pattern of hierarchical filtering.
 
+            } else if (role === 'college_admin') {
+                // College Admins see ONLY data within their college
+                const cid = userRole.college_id;
+                const myCollege = (cRes || []).filter((c: any) => c.id === cid);
+                const myDepts = (dRes || []).filter((d: any) => d.college_id === cid);
+                const deptIds = myDepts.map((d: any) => d.id);
+                const myUni = (uRes || []).filter((u: any) =>
+                    myCollege.some((c: any) => c.university_id === u.id)
+                );
+
+                setUniversities(myUni);
+                setColleges(myCollege);
+                setDepartments(myDepts);
+                setJobs((jRes || []).filter((j: any) => j.college_id === cid));
+                setGraduates((gRes || []).filter((g: any) => deptIds.includes(g.department_id)));
+                setResearch((rRes || []).filter((r: any) => deptIds.includes(r.department_id)));
+                setFees((fRes || []).filter((f: any) => deptIds.includes(f.department_id)));
+                setAnnouncements((aRes || []).filter((a: any) =>
+                    a.scope === 'college' && a.college_id === cid
+                ));
+                setStats({
+                    universities: myUni.length,
+                    colleges: 1,
+                    departments: myDepts.length,
+                    graduates: 0, research: 0, users: 0
+                });
+
+            } else if (role === 'department_admin') {
+                // Department Admins see ONLY data within their department
+                const did = userRole.department_id;
+                const myDept = (dRes || []).filter((d: any) => d.id === did);
+                const myCollege = myDept.length > 0
+                    ? (cRes || []).filter((c: any) => c.id === myDept[0]?.college_id)
+                    : [];
+                const myUni = myCollege.length > 0
+                    ? (uRes || []).filter((u: any) => u.id === myCollege[0]?.university_id)
+                    : [];
+
+                setUniversities(myUni);
+                setColleges(myCollege);
+                setDepartments(myDept);
+                setJobs((jRes || []).filter((j: any) =>
+                    myCollege.some((c: any) => c.id === j.college_id)
+                ));
+                setGraduates((gRes || []).filter((g: any) => g.department_id === did));
+                setResearch((rRes || []).filter((r: any) => r.department_id === did));
+                setFees((fRes || []).filter((f: any) => f.department_id === did));
+                setAnnouncements((aRes || []).filter((a: any) =>
+                    a.created_by === user?.id || (a.scope === 'college' && myCollege.some((c: any) => c.id === a.college_id))
+                ));
+                setStats({
+                    universities: myUni.length,
+                    colleges: myCollege.length,
+                    departments: 1,
+                    graduates: 0, research: 0, users: 0
+                });
+            }
         } catch (err) {
-            // Solid error handling for production apps
             console.error("Error fetching dashboard data:", err);
         } finally {
+
             // Ensure loading state is turned off regardless of success or failure
             setLoading(false);
         }

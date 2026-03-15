@@ -2,7 +2,9 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
+const rateLimit = require('express-rate-limit');
 const db = require('./db');
+
 
 // استيراد جميع مسارات الـ API
 const authRoutes = require('./routes/auth');
@@ -23,9 +25,29 @@ const uploadRoutes = require('./routes/uploads');
 const adminRoutes = require('./routes/admins');
 const permissionsRoutes = require('./routes/permissions');
 const syncRoutes = require('./routes/sync');
+const backupRoutes = require('./routes/backup');
+const { initBackupScheduler } = require('./backupScheduler');
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// --- Rate Limiting ---
+// General API limiter: 300 requests per 15 minutes per IP
+const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Too many requests, please try again later.' }
+});
+// Strict limiter for auth routes: 20 requests per 15 minutes
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    message: { error: 'Too many login attempts, please try again later.' }
+});
+
 
 // --- إعدادات الأمان والبرمجيات الوسيطة ---
 
@@ -70,7 +92,9 @@ if (!fs.existsSync(path.join(__dirname, 'uploads'))) {
 }
 
 // --- تعريف المسارات ---
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api', apiLimiter); // Apply general rate limit to all API routes
+
 app.use('/api/universities', universitiesRoutes);
 app.use('/api/colleges', collegesRoutes);
 app.use('/api/departments', departmentsRoutes);
@@ -88,6 +112,11 @@ app.use('/api/admins', adminRoutes);
 app.use('/api/permissions', permissionsRoutes);
 app.use('/api/error_logs', errorLogsRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/backup', backupRoutes);
+
+// Initialize backup scheduler
+initBackupScheduler();
+
 
 // نقطة فحص صحة الخادم
 app.get('/api/health', (req, res) => {
