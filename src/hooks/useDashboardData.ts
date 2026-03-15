@@ -71,7 +71,9 @@ export const useDashboardData = () => {
                 apiClient('/jobs'), // Fetch all job postings
                 apiClient('/announcements'), // Fetch all announcements
                 apiClient('/about'), // Fetch About page config
-                (['super_admin', 'university_admin', 'college_admin'].includes(role)) ? apiClient('/error_logs') : Promise.resolve([]), // Fetch logs for authorized admins
+                role === 'super_admin' ? apiClient('/error_logs') : Promise.resolve([]), // Fetch logs only if Super Admin (Security)
+
+
 
                 apiClient('/fees') // Fetch all fee records
             ]);

@@ -85,8 +85,11 @@ const Dashboard: React.FC = () => {
             <div className="px-6 pt-6 border-b border-primary/5 bg-slate-50/30">
               <TabsList className="flex flex-wrap gap-2 h-auto mb-4 bg-transparent p-0">
                 {role === 'super_admin' && hasPermission('manage_users') && <TabsTrigger value="users" className="tab-trigger-premium"><Users className="h-4 w-4" />{language === 'ar' ? 'المستخدمين' : 'Users'}</TabsTrigger>}
-                {['super_admin', 'university_admin', 'college_admin'].includes(role) && <TabsTrigger value="admins" className="tab-trigger-premium"><UserCog className="h-4 w-4" />{t('dashboard.manage_admins')}</TabsTrigger>}
-                {['super_admin', 'university_admin', 'college_admin'].includes(role) && <TabsTrigger value="permissions" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأدوار' : 'Roles'}</TabsTrigger>}
+                {role === 'super_admin' && <TabsTrigger value="admins" className="tab-trigger-premium"><UserCog className="h-4 w-4" />{t('dashboard.manage_admins')}</TabsTrigger>}
+
+                {role === 'super_admin' && <TabsTrigger value="permissions" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأدوار' : 'Roles'}</TabsTrigger>}
+
+
 
                 <TabsTrigger value="universities" className="tab-trigger-premium"><Building2 className="h-4 w-4" />{t('nav.universities')}</TabsTrigger>
                 {hasPermission('manage_colleges') && <TabsTrigger value="colleges" className="tab-trigger-premium"><BookOpen className="h-4 w-4" />{t('universities.colleges')}</TabsTrigger>}
@@ -96,7 +99,9 @@ const Dashboard: React.FC = () => {
                 {hasPermission('manage_graduates') && <TabsTrigger value="graduates" className="tab-trigger-premium"><GraduationCap className="h-4 w-4" />{t('nav.graduates')}</TabsTrigger>}
                 {hasPermission('manage_research') && <TabsTrigger value="research" className="tab-trigger-premium"><FileText className="h-4 w-4" />{t('nav.research')}</TabsTrigger>}
                 {hasPermission('manage_fees') && (role === 'super_admin' || role === 'university_admin') && <TabsTrigger value="fees" className="tab-trigger-premium"><DollarSign className="h-4 w-4" />{t('nav.fees')}</TabsTrigger>}
-                {['super_admin', 'university_admin', 'college_admin'].includes(role) && <TabsTrigger value="error_logs" className="tab-trigger-premium text-red-500"><AlertTriangle className="h-4 w-4" />{language === 'ar' ? 'الأخطاء' : 'Logs'}</TabsTrigger>}
+                {role === 'super_admin' && <TabsTrigger value="error_logs" className="tab-trigger-premium text-red-500"><AlertTriangle className="h-4 w-4" />{language === 'ar' ? 'الأخطاء' : 'Logs'}</TabsTrigger>}
+
+
                 <TabsTrigger value="security" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأمان' : 'Security'}</TabsTrigger>
 
               </TabsList>

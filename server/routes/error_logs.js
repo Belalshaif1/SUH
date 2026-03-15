@@ -7,10 +7,11 @@ const { v4: uuidv4 } = require('uuid');
 // GET all error logs (Super Admin only) مع دعم pagination
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
     try {
-        const allowedRoles = ['super_admin', 'university_admin', 'college_admin'];
-        if (!allowedRoles.includes(req.user.role)) {
-            return res.status(403).json({ error: 'Access denied.' });
+        if (req.user.role !== 'super_admin') {
+            return res.status(403).json({ error: 'Access denied. Super Admins only.' });
         }
+
+
 
 
         const page = parseInt(req.query.page) || 1;
