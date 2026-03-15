@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { GraduationCap, Search, User, Calendar, BookOpen, Award, Filter, SortAsc } from 'lucide-react';
 import { Input } from '@/components/ui/input';

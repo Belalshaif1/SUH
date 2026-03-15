@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, User, Eye, Search, BookOpen, Calendar, Filter, SortAsc } from 'lucide-react';
@@ -251,14 +251,14 @@ const Research: React.FC = () => {
                           <Button
                             className="flex-1 sm:flex-none h-16 px-10 rounded-2xl font-bold bg-primary text-primary-foreground shadow-2xl shadow-primary/20 hover:bg-primary/90 transition-all active:scale-95 text-lg"
                             onClick={() => setPreviewPdf({
-                              url: r.pdf_url.startsWith('http') ? r.pdf_url : `http://localhost:5000${r.pdf_url}`,
+                              url: getMediaUrl(r.pdf_url),
                               title: isAr ? r.title_ar : (r.title_en || r.title_ar)
                             })}
                           >
                             <Eye className="h-6 w-6 me-3" />{isAr ? 'معاينة' : 'Preview'}
                           </Button>
                           <a
-                            href={r.pdf_url.startsWith('http') ? r.pdf_url : `http://localhost:5000${r.pdf_url}`}
+                            href={getMediaUrl(r.pdf_url)}
                             download={`${isAr ? r.title_ar : (r.title_en || r.title_ar)}.pdf`}
                             target="_blank"
                             rel="noopener noreferrer"
