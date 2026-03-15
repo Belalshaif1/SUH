@@ -200,12 +200,14 @@ export const EntityForm: React.FC<EntityFormProps> = ({
         case 'job':
             return (
                 <div className="space-y-6">
+                    {(role === 'super_admin' || role === 'university_admin') && selectField('college_id', t('universities.colleges'), colleges)}
                     {f('title_ar', t('common.title_ar'), 'text', true)}
                     {f('title_en', t('common.title_en'))}
                     {f('description_ar', t('common.description_ar'), 'textarea', true)}
                     {f('description_en', t('common.description_en'), 'textarea')}
                     {f('deadline', language === 'ar' ? 'الموعد النهائي' : 'Deadline', 'date')}
                     {pinField()}
+
                 </div>
             );
 

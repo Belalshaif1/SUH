@@ -87,6 +87,10 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
             else if (activeForm === 'fee') {
                 payload.amount = parseFloat(formData.amount);
             }
+            else if (activeForm === 'job') {
+                if (role === 'college_admin') payload.college_id = userRole.college_id;
+            }
+
             // Note: Logic for other forms (Announcements, Research, etc.) follows the same pattern.
             // We would ideally use a strategy pattern here if the number of entities grows very large.
 

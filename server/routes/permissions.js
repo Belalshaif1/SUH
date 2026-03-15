@@ -85,9 +85,11 @@ router.put('/user/:userId', authenticateToken, isAdmin, async (req, res) => {
 // Get Permissions Matrix
 router.get('/matrix', authenticateToken, isAdmin, async (req, res) => {
     try {
-        if (req.user.role !== 'super_admin') {
-            return res.status(403).json({ error: 'Only Super Admin can view the permissions matrix' });
+        const allowedRoles = ['super_admin', 'university_admin', 'college_admin'];
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'Only authorized admins can view the permissions matrix' });
         }
+
 
         // استخدام single quotes بدلاً من double quotes للنص في PostgreSQL
         const admins = await db.query("SELECT id, email, full_name, role FROM users WHERE role != 'user'");
