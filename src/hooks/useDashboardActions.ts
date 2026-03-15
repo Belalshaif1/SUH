@@ -17,7 +17,9 @@ import { useLanguage } from '@/contexts/LanguageContext'; // For localized succe
 export const useDashboardActions = (fetchData: () => void, onSuccess: () => void) => {
     const [loading, setLoading] = useState<boolean>(false); // Action-level loading state (for buttons)
     const { toast } = useToast(); // Hook to trigger UI notifications
-    const { language } = useLanguage(); // Current site language    const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, table: string, name: string } | null>(null);
+    const { language } = useLanguage(); // Current site language
+    const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, table: string, name: string } | null>(null);
+
 
     /**
      * handleFileUpload - Helper to upload files to the server
