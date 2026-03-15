@@ -119,4 +119,11 @@ const apiClient = async (endpoint: string, options: RequestOptions = {}) => {
     }
 };
 
+export const getMediaUrl = (path: string | null | undefined) => {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const baseUrl = API_URL.replace(/\/api$/, '');
+    return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+};
+
 export default apiClient;

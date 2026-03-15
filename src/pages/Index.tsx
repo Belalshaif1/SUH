@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Building2, GraduationCap, FileText, BookOpen, Megaphone, ArrowLeft, ArrowRight, Calendar, Sparkles } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

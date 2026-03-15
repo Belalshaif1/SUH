@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Building2, ArrowRight, ArrowLeft, Search, FileText, Download, Eye } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -79,10 +79,10 @@ const Universities: React.FC = () => {
               {currentCollege && getDesc(currentCollege)}
             </p>
           </div>
-          <div className="w-56 h-56 md:w-64 md:h-64 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center border-4 border-white overflow-hidden p-10 group relative transition-all duration-700 hover:rotate-3 shrink-0">
+          <div className="w-56 h-56 md:w-64 md:h-64 rounded-[3rem] bg-card shadow-2xl flex items-center justify-center border-4 border-muted/20 overflow-hidden p-10 group relative transition-all duration-700 hover:rotate-3 shrink-0">
             <div className="absolute inset-0 bg-gradient-to-tr from-gold/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             {currentCollege?.logo_url ? (
-              <img src={currentCollege.logo_url.startsWith('http') ? currentCollege.logo_url : `http://localhost:5000${currentCollege.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain relative z-10" />
+              <img src={getMediaUrl(currentCollege.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain relative z-10" />
             ) : (
               <Building2 className="h-24 w-24 text-gold/20 relative z-10" />
             )}
@@ -99,9 +99,9 @@ const Universities: React.FC = () => {
             <Card key={d.id} className="card-premium group relative bg-white overflow-hidden flex flex-col h-full rounded-[2.5rem] p-4">
               <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
               <CardContent className="p-8 h-full flex flex-col relative z-10">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/5 shadow-inner mb-8 group-hover:scale-110 group-hover:bg-gold transition-all duration-500 overflow-hidden p-3">
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 shadow-inner mb-8 group-hover:scale-110 group-hover:bg-gold transition-all duration-500 overflow-hidden p-3">
                   {d.logo_url ? (
-                    <img src={d.logo_url.startsWith('http') ? d.logo_url : `http://localhost:5000${d.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                    <img src={getMediaUrl(d.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                   ) : (
                     <FileText className="h-8 w-8 text-gold group-hover:text-white transition-colors" />
                   )}
@@ -122,7 +122,7 @@ const Universities: React.FC = () => {
                       <Eye className="h-4 w-4 me-2" />{isAr ? 'خطة دراسية' : 'Study Plan'}
                     </Button>
                     <a
-                      href={d.study_plan_url.startsWith('http') ? d.study_plan_url : `http://localhost:5000${d.study_plan_url}`}
+                      href={getMediaUrl(d.study_plan_url)}
                       download={`${getName(d)}_Plan.pdf`}
                       target="_blank"
                       rel="noopener noreferrer"
@@ -176,17 +176,17 @@ const Universities: React.FC = () => {
               <div className="flex flex-wrap justify-center lg:justify-start gap-4">
                 <Button
                   className="h-14 px-10 rounded-2xl text-lg font-extrabold bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
-                  onClick={() => setPreviewPdf({ url: currentUni.guide_pdf_url.startsWith('http') ? currentUni.guide_pdf_url : `http://localhost:5000${currentUni.guide_pdf_url}`, title: getName(currentUni) })}
+                  onClick={() => setPreviewPdf({ url: getMediaUrl(currentUni.guide_pdf_url), title: getName(currentUni) })}
                 >
                   <Eye className="h-5 w-5 me-2" />{isAr ? 'دليل الجامعة' : 'University Guide'}
                 </Button>
               </div>
             )}
           </div>
-          <div className="w-56 h-56 md:w-64 md:h-64 rounded-[3rem] bg-white shadow-2xl flex items-center justify-center border-4 border-white overflow-hidden p-10 group relative transition-all duration-700 hover:-rotate-3 shrink-0">
+          <div className="w-56 h-56 md:w-64 md:h-64 rounded-[3rem] bg-card shadow-2xl flex items-center justify-center border-4 border-muted/20 overflow-hidden p-10 group relative transition-all duration-700 hover:-rotate-3 shrink-0">
             <div className="absolute inset-0 bg-gradient-to-bl from-primary/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
             {currentUni?.logo_url ? (
-              <img src={currentUni.logo_url.startsWith('http') ? currentUni.logo_url : `http://localhost:5000${currentUni.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain relative z-10 font-extrabold" />
+              <img src={getMediaUrl(currentUni.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain relative z-10 font-extrabold" />
             ) : (
               <Building2 className="h-24 w-24 text-primary/20 relative z-10" />
             )}
@@ -204,9 +204,9 @@ const Universities: React.FC = () => {
               <Card className="card-premium h-full overflow-hidden flex flex-col p-4 relative">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full -mr-16 -mt-16 group-hover:scale-150 transition-transform duration-700" />
                 <CardContent className="p-8 relative z-10 h-full flex flex-col">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/5 shadow-inner mb-8 group-hover:bg-primary group-hover:scale-110 transition-all duration-500 overflow-hidden p-3">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50 shadow-inner mb-8 group-hover:bg-primary group-hover:scale-110 transition-all duration-500 overflow-hidden p-3">
                     {c.logo_url ? (
-                      <img src={c.logo_url.startsWith('http') ? c.logo_url : `http://localhost:5000${c.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                      <img src={getMediaUrl(c.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                     ) : (
                       <Building2 className="h-8 w-8 text-primary group-hover:text-white transition-colors" />
                     )}
@@ -272,9 +272,9 @@ const Universities: React.FC = () => {
                 )}
 
                 <div className="relative p-4">
-                  <div className="flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-slate-50 shadow-inner mb-10 group-hover:scale-110 group-hover:bg-primary transition-all duration-500 p-5 overflow-hidden">
+                  <div className="flex h-24 w-24 items-center justify-center rounded-[2.5rem] bg-muted/50 shadow-inner mb-10 group-hover:scale-110 group-hover:bg-primary transition-all duration-500 p-5 overflow-hidden">
                     {u.logo_url ? (
-                      <img src={u.logo_url.startsWith('http') ? u.logo_url : `http://localhost:5000${u.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                      <img src={getMediaUrl(u.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                     ) : (
                       <Building2 className="h-12 w-12 text-primary group-hover:text-white transition-colors" />
                     )}

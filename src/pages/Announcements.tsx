@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { Megaphone, Calendar, ArrowRight, ArrowLeft, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -39,8 +39,8 @@ const Announcements: React.FC = () => {
         <div className="absolute inset-0 gradient-academic opacity-[0.03] z-0" />
 
         <div className="flex-1 text-center lg:text-start relative z-10 flex flex-col lg:flex-row items-center gap-10">
-          <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-white shadow-2xl p-6 flex items-center justify-center border-4 border-slate-50 group hover:rotate-3 transition-transform duration-500">
-            <Megaphone className="h-16 w-16 text-primary/10 group-hover:text-primary transition-colors" />
+          <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-card shadow-2xl p-6 flex items-center justify-center border-4 border-muted/20 group hover:rotate-3 transition-transform duration-500">
+            <Megaphone className="h-16 w-16 text-primary/20 group-hover:text-primary transition-colors" />
           </div>
 
           <div className="flex-1">
@@ -75,7 +75,7 @@ const Announcements: React.FC = () => {
               <div className="relative h-64 overflow-hidden rounded-t-[2.5rem]">
                 {a.image_url ? (
                   <img
-                    src={a.image_url.startsWith('http') ? a.image_url : `http://localhost:5000${a.image_url}`}
+                    src={getMediaUrl(a.image_url)}
                     alt={isAr ? a.title_ar : a.title_en}
                     className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
                   />
@@ -90,7 +90,7 @@ const Announcements: React.FC = () => {
                   <div className="absolute top-6 left-6 z-30 flex items-center gap-2">
                     <div className="h-14 w-14 rounded-2xl bg-white/90 backdrop-blur-md p-2.5 shadow-2xl border border-white/50 group-hover:scale-110 transition-transform duration-500">
                       <img
-                        src={(a.universities?.logo_url || a.colleges?.logo_url).startsWith('http') ? (a.universities?.logo_url || a.colleges?.logo_url) : `http://localhost:5000${a.universities?.logo_url || a.colleges?.logo_url}`}
+                        src={getMediaUrl(a.universities?.logo_url || a.colleges?.logo_url)}
                         alt="Logo"
                         className="w-full h-full object-contain"
                       />
@@ -108,7 +108,7 @@ const Announcements: React.FC = () => {
 
               {/* Content Section */}
               <CardContent className="p-10 flex flex-col flex-grow relative z-10">
-                <div className="flex items-center gap-3 text-xs font-bold text-muted-foreground mb-6 uppercase tracking-[0.2em] bg-slate-50 self-start px-5 py-2.5 rounded-2xl border border-border/30 shadow-sm">
+                <div className="flex items-center gap-3 text-xs font-bold text-muted-foreground mb-6 uppercase tracking-[0.2em] bg-muted/50 self-start px-5 py-2.5 rounded-2xl border border-border/30 shadow-sm">
                   <Calendar className="h-4 w-4 text-gold" />
                   <span>{new Date(a.created_at).toLocaleDateString(isAr ? 'ar-EG' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 </div>
@@ -128,7 +128,7 @@ const Announcements: React.FC = () => {
                   <span className="text-lg font-bold text-primary group-hover/btn:text-gold transition-colors">
                     {expandedId === a.id ? (isAr ? 'عرض أقل' : 'Show Less') : (isAr ? 'اقرأ المزيد' : 'Read More')}
                   </span>
-                  <div className={`h-14 w-14 rounded-2xl border-2 border-primary/10 bg-slate-50 flex items-center justify-center group-hover/btn:bg-primary group-hover/btn:border-primary transition-all duration-300 transform group-hover/btn:rotate-45 shadow-sm ${expandedId === a.id ? 'rotate-180 bg-primary border-primary' : ''}`}>
+                  <div className={`h-14 w-14 rounded-2xl border-2 border-primary/10 bg-muted/50 flex items-center justify-center group-hover/btn:bg-primary group-hover/btn:border-primary transition-all duration-300 transform group-hover/btn:rotate-45 shadow-sm ${expandedId === a.id ? 'rotate-180 bg-primary border-primary' : ''}`}>
                     <Arrow className={`h-6 w-6 transition-all duration-300 ${expandedId === a.id ? 'text-white -rotate-45' : 'text-primary group-hover/btn:text-white'} ${!isAr && isRTL ? 'rotate-180' : ''}`} />
                   </div>
                 </div>
