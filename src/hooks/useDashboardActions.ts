@@ -90,8 +90,24 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
 
             // --- API Execution ---
             const method = editId ? 'PUT' : 'POST'; // Choose HTTP verb based on mode
-            const endpoint = `/${activeForm}${editId ? `s/${editId}` : 's'}`; // Construct URL (note: singular vs plural handling depends on API)
+           // const endpoint = `/${activeForm}${editId ? `s/${editId}` : 's'}`; // Construct URL (note: singular vs plural handling depends on API)
+// خريطة المسارات الصحيحة لكل كيان
+const endpointMap: Record<string, string> = {
+    university: 'universities',
+    college: 'colleges',
+    department: 'departments',
+    announcement: 'announcements',
+    job: 'jobs',
+    graduate: 'graduates',
+    research: 'research',      // ملاحظة: الخادم يستخدم '/api/research' (بدون s)
+    fee: 'fees',
+    about: 'about',
+    // أضف أي كيانات أخرى حسب الحاجة
+};
 
+// الحصول على base الصحيح، مع fallback آمن (إضافة s فقط إذا لم نجد)
+const base = endpointMap[activeForm] || (activeForm + 's');
+const endpoint = `/${base}${editId ? `/${editId}` : ''}`;
             // Note: The endpoint construction above is simplified; some routes might need explicit mapping.
             // For production, a mapping object { 'university': '/universities' } is safer.
 
