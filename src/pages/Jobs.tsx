@@ -131,7 +131,7 @@ const Jobs: React.FC = () => {
                 <div className="flex items-start justify-between mb-8">
                   <div className="h-20 w-20 rounded-2xl bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-4 shadow-inner">
                     {j.universities?.logo_url ? (
-                      <img src={j.universities.logo_url.startsWith('http') ? j.universities.logo_url : `http://localhost:5000${j.universities.logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                      <img src={getMediaUrl(j.universities.logo_url)} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                     ) : (
                       <Briefcase className="h-10 w-10 text-primary group-hover:text-white transition-colors" />
                     )}

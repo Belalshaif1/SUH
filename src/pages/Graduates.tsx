@@ -91,19 +91,11 @@ const Graduates: React.FC = () => {
           {(selectedDept !== 'all' || selectedCollege !== 'all' || selectedUni !== 'all') ? (
             <div className="shrink-0 h-40 w-40 rounded-[2.5rem] bg-white shadow-2xl p-6 flex items-center justify-center border-4 border-slate-50 group hover:rotate-3 transition-transform duration-500">
               <img
-                src={(
+                src={getMediaUrl(
                   (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
                   (selectedCollege !== 'all' ? colleges.find(c => c.id === selectedCollege)?.logo_url : null) ||
                   (selectedUni !== 'all' ? universities.find(u => u.id === selectedUni)?.logo_url : null)
-                )?.startsWith('http') ? (
-                  (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
-                  (selectedCollege !== 'all' ? colleges.find(c => c.id === selectedCollege)?.logo_url : null) ||
-                  (selectedUni !== 'all' ? universities.find(u => u.id === selectedUni)?.logo_url : null)
-                ) : `http://localhost:5000${(
-                  (selectedDept !== 'all' ? departments.find(d => d.id === selectedDept)?.logo_url : null) ||
-                  (selectedCollege !== 'all' ? colleges.find(c => c.id === selectedCollege)?.logo_url : null) ||
-                  (selectedUni !== 'all' ? universities.find(u => u.id === selectedUni)?.logo_url : null)
-                )}`}
+                )}
                 alt="Entity Logo"
                 className="w-full h-full object-contain"
               />
@@ -217,7 +209,7 @@ const Graduates: React.FC = () => {
                 <div className="flex items-start justify-between mb-8">
                   <div className="h-16 w-16 rounded-2xl bg-primary/5 shadow-inner flex items-center justify-center group-hover:bg-primary transition-all duration-500 overflow-hidden p-3">
                     {g.department_logo_url || g.college_logo_url ? (
-                      <img src={(g.department_logo_url || g.college_logo_url).startsWith('http') ? (g.department_logo_url || g.college_logo_url) : `http://localhost:5000${g.department_logo_url || g.college_logo_url}`} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
+                      <img src={getMediaUrl(g.department_logo_url || g.college_logo_url)} alt="Logo" className="max-w-full max-h-full object-contain group-hover:brightness-0 group-hover:invert transition-all" />
                     ) : (
                       <User className="h-7 w-7 text-primary group-hover:text-white transition-colors" />
                     )}
