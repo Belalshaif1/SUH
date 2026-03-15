@@ -18,7 +18,7 @@ interface ResearchTabProps {
     research: Research[]; // Array of research paper records
     onAdd: () => void; // Command to open add dialog
     onEdit: (item: Research) => void; // Command to open edit dialog
-    onDelete: (id: string) => void; // Logic to remove a record
+    onDelete: (id: string, name: string) => void; // Logic to remove a record
     processData: (data: any[]) => any[]; // Logic to sort/prioritize data
 }
 
@@ -74,7 +74,7 @@ export const ResearchTab: React.FC<ResearchTabProps> = ({
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(r)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(r.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                <Button variant="ghost" size="icon" onClick={() => onDelete(r.id, language === 'ar' ? r.title_ar : (r.title_en || r.title_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>

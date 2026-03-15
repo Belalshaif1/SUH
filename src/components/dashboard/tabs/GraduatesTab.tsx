@@ -18,7 +18,7 @@ interface GraduatesTabProps {
     graduates: Graduate[]; // Data source
     onAdd: () => void; // Trigger for create
     onEdit: (item: Graduate) => void; // Trigger for edit
-    onDelete: (id: string) => void; // Handle removal
+    onDelete: (id: string, name: string) => void; // Handle removal
     processData: (data: any[]) => any[]; // Logic wrapper for sort/filters
 }
 
@@ -73,7 +73,7 @@ export const GraduatesTab: React.FC<GraduatesTabProps> = ({
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(g)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={() => onDelete(g.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                <Button variant="ghost" size="icon" onClick={() => onDelete(g.id, language === 'ar' ? g.full_name_ar : (g.full_name_en || g.full_name_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>

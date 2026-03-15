@@ -18,7 +18,7 @@ interface JobsTabProps {
     jobs: Job[]; // List of available job objects
     onAdd: () => void; // Command to open the creation dialog
     onEdit: (item: Job) => void; // Command to open the edit dialog
-    onDelete: (id: string) => void; // Command to delete a job
+    onDelete: (id: string, name: string) => void; // Command to delete a job
     onViewApplications: (id: string) => void; // Specialized command for viewing applicants
     processData: (data: any[]) => any[]; // Logic to apply sort/pin orders
 }
@@ -87,7 +87,7 @@ export const JobsTab: React.FC<JobsTabProps> = ({
                                     <Button variant="ghost" size="icon" onClick={() => onEdit(j)} className="h-11 w-11 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                         <Edit className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" onClick={() => onDelete(j.id)} className="h-11 w-11 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(j.id, language === 'ar' ? j.title_ar : (j.title_en || j.title_ar))} className="h-11 w-11 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 </div>

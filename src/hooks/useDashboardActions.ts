@@ -17,7 +17,7 @@ import { useLanguage } from '@/contexts/LanguageContext'; // For localized succe
 export const useDashboardActions = (fetchData: () => void, onSuccess: () => void) => {
     const [loading, setLoading] = useState<boolean>(false); // Action-level loading state (for buttons)
     const { toast } = useToast(); // Hook to trigger UI notifications
-    const { language } = useLanguage(); // Current site language
+    const { language } = useLanguage(); // Current site language    const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, table: string, name: string } | null>(null);
 
     /**
      * handleFileUpload - Helper to upload files to the server
@@ -131,16 +131,18 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
     };
 
     /**
-     * handleDelete - Soft or hard delete an item after user confirmation
-     * @param table The API endpoint/entity type
-     * @param id The ID to delete
+     * requestDelete - Initiates the custom confirmation flow
      */
-    const handleDelete = async (table: string, id: string) => {
-        const confirmMsg = language === 'ar' 
-            ? 'هل أنت متأكد من رغبتك في الحذف؟ لا يمكن التراجع عن هذا الإجراء.' 
-            : 'Are you sure you want to delete this? This action cannot be undone.';
-        
-        if (!window.confirm(confirmMsg)) return;
+    const requestDelete = (table: string, id: string, name: string) => {
+        setDeleteConfirm({ id, table, name });
+    };
+
+    /**
+     * confirmDelete - Performs the actual deletion after user clicks "Yes"
+     */
+    const confirmDelete = async () => {
+        if (!deleteConfirm) return;
+        const { id, table } = deleteConfirm;
 
         try {
             await apiClient(`/${table}/${id}`, { method: 'DELETE' }); // Perform HTTP DELETE
@@ -148,8 +150,17 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
             fetchData(); // Sync UI with database
         } catch (err: any) {
             toast({ title: err.message, variant: 'destructive' });
+        } finally {
+            setDeleteConfirm(null);
         }
     };
 
-    return { loading, handleSave, handleDelete }; // Expose state and methods
+    return {
+        loading,
+        handleSave,
+        requestDelete,
+        confirmDelete,
+        deleteConfirm,
+        cancelDelete: () => setDeleteConfirm(null)
+    }; // Expose state and methods
 };

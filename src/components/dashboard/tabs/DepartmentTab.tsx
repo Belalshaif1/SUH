@@ -18,7 +18,7 @@ interface DepartmentTabProps {
     departments: Department[]; // List of department records
     onAdd: () => void; // Function to trigger add dialog
     onEdit: (item: Department) => void; // Function to trigger edit dialog
-    onDelete: (id: string) => void; // Function to handle deletion
+    onDelete: (id: string, name: string) => void; // Function to handle deletion
     processData: (data: any[]) => any[]; // Utility for sorting and filtering logic
     role?: string;
     userRole?: any;
@@ -87,7 +87,7 @@ export const DepartmentTab: React.FC<DepartmentTabProps> = ({
                                     <Edit className="h-4 w-4" />
                                 </Button>
                                 {(role === 'super_admin' || role === 'university_admin') && (
-                                    <Button variant="ghost" size="icon" onClick={() => onDelete(d.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(d.id, language === 'ar' ? d.name_ar : (d.name_en || d.name_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 )}

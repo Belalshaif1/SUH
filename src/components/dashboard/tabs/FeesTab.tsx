@@ -19,7 +19,7 @@ interface FeesTabProps {
     departments: Department[]; // List of departments for ID-to-Name resolution
     onAdd: () => void; // Trigger for creating a new fee record
     onEdit: (item: Fee) => void; // Trigger for editing an existing record
-    onDelete: (id: string) => void; // Trigger for deletion logic
+    onDelete: (id: string, name: string) => void; // Trigger for deletion logic
 }
 
 export const FeesTab: React.FC<FeesTabProps> = ({
@@ -75,7 +75,7 @@ export const FeesTab: React.FC<FeesTabProps> = ({
                                 <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5 transition-all" onClick={() => onEdit(f)}>
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => onDelete(f.id)}>
+                                <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all" onClick={() => onDelete(f.id, `${f.amount?.toLocaleString()} ${language === 'ar' ? 'د.ع' : 'IQD'}`)}>
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
                             </div>

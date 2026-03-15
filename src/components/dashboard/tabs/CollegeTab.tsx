@@ -18,7 +18,7 @@ interface CollegeTabProps {
     colleges: College[]; // Data source: list of colleges
     onAdd: () => void; // Trigger for add modal
     onEdit: (item: College) => void; // Trigger for edit modal
-    onDelete: (id: string) => void; // Trigger for delete action
+    onDelete: (id: string, name: string) => void; // Trigger for delete action
     processData: (data: any[]) => any[]; // Business logic wrapper for sorting/pinning
     role?: string;
     userRole?: any;
@@ -96,7 +96,7 @@ export const CollegeTab: React.FC<CollegeTabProps> = ({
                                 </Button>
                                 {/* Delete Button - Only for Super Admins */}
                                 {role === 'super_admin' && (
-                                    <Button variant="ghost" size="icon" onClick={() => onDelete(c.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(c.id, language === 'ar' ? c.name_ar : (c.name_en || c.name_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 )}

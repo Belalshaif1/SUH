@@ -18,7 +18,7 @@ interface UniversityTabProps {
     universities: University[]; // List of universities to display
     onAdd: () => void; // Trigger for "Add New University" dialog
     onEdit: (item: University) => void; // Trigger for "Edit University" dialog
-    onDelete: (id: string) => void; // Trigger for deletion logic
+    onDelete: (id: string, name: string) => void; // Trigger for deletion logic
     processData: (data: any[]) => any[]; // Utility to sort/pin data before rendering
     role?: string;
     userRole?: any;
@@ -93,7 +93,7 @@ export const UniversityTab: React.FC<UniversityTabProps> = ({
                                     <Edit className="h-4 w-4" />
                                 </Button>
                                 {role === 'super_admin' && (
-                                    <Button variant="ghost" size="icon" onClick={() => onDelete(u.id)} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
+                                    <Button variant="ghost" size="icon" onClick={() => onDelete(u.id, language === 'ar' ? u.name_ar : (u.name_en || u.name_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 )}

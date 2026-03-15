@@ -24,6 +24,7 @@ import { useDashboardDialogs } from '@/hooks/useDashboardDialogs'; // Dialog & F
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'; // Header & Welcome
 import { StatsOverview } from '@/components/dashboard/StatsOverview'; // Stats cards
 import { EntityDialog } from '@/components/dashboard/EntityDialog'; // Unified Form/Dialog
+import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog'; // Premium confirm dialog
 import AdminManagement from '@/components/dashboard/AdminManagement'; // Admin table
 import UserManagementTable from '@/components/dashboard/UserManagementTable'; // User table
 import RolePermissions from '@/components/dashboard/RolePermissions'; // Role settings
@@ -101,14 +102,14 @@ const Dashboard: React.FC = () => {
             <TabsContent value="users"><UserManagementTable onAddAdmin={() => document.querySelector<HTMLElement>('[data-value="admins"]')?.click()} /></TabsContent>
             <TabsContent value="admins"><AdminManagement universities={data.universities} colleges={data.colleges} departments={data.departments} /></TabsContent>
             <TabsContent value="permissions"><RolePermissions /></TabsContent>
-            <TabsContent value="universities"><UniversityTab universities={data.universities} onAdd={() => dialogs.openAdd('university')} onEdit={(i) => dialogs.openEdit('university', i)} onDelete={(id) => actions.handleDelete('universities', id)} processData={data.processData} role={role} userRole={userRole} /></TabsContent>
-            <TabsContent value="colleges"><CollegeTab colleges={data.colleges} onAdd={() => dialogs.openAdd('college')} onEdit={(i) => dialogs.openEdit('college', i)} onDelete={(id) => actions.handleDelete('colleges', id)} processData={data.processData} role={role} userRole={userRole} /></TabsContent>
-            <TabsContent value="departments"><DepartmentTab departments={data.departments} onAdd={() => dialogs.openAdd('department')} onEdit={(i) => dialogs.openEdit('department', i)} onDelete={(id) => actions.handleDelete('departments', id)} processData={data.processData} role={role} userRole={userRole} /></TabsContent>
-            <TabsContent value="announcements"><AnnouncementsTab announcements={data.announcements} onAdd={() => dialogs.openAdd('announcement')} onEdit={(i) => dialogs.openEdit('announcement', i)} onDelete={(id) => actions.handleDelete('announcements', id)} processData={data.processData} role={role} /></TabsContent>
-            <TabsContent value="jobs"><JobsTab jobs={data.jobs} onAdd={() => dialogs.openAdd('job')} onEdit={(i) => dialogs.openEdit('job', i)} onDelete={(id) => actions.handleDelete('jobs', id)} onViewApplications={(id) => dialogs.setViewingJobId(id)} processData={data.processData} /></TabsContent>
-            <TabsContent value="graduates"><GraduatesTab graduates={data.graduates} onAdd={() => dialogs.openAdd('graduate')} onEdit={(i) => dialogs.openEdit('graduate', i)} onDelete={(id) => actions.handleDelete('graduates', id)} processData={data.processData} /></TabsContent>
-            <TabsContent value="research"><ResearchTab research={data.research} onAdd={() => dialogs.openAdd('research')} onEdit={(i) => dialogs.openEdit('research', i)} onDelete={(id) => actions.handleDelete('research', id)} processData={data.processData} /></TabsContent>
-            <TabsContent value="fees"><FeesTab fees={data.fees} departments={data.departments} onAdd={() => dialogs.openAdd('fee')} onEdit={(i) => dialogs.openEdit('fee', i)} onDelete={(id) => actions.handleDelete('fees', id)} /></TabsContent>
+            <TabsContent value="universities"><UniversityTab universities={data.universities} onAdd={() => dialogs.openAdd('university')} onEdit={(i) => dialogs.openEdit('university', i)} onDelete={(id, name) => actions.requestDelete('universities', id, name)} processData={data.processData} role={role} userRole={userRole} /></TabsContent>
+            <TabsContent value="colleges"><CollegeTab colleges={data.colleges} onAdd={() => dialogs.openAdd('college')} onEdit={(i) => dialogs.openEdit('college', i)} onDelete={(id, name) => actions.requestDelete('colleges', id, name)} processData={data.processData} role={role} userRole={userRole} /></TabsContent>
+            <TabsContent value="departments"><DepartmentTab departments={data.departments} onAdd={() => dialogs.openAdd('department')} onEdit={(i) => dialogs.openEdit('department', i)} onDelete={(id, name) => actions.requestDelete('departments', id, name)} processData={data.processData} role={role} userRole={userRole} /></TabsContent>
+            <TabsContent value="announcements"><AnnouncementsTab announcements={data.announcements} onAdd={() => dialogs.openAdd('announcement')} onEdit={(i) => dialogs.openEdit('announcement', i)} onDelete={(id, title) => actions.requestDelete('announcements', id, title)} processData={data.processData} role={role} /></TabsContent>
+            <TabsContent value="jobs"><JobsTab jobs={data.jobs} onAdd={() => dialogs.openAdd('job')} onEdit={(i) => dialogs.openEdit('job', i)} onDelete={(id, title) => actions.requestDelete('jobs', id, title)} onViewApplications={(id) => dialogs.setViewingJobId(id)} processData={data.processData} /></TabsContent>
+            <TabsContent value="graduates"><GraduatesTab graduates={data.graduates} onAdd={() => dialogs.openAdd('graduate')} onEdit={(i) => dialogs.openEdit('graduate', i)} onDelete={(id, name) => actions.requestDelete('graduates', id, name)} processData={data.processData} /></TabsContent>
+            <TabsContent value="research"><ResearchTab research={data.research} onAdd={() => dialogs.openAdd('research')} onEdit={(i) => dialogs.openEdit('research', i)} onDelete={(id, title) => actions.requestDelete('research', id, title)} processData={data.processData} /></TabsContent>
+            <TabsContent value="fees"><FeesTab fees={data.fees} departments={data.departments} onAdd={() => dialogs.openAdd('fee')} onEdit={(i) => dialogs.openEdit('fee', i)} onDelete={(id, name) => actions.requestDelete('fees', id, name)} /></TabsContent>
             <TabsContent value="error_logs"><ErrorLogsTab errorLogs={data.errorLogs} /></TabsContent>
             <TabsContent value="security"><SecurityTab userId={user.id} language={language} /></TabsContent>
           </Tabs>
@@ -122,6 +123,13 @@ const Dashboard: React.FC = () => {
         onSave={() => actions.handleSave(dialogs.activeForm, dialogs.formData, dialogs.editId, role, userRole)}
         loading={actions.loading} editId={dialogs.editId} universities={data.universities}
         colleges={data.colleges} departments={data.departments} role={role}
+      />
+
+      <DeleteConfirmDialog
+        isOpen={!!actions.deleteConfirm}
+        onClose={actions.cancelDelete}
+        onConfirm={actions.confirmDelete}
+        itemName={actions.deleteConfirm?.name || ''}
       />
     </div>
   );
