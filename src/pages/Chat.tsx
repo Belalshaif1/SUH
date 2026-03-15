@@ -471,50 +471,69 @@ const Chat: React.FC = () => {
     );
 
     // ─── Input Bar ────────────────────────────────────────────────────────────
-    const InputBar = () => (
-        <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-md shrink-0">
-            <div className="flex items-end gap-2 max-w-4xl mx-auto">
-                <div className="flex-1 relative">
-                    <textarea
-                        ref={inputRef as any}
-                        value={newMessage}
-                        rows={1}
-                        onChange={e => {
-                            setNewMessage(e.target.value);
-                            // Auto-resize
-                            e.target.style.height = 'auto';
-                            e.target.style.height = Math.min(e.target.scrollHeight, 144) + 'px';
-                        }}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                sendMessage();
-                            }
-                        }}
-                        placeholder={t('chat.placeholder') || (isAr ? 'اكتب رسالة... (Enter للإرسال، Shift+Enter سطر جديد)' : 'Type a message... (Enter to send, Shift+Enter for newline)')}
-                        className={cn(
-                            'w-full resize-none rounded-2xl bg-muted/60 border border-border/50',
-                            'px-4 py-2.5 text-sm leading-relaxed',
-                            'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30',
-                            'transition-all duration-200 overflow-hidden'
-                        )}
-                        style={{ minHeight: '44px', maxHeight: '144px' }}
-                    />
+    const InputBar = () => {
+        // مرجع لحقل الإدخال للتحكم في ارتفاعه
+        const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+        // دالة لضبط ارتفاع حقل الإدخال تلقائياً بناءً على المحتوى
+        const adjustHeight = () => {
+            if (textAreaRef.current) {
+                // إعادة الضبط للارتفاع الافتراضي أولاً
+                textAreaRef.current.style.height = '44px';
+                // حساب الارتفاع الجديد بحد أقصى 144 بكسل
+                const scrollHeight = textAreaRef.current.scrollHeight;
+                textAreaRef.current.style.height = Math.min(scrollHeight, 144) + 'px';
+            }
+        };
+
+        // تحديث الارتفاع عند تغير النص
+        useEffect(() => {
+            adjustHeight();
+        }, [newMessage]);
+
+        return (
+            <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-md shrink-0">
+                <div className="flex items-end gap-2 max-w-4xl mx-auto">
+                    <div className="flex-1 relative">
+                        <textarea
+                            ref={textAreaRef}
+                            value={newMessage}
+                            rows={1}
+                            onChange={e => setNewMessage(e.target.value)}
+                            onKeyDown={e => {
+                                // الإرسال عند الضغط على Enter بدون Shift
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    sendMessage();
+                                }
+                            }}
+                            placeholder={t('chat.placeholder') || (isAr ? 'اكتب رسالة... (Enter للإرسال، Shift+Enter سطر جديد)' : 'Type a message...')}
+                            className={cn(
+                                'w-full resize-none rounded-2xl bg-muted/60 border border-border/50',
+                                'px-4 py-2.5 text-sm leading-relaxed',
+                                'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30',
+                                'transition-shadow duration-200 overflow-y-auto' // إزالة transition-all لمنع التقطيع
+                            )}
+                            style={{ minHeight: '44px' }}
+                        />
+                    </div>
+                    {/* زر الإرسال */}
+                    <Button
+                        onClick={sendMessage}
+                        disabled={!newMessage.trim() || sending}
+                        size="icon"
+                        className="h-11 w-11 rounded-2xl shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all active:scale-90 shadow-lg shadow-primary/20"
+                    >
+                        <Send className={cn('h-4 w-4', isAr && 'scale-x-[-1]')} />
+                    </Button>
                 </div>
-                <Button
-                    onClick={sendMessage}
-                    disabled={!newMessage.trim() || sending}
-                    size="icon"
-                    className="h-11 w-11 rounded-2xl shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all active:scale-90 shadow-lg shadow-primary/20"
-                >
-                    <Send className={cn('h-4 w-4', isAr && 'scale-x-[-1]')} />
-                </Button>
+                {/* تلميح للاختصارات */}
+                <p className="text-center text-[10px] text-muted-foreground mt-1.5 hidden sm:block">
+                    {isAr ? 'Enter للإرسال • Shift+Enter لسطر جديد' : 'Enter to send • Shift+Enter for new line'}
+                </p>
             </div>
-            <p className="text-center text-[10px] text-muted-foreground mt-1.5 hidden sm:block">
-                {isAr ? 'Enter للإرسال • Shift+Enter لسطر جديد' : 'Enter to send • Shift+Enter for new line'}
-            </p>
-        </div>
-    );
+        );
+    };
 
     // ─── Main Render ──────────────────────────────────────────────────────────
     return (

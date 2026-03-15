@@ -37,11 +37,51 @@ export class SmartUniversityDB extends Dexie {
 
 export const db = new SmartUniversityDB();
 
+// دالة لإضافة العمليات إلى طابور المزامنة
 export const addToSyncQueue = async (table: string, action: 'create' | 'update' | 'delete', data: any) => {
+    // إضافة العملية إلى قاعدة البيانات المحلية مع تسجيل الوقت
     await db.sync_queue.add({
         table,
         action,
         data,
         timestamp: Date.now()
     });
+};
+
+// دالة لمعالجة طابور المزامنة عند عودة الاتصال
+export const processSyncQueue = async (apiClient: any) => {
+    // جلب جميع العمليات المتوقفة للحظات الانقطاع
+    const queue = await db.sync_queue.orderBy('timestamp').toArray();
+    if (queue.length === 0) return; // لا يوجد شيء للمزامنة
+
+    console.log(`Starting background sync for ${queue.length} items...`);
+    
+    // محاولة معالجة كل عملية مسجلة
+    for (const item of queue) {
+        try {
+            // تحديد الرابط والطريقة بناءً على الإجراء
+            let endpoint = `/${item.table}`;
+            let method = 'POST';
+            if (item.action === 'update') {
+                method = 'PUT';
+                endpoint += `/${item.data.id}`;
+            } else if (item.action === 'delete') {
+                method = 'DELETE';
+                endpoint += `/${item.data.id}`;
+            }
+
+            // تنفيذ الطلب عبر apiClient (يجب إعداد apiClient لتجنب حلقة لا نهائية)
+            await apiClient(endpoint, {
+                method,
+                body: JSON.stringify(item.data),
+                skipQueueOnFail: true, // لتجنب إعادة الإضافة إن فشل
+            });
+
+            // حذف العنصر من الطابور بعد نجاح إرساله لعدم تكرار الإرسال
+            if (item.id) await db.sync_queue.delete(item.id);
+        } catch (err) {
+            console.error('Failed to sync item', item, err);
+            // سيحتفظ بالعنصر في الطابور للمحاولة لاحقاً
+        }
+    }
 };

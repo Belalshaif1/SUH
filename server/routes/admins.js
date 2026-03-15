@@ -12,15 +12,20 @@ const canManageRole = (managerRole, targetRole) => {
     return false;
 };
 
-// Get all admins
+// Get all admins (each admin sees only those they appointed)
 router.get('/', authenticateToken, isAdmin, async (req, res) => {
     try {
-        let sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != 'user'";
+        let sql;
         let params = [];
 
-        if (req.user.role !== 'super_admin') {
-            sql += ' AND (created_by = $1 OR (university_id = $2 AND $3 IS NOT NULL) OR (college_id = $4 AND $5 IS NOT NULL) OR (department_id = $6 AND $7 IS NOT NULL))';
-            params.push(req.user.id, req.user.university_id, req.user.university_id, req.user.college_id, req.user.college_id, req.user.department_id, req.user.department_id);
+        if (req.user.role === 'super_admin') {
+            // Super admin sees everyone except regular users
+            sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != 'user' AND id != $1 ORDER BY created_at DESC";
+            params = [req.user.id];
+        } else {
+            // Other admins only see admins they personally appointed (created_by = their ID)
+            sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != 'user' AND created_by = $1 ORDER BY created_at DESC";
+            params = [req.user.id];
         }
 
         const admins = await db.query(sql, params);

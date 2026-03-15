@@ -22,11 +22,17 @@ interface DepartmentTabProps {
     processData: (data: any[]) => any[]; // Utility for sorting and filtering logic
     role?: string;
     userRole?: any;
+    canAdd?: boolean;    // السماح بالإضافة
+    canEdit?: boolean;   // السماح بالتعديل
+    canDelete?: boolean; // السماح بالحذف
 }
 
+
 export const DepartmentTab: React.FC<DepartmentTabProps> = ({
-    departments, onAdd, onEdit, onDelete, processData, role, userRole
+    departments, onAdd, onEdit, onDelete, processData, role, userRole,
+    canAdd, canEdit, canDelete // استقبال الخصائص الجديدة
 }) => {
+
     const { t, language } = useLanguage(); // Current language and localization tool
 
     // Filter based on role
@@ -52,13 +58,14 @@ export const DepartmentTab: React.FC<DepartmentTabProps> = ({
                         {language === 'ar' ? 'إدارة الأقسام العلمية والبرامج الدراسية' : 'Manage academic departments and study programs'}
                     </p>
                 </div>
-                {/* Primary Action - restricted by role */}
-                {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
+                {/* Primary Action - مبني على الصلاحيات */}
+                {canAdd && (
                     <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
                         <Plus className="h-5 w-5 me-2" /> {t('common.add')}
                     </Button>
                 )}
             </div>
+
 
             {/* --- Departments Grid --- */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -83,16 +90,21 @@ export const DepartmentTab: React.FC<DepartmentTabProps> = ({
 
                             {/* CRUD Controls */}
                             <div className="flex gap-2">
-                                <Button variant="ghost" size="icon" onClick={() => onEdit(d)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
-                                    <Edit className="h-4 w-4" />
-                                </Button>
-                                {(role === 'super_admin' || role === 'university_admin') && (
+                                {/* زر التعديل */}
+                                {canEdit && (
+                                    <Button variant="ghost" size="icon" onClick={() => onEdit(d)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
+                                        <Edit className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                {/* زر الحذف */}
+                                {canDelete && (
                                     <Button variant="ghost" size="icon" onClick={() => onDelete(d.id, language === 'ar' ? d.name_ar : (d.name_en || d.name_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
                                 )}
                             </div>
                         </CardContent>
+
                     </Card>
                 ))}
             </div>
