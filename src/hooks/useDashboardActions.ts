@@ -56,8 +56,6 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
                 // Handle images/PDFs if they were newly selected
                 if (formData._guide_file) payload.guide_pdf_url = await handleFileUpload(formData._guide_file);
                 if (formData._logo_file) payload.logo_url = await handleFileUpload(formData._logo_file);
-                // Force pinning to binary for database compatibility (if Super Admin)
-                if (role === 'super_admin') payload.is_pinned = formData.is_pinned ? 1 : 0;
             }
             else if (activeForm === 'college') {
                 payload.university_id = role === 'university_admin' ? userRole.university_id : formData.university_id;
@@ -72,7 +70,6 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
             else if (activeForm === 'announcement') {
                 if (formData._image_file) payload.image_url = await handleFileUpload(formData._image_file);
                 if (formData._attachment_file) payload.file_url = await handleFileUpload(formData._attachment_file);
-                if (role === 'super_admin') payload.is_pinned = formData.is_pinned ? 1 : 0;
             }
             else if (activeForm === 'research') {
                 if (formData._pdf_file) payload.pdf_url = await handleFileUpload(formData._pdf_file);
@@ -88,7 +85,21 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
                 payload.amount = parseFloat(formData.amount);
             }
             else if (activeForm === 'job') {
-                if (role === 'college_admin') payload.college_id = userRole.college_id;
+                payload.college_id = role === 'college_admin' ? userRole.college_id : formData.college_id;
+            }
+
+            // Inject department context for lower level admins
+            if (['research', 'graduate', 'fee'].includes(activeForm)) {
+                if (role === 'department_admin') {
+                    payload.department_id = userRole.department_id;
+                }
+            }
+
+            // Global Security Override: Only Super Admins can pin items
+            if (role === 'super_admin' && formData.is_pinned !== undefined) {
+                payload.is_pinned = formData.is_pinned ? 1 : 0;
+            } else if (payload.is_pinned !== undefined) {
+                delete payload.is_pinned;
             }
 
             // Note: Logic for other forms (Announcements, Research, etc.) follows the same pattern.

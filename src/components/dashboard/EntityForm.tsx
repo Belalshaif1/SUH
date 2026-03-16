@@ -153,7 +153,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
             const isDeptAdmin = role === 'department_admin';
             return (
                 <div className="space-y-6">
-                    {role === 'super_admin' && selectField('college_id', t('universities.colleges'), colleges)}
+                    {role !== 'college_admin' && selectField('college_id', t('universities.colleges'), colleges)}
                     {f('name_ar', t('common.name_ar'), 'text', true, 'قسم هندسة الحاسوب', '', isDeptAdmin)}
                     {f('name_en', t('common.name_en'), 'text', false, '', '', isDeptAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
@@ -200,7 +200,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
         case 'job':
             return (
                 <div className="space-y-6">
-                    {(role === 'super_admin' || role === 'university_admin') && selectField('college_id', t('universities.colleges'), colleges)}
+                    {role !== 'college_admin' && selectField('college_id', t('universities.colleges'), colleges)}
                     {f('title_ar', t('common.title_ar'), 'text', true)}
                     {f('title_en', t('common.title_en'))}
                     {f('description_ar', t('common.description_ar'), 'textarea', true)}
@@ -216,7 +216,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                 <div className="space-y-6">
                     {f('full_name_ar', t('common.name_ar'), 'text', true)}
                     {f('full_name_en', t('common.name_en'))}
-                    {selectField('department_id', t('universities.departments'), departments)}
+                    {role !== 'department_admin' && selectField('department_id', t('universities.departments'), departments)}
                     {f('graduation_year', language === 'ar' ? 'سنة التخرج' : 'Graduation Year', 'number')}
                     {f('gpa', 'GPA', 'number')}
                 </div>
@@ -227,8 +227,8 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                 <div className="space-y-6">
                     {f('title_ar', t('common.title_ar'), 'text', true)}
                     {f('title_en', t('common.title_en'))}
-                    {f('author_name', language === 'ar' ? 'اسم الباحث' : 'Author Name', 'text', true)}
-                    {selectField('department_id', t('universities.departments'), departments)}
+                    {f('author_name', language === 'ar' ? 'اسم الباحث (أو الباحثين)' : 'Author(s) Name', 'text', true)}
+                    {role !== 'department_admin' && selectField('department_id', t('universities.departments'), departments)}
                     <div className="space-y-2">
                         <Label className="font-bold">{language === 'ar' ? 'ملف البحث (PDF)' : 'Research File (PDF)'}</Label>
                         <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _pdf_file: e.target.files?.[0] })} className="rounded-xl h-11" />
@@ -239,7 +239,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
         case 'fee':
             return (
                 <div className="space-y-6">
-                    {selectField('department_id', t('universities.departments'), departments)}
+                    {role !== 'department_admin' && selectField('department_id', t('universities.departments'), departments)}
                     {f('amount', language === 'ar' ? 'المبلغ' : 'Amount', 'number', true)}
                     {selectField('fee_type', language === 'ar' ? 'نوع الرسوم' : 'Fee Type', [
                         { id: 'public', name_ar: 'حكومي', name_en: 'Public' },

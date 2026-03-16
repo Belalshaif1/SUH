@@ -83,7 +83,7 @@ const Dashboard: React.FC = () => {
       {/* 3. Main Operational Tabs */}
       <main className="px-6 pb-20 relative">
         {data.loading && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC]/70 dark:bg-slate-950/70 backdrop-blur-sm rounded-[2.5rem] mt-6 mx-6 mb-20">
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC]/70 dark:bg-slate-950/70 backdrop-blur-sm rounded-[2.5rem] mt-6 mx-6 mb-20 transition-all duration-300">
             <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
             <h2 className="text-2xl font-black text-foreground">
               {language === 'ar' ? 'الرجاء الانتظار...' : 'Please Wait...'}
@@ -91,6 +91,20 @@ const Dashboard: React.FC = () => {
             <p className="text-sm font-medium text-muted-foreground mt-2">
               {language === 'ar' ? 'جاري تحميل وعرض البيانات' : 'Loading and rendering data'}
             </p>
+          </div>
+        )}
+        
+        {actions.loading && (
+          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/40 backdrop-blur-md transition-all duration-300">
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center">
+              <div className="w-16 h-16 border-4 border-gold/30 border-t-gold rounded-full animate-spin mb-6"></div>
+              <h2 className="text-2xl font-black text-foreground mb-2">
+                {language === 'ar' ? 'الرجاء الانتظار...' : 'Please Wait...'}
+              </h2>
+              <p className="text-sm font-medium text-muted-foreground text-center max-w-xs">
+                {language === 'ar' ? 'جاري معالجة طلبك وتحديث البيانات في النظام' : 'Processing your request and updating system data'}
+              </p>
+            </div>
           </div>
         )}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-primary/5 border border-white/50 dark:border-white/5 overflow-hidden min-h-[500px]">
@@ -150,9 +164,9 @@ const Dashboard: React.FC = () => {
                 onDelete={(id, name) => actions.requestDelete('universities', id, name)}
                 processData={data.processData}
                 role={role} userRole={userRole}
-                canAdd={hasPermission('manage_universities')}
+                canAdd={role === 'super_admin'}
                 canEdit={hasPermission('manage_universities')}
-                canDelete={hasPermission('manage_universities')}
+                canDelete={role === 'super_admin'}
               />
             </TabsContent>
             <TabsContent value="colleges">
@@ -163,9 +177,9 @@ const Dashboard: React.FC = () => {
                 onDelete={(id, name) => actions.requestDelete('colleges', id, name)}
                 processData={data.processData}
                 role={role} userRole={userRole}
-                canAdd={hasPermission('manage_colleges')}
+                canAdd={role === 'super_admin' || role === 'university_admin'}
                 canEdit={hasPermission('manage_colleges')}
-                canDelete={hasPermission('manage_colleges')}
+                canDelete={role === 'super_admin' || role === 'university_admin'}
               />
             </TabsContent>
             <TabsContent value="departments">
@@ -176,9 +190,9 @@ const Dashboard: React.FC = () => {
                 onDelete={(id, name) => actions.requestDelete('departments', id, name)}
                 processData={data.processData}
                 role={role} userRole={userRole}
-                canAdd={hasPermission('manage_departments')}
+                canAdd={role === 'super_admin' || role === 'university_admin' || role === 'college_admin'}
                 canEdit={hasPermission('manage_departments')}
-                canDelete={hasPermission('manage_departments')}
+                canDelete={role === 'super_admin' || role === 'university_admin' || role === 'college_admin'}
               />
             </TabsContent>
             <TabsContent value="announcements">

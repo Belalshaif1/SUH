@@ -238,19 +238,20 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
   };
 
   const getEntityName = (admin: AdminRole) => {
-    if (admin.university_id) {
-      const uni = universities.find(u => u.id === admin.university_id);
-      if (uni) return isAr ? uni.name_ar : (uni.name_en || uni.name_ar);
+    const parts = [];
+    if (admin.department_id) {
+      const dep = departments.find(d => d.id === admin.department_id);
+      if (dep) parts.push(isAr ? dep.name_ar : (dep.name_en || dep.name_ar));
     }
     if (admin.college_id) {
       const col = colleges.find(c => c.id === admin.college_id);
-      if (col) return isAr ? col.name_ar : (col.name_en || col.name_ar);
+      if (col) parts.push(isAr ? col.name_ar : (col.name_en || col.name_ar));
     }
-    if (admin.department_id) {
-      const dep = departments.find(d => d.id === admin.department_id);
-      if (dep) return isAr ? dep.name_ar : (dep.name_en || dep.name_ar);
+    if (admin.university_id) {
+      const uni = universities.find(u => u.id === admin.university_id);
+      if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
     }
-    return '';
+    return parts.join(' - ');
   };
 
   const availableRoles = () => {
@@ -269,7 +270,11 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     <>
       <div className="space-y-1">
         <Label>{isAr ? 'الدور' : 'Role'} *</Label>
-        <Select value={formState.role} onValueChange={v => setFormState({ ...formState, role: v, university_id: '', college_id: '', department_id: '' })}>
+        <Select 
+          value={formState.role} 
+          disabled={editingAdmin?.id === user?.id && role !== 'super_admin'}
+          onValueChange={v => setFormState({ ...formState, role: v, university_id: '', college_id: '', department_id: '' })}
+        >
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
             {availableRoles().map(r => (
@@ -333,8 +338,24 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
   );
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-4">
+    <>
+      {/* Global Loading Overlay for Admin Actions */}
+      {loading && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/40 backdrop-blur-md transition-all duration-300">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center">
+            <div className="w-16 h-16 border-4 border-gold/30 border-t-gold rounded-full animate-spin mb-6"></div>
+            <h2 className="text-2xl font-black text-foreground mb-2">
+              {isAr ? 'الرجاء الانتظار...' : 'Please Wait...'}
+            </h2>
+            <p className="text-sm font-medium text-muted-foreground text-center max-w-xs">
+              {isAr ? 'جاري معالجة طلبك وتحديث البيانات في النظام' : 'Processing your request and updating system data'}
+            </p>
+          </div>
+        </div>
+      )}
+      
+      <div>
+        <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold flex items-center gap-2">
           <UserCog className="h-5 w-5 text-accent" />
           {isAr ? 'إدارة المدراء' : 'Manage Admins'}
@@ -496,6 +517,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
                 value={editForm.full_name}
                 onChange={e => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
                 placeholder={isAr ? 'أدخل الاسم الكامل' : 'Enter full name'}
+                disabled={editingAdmin?.id === user?.id && role !== 'super_admin'}
               />
               <p className="text-[10px] text-muted-foreground italic px-1">{isAr ? 'قم بتحديث الاسم إذا لزم الأمر.' : 'Update the name if necessary.'}</p>
             </div>
@@ -585,6 +607,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 };
 
