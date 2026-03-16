@@ -199,6 +199,19 @@ const Chat: React.FC = () => {
 
     const bottomRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
+    const textAreaRef = useRef<HTMLTextAreaElement>(null);
+
+    const adjustHeight = useCallback(() => {
+        if (textAreaRef.current) {
+            textAreaRef.current.style.height = '44px';
+            const scrollHeight = textAreaRef.current.scrollHeight;
+            textAreaRef.current.style.height = Math.min(scrollHeight, 144) + 'px';
+        }
+    }, []);
+
+    useEffect(() => {
+        adjustHeight();
+    }, [newMessage, adjustHeight]);
 
     // Fetch messages
     const fetchMessages = useCallback(async () => {
@@ -471,26 +484,7 @@ const Chat: React.FC = () => {
     );
 
     // ─── Input Bar ────────────────────────────────────────────────────────────
-    const InputBar = () => {
-        // مرجع لحقل الإدخال للتحكم في ارتفاعه
-        const textAreaRef = useRef<HTMLTextAreaElement>(null);
-
-        // دالة لضبط ارتفاع حقل الإدخال تلقائياً بناءً على المحتوى
-        const adjustHeight = () => {
-            if (textAreaRef.current) {
-                // إعادة الضبط للارتفاع الافتراضي أولاً
-                textAreaRef.current.style.height = '44px';
-                // حساب الارتفاع الجديد بحد أقصى 144 بكسل
-                const scrollHeight = textAreaRef.current.scrollHeight;
-                textAreaRef.current.style.height = Math.min(scrollHeight, 144) + 'px';
-            }
-        };
-
-        // تحديث الارتفاع عند تغير النص
-        useEffect(() => {
-            adjustHeight();
-        }, [newMessage]);
-
+    const renderInputBar = () => {
         return (
             <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-md shrink-0">
                 <div className="flex items-end gap-2 max-w-4xl mx-auto">
@@ -559,24 +553,24 @@ const Chat: React.FC = () => {
                         ? 'translate-x-0'
                         : isAr ? 'translate-x-full' : '-translate-x-full'
                 )}>
-                    <Sidebar />
+                    {Sidebar({})}
                 </div>
 
                 {/* Desktop: fixed sidebar */}
                 <div className="hidden lg:flex w-[300px] xl:w-[340px] shrink-0 border-e border-border/50">
-                    <Sidebar className="flex-1" />
+                    {Sidebar({ className: "flex-1" })}
                 </div>
 
                 {/* ── CHAT AREA ─────────────────────────────────────────────── */}
                 <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
                     {/* Header */}
-                    <ChatHeader />
+                    {ChatHeader()}
 
                     {/* Messages */}
-                    <MessageArea />
+                    {MessageArea()}
 
                     {/* Input */}
-                    <InputBar />
+                    {renderInputBar()}
                 </div>
             </div>
         </div>

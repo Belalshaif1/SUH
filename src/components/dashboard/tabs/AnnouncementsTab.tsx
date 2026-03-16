@@ -21,10 +21,13 @@ interface AnnouncementsTabProps {
     onDelete: (id: string, title: string) => void; // Handle deletion
     processData: (data: any[]) => any[]; // Logic for sorting/pinning
     role?: string;
+    canAdd?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({
-    announcements, onAdd, onEdit, onDelete, processData, role
+    announcements, onAdd, onEdit, onDelete, processData, role, canAdd = false, canEdit = false, canDelete = false
 }) => {
     const { t, language } = useLanguage(); // User's language preference
 
@@ -65,9 +68,11 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({
                         {language === 'ar' ? 'نشر الإعلانات والأخبار الأكاديمية' : 'Publish academic news and announcements'}
                     </p>
                 </div>
+                {canAdd && (
                 <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
                     <Plus className="h-5 w-5 me-2" /> {t('common.add')}
                 </Button>
+                )}
             </div>
 
             {/* --- Announcements List --- */}
@@ -104,10 +109,12 @@ export const AnnouncementsTab: React.FC<AnnouncementsTabProps> = ({
 
                             {/* Interaction Row */}
                             <div className="flex gap-2 w-full md:w-auto justify-end border-t md:border-t-0 pt-4 md:pt-0">
+                                {canEdit && (
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(a)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
-                                {(role === 'super_admin' || role === 'university_admin') && (
+                                )}
+                                {canDelete && (
                                     <Button variant="ghost" size="icon" onClick={() => onDelete(a.id, language === 'ar' ? a.title_ar : (a.title_en || a.title_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>

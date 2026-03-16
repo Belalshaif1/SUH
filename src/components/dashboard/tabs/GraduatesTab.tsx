@@ -20,10 +20,13 @@ interface GraduatesTabProps {
     onEdit: (item: Graduate) => void; // Trigger for edit
     onDelete: (id: string, name: string) => void; // Handle removal
     processData: (data: any[]) => any[]; // Logic wrapper for sort/filters
+    canAdd?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export const GraduatesTab: React.FC<GraduatesTabProps> = ({
-    graduates, onAdd, onEdit, onDelete, processData
+    graduates, onAdd, onEdit, onDelete, processData, canAdd = false, canEdit = false, canDelete = false
 }) => {
     const { t, language } = useLanguage(); // User localization context
 
@@ -41,9 +44,11 @@ export const GraduatesTab: React.FC<GraduatesTabProps> = ({
                         {language === 'ar' ? 'إدارة سجلات الخريجين والطلبة الأوائل' : 'Manage graduate records and top students'}
                     </p>
                 </div>
+                {canAdd && (
                 <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
                     <Plus className="h-5 w-5 me-2" /> {t('common.add')}
                 </Button>
+                )}
             </div>
 
             {/* --- Graduates List --- */}
@@ -70,12 +75,16 @@ export const GraduatesTab: React.FC<GraduatesTabProps> = ({
 
                             {/* Toolbar */}
                             <div className="flex gap-2">
+                                {canEdit && (
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(g)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
+                                )}
+                                {canDelete && (
                                 <Button variant="ghost" size="icon" onClick={() => onDelete(g.id, language === 'ar' ? g.full_name_ar : (g.full_name_en || g.full_name_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>

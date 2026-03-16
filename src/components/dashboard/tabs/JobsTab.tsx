@@ -21,10 +21,13 @@ interface JobsTabProps {
     onDelete: (id: string, name: string) => void; // Command to delete a job
     onViewApplications: (id: string) => void; // Specialized command for viewing applicants
     processData: (data: any[]) => any[]; // Logic to apply sort/pin orders
+    canAdd?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export const JobsTab: React.FC<JobsTabProps> = ({
-    jobs, onAdd, onEdit, onDelete, onViewApplications, processData
+    jobs, onAdd, onEdit, onDelete, onViewApplications, processData, canAdd = false, canEdit = false, canDelete = false
 }) => {
     const { t, language } = useLanguage(); // User's preference
 
@@ -42,9 +45,11 @@ export const JobsTab: React.FC<JobsTabProps> = ({
                         {language === 'ar' ? 'نشر وإدارة التوظيف الأكاديمي' : 'Management of academic recruitment and job postings'}
                     </p>
                 </div>
+                {canAdd && (
                 <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
                     <Plus className="h-5 w-5 me-2" /> {t('common.add')}
                 </Button>
+                )}
             </div>
 
             {/* --- Jobs Grid --- */}
@@ -84,12 +89,16 @@ export const JobsTab: React.FC<JobsTabProps> = ({
 
                                 {/* Secondary Actions */}
                                 <div className="flex gap-2">
+                                    {canEdit && (
                                     <Button variant="ghost" size="icon" onClick={() => onEdit(j)} className="h-11 w-11 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                         <Edit className="h-4 w-4" />
                                     </Button>
+                                    )}
+                                    {canDelete && (
                                     <Button variant="ghost" size="icon" onClick={() => onDelete(j.id, language === 'ar' ? j.title_ar : (j.title_en || j.title_ar))} className="h-11 w-11 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                         <Trash2 className="h-4 w-4" />
                                     </Button>
+                                    )}
                                 </div>
                             </div>
                         </CardContent>

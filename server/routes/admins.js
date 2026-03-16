@@ -18,14 +18,24 @@ router.get('/', authenticateToken, isAdmin, async (req, res) => {
         let sql;
         let params = [];
 
-        if (req.user.role === 'super_admin') {
+        const currentUser = await db.getAsync('SELECT * FROM users WHERE id = $1', [req.user.id]);
+
+        if (currentUser.role === 'super_admin') {
             // Super admin sees everyone except regular users
             sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != 'user' AND id != $1 ORDER BY created_at DESC";
-            params = [req.user.id];
+            params = [currentUser.id];
+        } else if (currentUser.role === 'university_admin') {
+            // University admins see all college and department admins in their university
+            sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role IN ('college_admin', 'department_admin') AND university_id = $1 ORDER BY created_at DESC";
+            params = [currentUser.university_id];
+        } else if (currentUser.role === 'college_admin') {
+            // College admins see all department admins in their college
+            sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role = 'department_admin' AND college_id = $1 ORDER BY created_at DESC";
+            params = [currentUser.college_id];
         } else {
-            // Other admins only see admins they personally appointed (created_by = their ID)
-            sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE role != 'user' AND created_by = $1 ORDER BY created_at DESC";
-            params = [req.user.id];
+            // Department admins shouldn't really see this list, return nothing
+            sql = "SELECT id, email, full_name, role, university_id, college_id, department_id, is_active, created_at, created_by FROM users WHERE 1=0";
+            params = [];
         }
 
         const admins = await db.query(sql, params);

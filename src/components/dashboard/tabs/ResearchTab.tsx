@@ -20,10 +20,13 @@ interface ResearchTabProps {
     onEdit: (item: Research) => void; // Command to open edit dialog
     onDelete: (id: string, name: string) => void; // Logic to remove a record
     processData: (data: any[]) => any[]; // Logic to sort/prioritize data
+    canAdd?: boolean;
+    canEdit?: boolean;
+    canDelete?: boolean;
 }
 
 export const ResearchTab: React.FC<ResearchTabProps> = ({
-    research, onAdd, onEdit, onDelete, processData
+    research, onAdd, onEdit, onDelete, processData, canAdd = false, canEdit = false, canDelete = false
 }) => {
     const { t, language } = useLanguage(); // User's interface language
 
@@ -41,9 +44,11 @@ export const ResearchTab: React.FC<ResearchTabProps> = ({
                         {language === 'ar' ? 'إدارة ونشر البحوث العلمية والمقالات' : 'Manage and publish scientific research and articles'}
                     </p>
                 </div>
+                {canAdd && (
                 <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
                     <Plus className="h-5 w-5 me-2" /> {t('common.add')}
                 </Button>
+                )}
             </div>
 
             {/* --- Research List Grid --- */}
@@ -71,12 +76,16 @@ export const ResearchTab: React.FC<ResearchTabProps> = ({
 
                             {/* Interaction Row */}
                             <div className="flex gap-2">
+                                {canEdit && (
                                 <Button variant="ghost" size="icon" onClick={() => onEdit(r)} className="h-10 w-10 rounded-xl text-primary/40 hover:text-primary hover:bg-primary/5">
                                     <Edit className="h-4 w-4" />
                                 </Button>
+                                )}
+                                {canDelete && (
                                 <Button variant="ghost" size="icon" onClick={() => onDelete(r.id, language === 'ar' ? r.title_ar : (r.title_en || r.title_ar))} className="h-10 w-10 rounded-xl text-red-400 hover:text-red-600 hover:bg-red-50">
                                     <Trash2 className="h-4 w-4" />
                                 </Button>
+                                )}
                             </div>
                         </CardContent>
                     </Card>
