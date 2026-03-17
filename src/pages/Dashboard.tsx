@@ -26,6 +26,7 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader'; // Hea
 import { StatsOverview } from '@/components/dashboard/StatsOverview'; // Stats cards
 import { EntityDialog } from '@/components/dashboard/EntityDialog'; // Unified Form/Dialog
 import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog'; // Premium confirm dialog
+import { JobApplicationsViewer } from '@/components/dashboard/JobApplicationsViewer'; // Applicants viewer
 import AdminManagement from '@/components/dashboard/AdminManagement'; // Admin table
 import UserManagementTable from '@/components/dashboard/UserManagementTable'; // User table
 import RolePermissions from '@/components/dashboard/RolePermissions'; // Role settings
@@ -287,6 +288,11 @@ const Dashboard: React.FC = () => {
         onClose={actions.cancelDelete}
         onConfirm={actions.confirmDelete}
         itemName={actions.deleteConfirm?.name || ''}
+      />
+
+      <JobApplicationsViewer
+        jobId={dialogs.viewingJobId}
+        onClose={() => dialogs.setViewingJobId(null)}
       />
     </div>
   );

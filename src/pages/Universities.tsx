@@ -112,15 +112,16 @@ const Universities: React.FC = () => {
                 </p>
                 {d.study_plan_url && (
                   <div className="flex gap-4 mt-auto">
-                    <Button
-                      className="flex-1 h-12 rounded-2xl font-black bg-gold text-white shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all active:scale-95"
-                      onClick={() => setPreviewPdf({
-                        url: d.study_plan_url.startsWith('http') ? d.study_plan_url : `http://localhost:5000${d.study_plan_url}`,
-                        title: getName(d)
-                      })}
+                    <a
+                      href={d.study_plan_url.startsWith('http') ? d.study_plan_url : `http://localhost:5000${d.study_plan_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1"
                     >
-                      <Eye className="h-4 w-4 me-2" />{isAr ? 'خطة دراسية' : 'Study Plan'}
-                    </Button>
+                      <Button className="w-full h-12 rounded-2xl font-black bg-gold text-white shadow-lg shadow-gold/20 hover:shadow-gold/40 transition-all active:scale-95">
+                        <Eye className="h-4 w-4 me-2" />{isAr ? 'خطة دراسية' : 'Study Plan'}
+                      </Button>
+                    </a>
                     <a
                       href={getMediaUrl(d.study_plan_url)}
                       download={`${getName(d)}_Plan.pdf`}
@@ -174,12 +175,15 @@ const Universities: React.FC = () => {
             </p>
             {currentUni?.guide_pdf_url && (
               <div className="flex flex-wrap justify-center lg:justify-start gap-4">
-                <Button
-                  className="h-14 px-10 rounded-2xl text-lg font-extrabold bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95"
-                  onClick={() => setPreviewPdf({ url: getMediaUrl(currentUni.guide_pdf_url), title: getName(currentUni) })}
+                <a
+                  href={getMediaUrl(currentUni.guide_pdf_url)}
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  <Eye className="h-5 w-5 me-2" />{isAr ? 'دليل الجامعة' : 'University Guide'}
-                </Button>
+                  <Button className="h-14 px-10 rounded-2xl text-lg font-extrabold bg-primary shadow-xl shadow-primary/20 hover:shadow-primary/40 transition-all active:scale-95">
+                    <Eye className="h-5 w-5 me-2" />{isAr ? 'دليل الجامعة' : 'University Guide'}
+                  </Button>
+                </a>
               </div>
             )}
           </div>

@@ -42,10 +42,17 @@ const ForgotPassword: React.FC = () => {
 
     const handleVerifySubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (verificationCode === '1234') {
+        setLoading(true);
+        try {
+            await apiClient('/auth/verify-code', {
+                method: 'POST',
+                body: JSON.stringify({ context_id: contextId, code: verificationCode }),
+            });
             setStep(3);
-        } else {
-            toast({ title: "Invalid code", variant: 'destructive' });
+        } catch (error: any) {
+            toast({ title: error.message || "Invalid code", variant: 'destructive' });
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -164,11 +171,18 @@ const ForgotPassword: React.FC = () => {
                                     required
                                     placeholder="0000"
                                     className="h-20 text-center text-4xl tracking-[0.5em] font-black rounded-3xl border-2 border-border/30 bg-white shadow-inner focus-visible:ring-primary/20 focus-visible:border-primary"
-                                    maxLength={4}
+                                    maxLength={6}
                                 />
                             </div>
-                            <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98]">
-                                {t('auth.next')}
+                            <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/95 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98]" disabled={loading}>
+                                {loading ? (
+                                    <div className="flex items-center gap-2">
+                                        <span className="h-5 w-5 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                                        {t('common.loading')}
+                                    </div>
+                                ) : (
+                                    <span>{t('auth.next')}</span>
+                                )}
                             </Button>
                         </form>
                     )}

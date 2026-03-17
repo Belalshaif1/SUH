@@ -118,6 +118,38 @@ router.post('/register', async (req, res) => {
     }
 });
 
+// Send Registration Code (OTP)
+router.post('/send-register-code', async (req, res) => {
+    try {
+        const { email, phone } = req.body;
+        if (!email && !phone) return res.status(400).json({ error: 'Email or phone required' });
+
+        // Check if user already exists
+        let existingUser;
+        if (email) existingUser = await db.getAsync('SELECT id FROM users WHERE email = $1', [email]);
+        else if (phone) existingUser = await db.getAsync('SELECT id FROM users WHERE phone = $1', [phone]);
+
+        if (existingUser) return res.status(400).json({ error: 'User already exists' });
+
+        // Generate Code
+        const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Mock sending
+        if (email) {
+            console.log(`[REGISTRATION OTP - EMAIL] -> ${email} | Code: ${resetCode}`);
+        } else if (phone) {
+            console.log(`[REGISTRATION OTP - SMS] -> ${phone} | Code: ${resetCode}`);
+        }
+
+        // Return code (for local dev purposes only, normally you'd save it in redis/db and not return it)
+        // To make it easy to test without email provider, we return it here.
+        res.json({ success: true, code: resetCode });
+    } catch (err) {
+        console.error('Send register code error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Update User Profile
 router.put('/update', require('../middleware/auth').authenticateToken, async (req, res) => {
     try {
@@ -348,13 +380,20 @@ router.post('/forgot-password', async (req, res) => {
             [resetCode, resetExpires.toISOString(), user.id]
         );
 
-        // في بيئة الإنتاج: أرسل البريد الإلكتروني أو SMS
-        console.log(`[RESET CODE] User: ${user.email || user.phone} | Code: ${resetCode} | Expires: ${resetExpires.toISOString()}`);
+        let method = 'email';
+        if (user.email) {
+            console.log(`[FORGOT PASSWORD OTP - EMAIL] -> ${user.email} | Code: ${resetCode} | Expires: ${resetExpires.toISOString()}`);
+            method = 'email';
+        } else if (user.phone) {
+            console.log(`[FORGOT PASSWORD OTP - SMS] -> ${user.phone} | Code: ${resetCode} | Expires: ${resetExpires.toISOString()}`);
+            method = 'phone';
+        }
 
         res.json({
             success: true,
             message: 'Verification code sent',
-            context_id: user.id
+            context_id: user.id,
+            method
         });
     } catch (err) {
         console.error('Forgot password error:', err);

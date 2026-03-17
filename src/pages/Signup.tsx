@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { GraduationCap, CheckCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import apiClient from '@/lib/apiClient';
 
 const Signup: React.FC = () => {
   const { t, language } = useLanguage();
@@ -23,21 +24,30 @@ const Signup: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [expectedCode, setExpectedCode] = useState('');
 
   const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
       setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
+      try {
+        const res = await apiClient('/auth/send-register-code', {
+            method: 'POST',
+            body: JSON.stringify(regType === 'email' ? { email } : { phone }),
+        });
+        setExpectedCode(res.code);
         setStep(2);
-        toast({ title: t('auth.code_sent'), description: "Mock code is 1234" });
-      }, 800);
+        toast({ title: t('auth.code_sent'), description: language === 'ar' ? 'تم إرسال رمز التحقق' : 'Verification code sent' });
+      } catch (err: any) {
+        toast({ title: err.message || "Error", variant: 'destructive' });
+      } finally {
+        setLoading(false);
+      }
     } else if (step === 2) {
-      if (verificationCode === '1234') {
+      if (verificationCode === expectedCode) {
         setStep(3);
       } else {
-        toast({ title: "Invalid code", variant: 'destructive' });
+        toast({ title: language === 'ar' ? 'رمز غير صحيح' : 'Invalid code', variant: 'destructive' });
       }
     } else if (step === 3) {
       setLoading(true);
@@ -143,7 +153,7 @@ const Signup: React.FC = () => {
                 required
                 placeholder="0000"
                 className="h-20 text-center text-4xl tracking-[0.5em] font-black rounded-3xl border-2 border-border/30 bg-white shadow-inner focus-visible:ring-primary/20 focus-visible:border-primary"
-                maxLength={4}
+                maxLength={6}
               />
             </div>
             <div className="space-y-2">

@@ -92,7 +92,7 @@ const Header: React.FC = () => {
               </div>
 
               {/* Dashboard link */}
-              {user && userRole && (
+              {user && user.role !== 'user' && (
                 <Link
                   to="/dashboard"
                   onClick={() => setSheetOpen(false)}
@@ -206,7 +206,7 @@ const Header: React.FC = () => {
 
             {user ? (
               <div className="flex items-center gap-2">
-                {userRole && (
+                {user.role !== 'user' && (
                   <Link to="/dashboard">
                     <Button variant="outline" size="sm">
                       <LayoutDashboard className="h-4 w-4" />
