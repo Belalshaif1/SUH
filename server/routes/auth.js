@@ -134,12 +134,20 @@ router.post('/send-register-code', async (req, res) => {
         // Generate Code
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // Mock sending
-        if (email) {
-            console.log(`[REGISTRATION OTP - EMAIL] -> ${email} | Code: ${resetCode}`);
-        } else if (phone) {
-            console.log(`[REGISTRATION OTP - SMS] -> ${phone} | Code: ${resetCode}`);
-        }
+        // Mock sending with Beautiful Template
+        const methodLabel = email ? 'EMAIL' : 'SMS';
+        const targetValue = email || phone;
+        
+        console.log("\x1b[36m%s\x1b[0m", `
+╔════════════════════════════════════════════════════════════╗
+║          [REGISTRATION OTP SIMULATION] - ${methodLabel}          ║
+╠════════════════════════════════════════════════════════════╣
+║ TO: ${targetValue.padEnd(54)} ║
+║ CODE: ${resetCode.padEnd(52)} ║
+║ MESSAGE: Your verification code is ${resetCode}.          ║
+║          It will expire in 10 minutes.                     ║
+╚════════════════════════════════════════════════════════════╝
+        `);
 
         // Return code (for local dev purposes only, normally you'd save it in redis/db and not return it)
         // To make it easy to test without email provider, we return it here.
@@ -380,14 +388,20 @@ router.post('/forgot-password', async (req, res) => {
             [resetCode, resetExpires.toISOString(), user.id]
         );
 
-        let method = 'email';
-        if (user.email) {
-            console.log(`[FORGOT PASSWORD OTP - EMAIL] -> ${user.email} | Code: ${resetCode} | Expires: ${resetExpires.toISOString()}`);
-            method = 'email';
-        } else if (user.phone) {
-            console.log(`[FORGOT PASSWORD OTP - SMS] -> ${user.phone} | Code: ${resetCode} | Expires: ${resetExpires.toISOString()}`);
-            method = 'phone';
-        }
+        // Beautiful Template for Forgot Password
+        const methodLabel = user.email ? 'EMAIL' : 'SMS';
+        const targetValue = user.email || user.phone;
+        
+        console.log("\x1b[33m%s\x1b[0m", `
+╔════════════════════════════════════════════════════════════╗
+║        [FORGOT PASSWORD OTP SIMULATION] - ${methodLabel}       ║
+╠════════════════════════════════════════════════════════════╣
+║ TO: ${targetValue.padEnd(54)} ║
+║ CODE: ${resetCode.padEnd(52)} ║
+║ EXPIRES: ${resetExpires.toISOString().padEnd(49)} ║
+║ MESSAGE: Use code ${resetCode} to reset your password.     ║
+╚════════════════════════════════════════════════════════════╝
+        `);
 
         res.json({
             success: true,

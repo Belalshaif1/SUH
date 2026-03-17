@@ -238,19 +238,42 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
   };
 
   const getEntityName = (admin: AdminRole) => {
+    if (admin.role === 'super_admin') return isAr ? 'إدارة الموقع كاملة' : 'Full Site Management';
+
     const parts = [];
+    
+    // Case 1: Department Admin
     if (admin.department_id) {
       const dep = departments.find(d => d.id === admin.department_id);
-      if (dep) parts.push(isAr ? dep.name_ar : (dep.name_en || dep.name_ar));
-    }
-    if (admin.college_id) {
+      if (dep) {
+        parts.push(isAr ? dep.name_ar : (dep.name_en || dep.name_ar));
+        
+        // Find parent college if not in admin object
+        const col = colleges.find(c => c.id === (admin.college_id || dep.college_id));
+        if (col) {
+          parts.push(isAr ? col.name_ar : (col.name_en || col.name_ar));
+          
+          // Find parent university
+          const uni = universities.find(u => u.id === (admin.university_id || col.university_id));
+          if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
+        }
+      }
+    } 
+    // Case 2: College Admin
+    else if (admin.college_id) {
       const col = colleges.find(c => c.id === admin.college_id);
-      if (col) parts.push(isAr ? col.name_ar : (col.name_en || col.name_ar));
+      if (col) {
+        parts.push(isAr ? col.name_ar : (col.name_en || col.name_ar));
+        const uni = universities.find(u => u.id === (admin.university_id || col.university_id));
+        if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
+      }
     }
-    if (admin.university_id) {
+    // Case 3: University Admin
+    else if (admin.university_id) {
       const uni = universities.find(u => u.id === admin.university_id);
       if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
     }
+
     return parts.join(' - ');
   };
 
