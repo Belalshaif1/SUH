@@ -1,13 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+// 1. تحديد نوع اللغات المدعومة (عربي أو إنجليزي)
 type Language = 'ar' | 'en';
 
+// 2. تعريف هيكلية سياق اللغة (Language Context Structure)
 interface LanguageContextType {
-  language: Language;
-  setLanguage: (lang: Language) => void;
-  t: (key: string) => string;
-  dir: 'rtl' | 'ltr';
-  isRTL: boolean;
+  language: Language;               // اللغة الحالية
+  setLanguage: (lang: Language) => void; // دالة لتغيير اللغة
+  t: (key: string) => string;       // دالة الترجمة (Translation Function)
+  dir: 'rtl' | 'ltr';               // اتجاه النص (من اليمين أو اليسار)
+  isRTL: boolean;                   // هل الاتجاه من اليمين لليسار؟ (True للعربي)
 }
 
 const translations: Record<string, Record<Language, string>> = {
@@ -148,35 +150,43 @@ const translations: Record<string, Record<Language, string>> = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+// 4. مكون موفر اللغة (LanguageProvider)
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // تعريف حالة اللغة (الافتراضية عربية، أو استعادتها من التخزين المحلي)
   const [language, setLanguageState] = useState<Language>(() => {
     return (localStorage.getItem('language') as Language) || 'ar';
   });
 
+  // دالة تغيير اللغة وحفظها في التخزين المحلي للمتصفح
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     localStorage.setItem('language', lang);
   };
 
+  // دالة الترجمة: تأخذ مفتاحاً وتعيد النص المقابل له بناءً على اللغة الحالية
   const t = (key: string): string => {
     return translations[key]?.[language] || key;
   };
 
+  // تحديد اتجاه الصفحة (RTL للعربي و LTR للإنجليزي)
   const dir = language === 'ar' ? 'rtl' : 'ltr';
   const isRTL = language === 'ar';
 
+  // تحديث خصائص عنصر HTML الجذري عند تغير اللغة للتأثير على كامل الصفحة
   useEffect(() => {
     document.documentElement.dir = dir;
     document.documentElement.lang = language;
   }, [language, dir]);
 
   return (
+    // توفير سياق اللغة لكل المكونات الفرعية
     <LanguageContext.Provider value={{ language, setLanguage, t, dir, isRTL }}>
       {children}
     </LanguageContext.Provider>
   );
 };
 
+// خطاف مخصص لسهولة استخدام الترجمة واللغة في أي مكان بالتطبيق
 export const useLanguage = () => {
   const context = useContext(LanguageContext);
   if (!context) throw new Error('useLanguage must be used within LanguageProvider');

@@ -52,15 +52,16 @@ import { AboutUsTab } from '@/components/dashboard/tabs/AboutUsTab';
  * Dashboard Orchestrator
  */
 const Dashboard: React.FC = () => {
-  const { t, language } = useLanguage(); // Localized strings
-  const { user, userRole, loading: authLoading, hasPermission, signOut: logout } = useAuth(); // Session info
-  const navigate = useNavigate(); // Navigation engine
+  // --- 1. استرجاع البيانات والدوال ---
+  const { t, language } = useLanguage(); // ترجمة النصوص واللغة الحالية
+  const { user, userRole, loading: authLoading, hasPermission, signOut: logout } = useAuth(); // بيانات الجلسة والصلاحيات
+  const navigate = useNavigate(); // محرك التنقل بين الصفحات
 
-  const data = useDashboardData(); // Business State
-  const dialogs = useDashboardDialogs(); // Modal State
-  const actions = useDashboardActions(data.fetchData, dialogs.close); // CRUD Operations
+  const data = useDashboardData(); // حالة البيانات (جامعات، خريجون، إلخ)
+  const dialogs = useDashboardDialogs(); // حالة النوافذ المنبثقة (Modal)
+  const actions = useDashboardActions(data.fetchData, dialogs.close); // عمليات الإضافة والحذف والتعديل
 
-  // Security Guard: Ensure authenticated access
+  // حارس الأمان (Security Guard): منع الوصول لغير المسجلين وإرجاعهم لصفحة الدخول
   React.useEffect(() => {
     if (!authLoading && (!user || !userRole)) {
       navigate('/login');
@@ -82,7 +83,8 @@ const Dashboard: React.FC = () => {
       <StatsOverview stats={data.stats} role={role} hasPermission={hasPermission} />
 
       {/* 3. Main Operational Tabs */}
-      <main className="px-6 pb-20 relative">
+      <main className="container mx-auto px-4 pb-20 relative -mt-32 z-10">
+        {/* مؤشر التحميل العام عند جلب البيانات */}
         {data.loading && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC]/70 dark:bg-slate-950/70 backdrop-blur-sm rounded-[2.5rem] mt-6 mx-6 mb-20 transition-all duration-300">
             <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
@@ -95,6 +97,7 @@ const Dashboard: React.FC = () => {
           </div>
         )}
         
+        {/* شاشة انتظار عند تنفيذ عمليات برمجية (حفظ/حذف) */}
         {actions.loading && (
           <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/40 backdrop-blur-md transition-all duration-300">
             <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center">
@@ -108,21 +111,26 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* الحاوية الرئيسية للتبويبات (Tabs Layout) */}
         <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-primary/5 border border-white/50 dark:border-white/5 overflow-hidden min-h-[500px]">
 
           <Tabs defaultValue={role === 'super_admin' ? 'users' : 'admins'} className="w-full">
 
-            {/* Unified Navigation List */}
+            {/* القائمة الموحدة للتنقل بين التبويبات (Navigation List) */}
             <div className="px-6 pt-6 border-b border-primary/5 bg-slate-50/30">
               <TabsList className="flex flex-wrap gap-2 h-auto mb-4 bg-transparent p-0">
+                {/* تبويب إدارة المستخدمين (للمدير العام فقط) */}
                 {role === 'super_admin' && hasPermission('manage_users') && <TabsTrigger value="users" className="tab-trigger-premium"><Users className="h-4 w-4" />{language === 'ar' ? 'المستخدمين' : 'Users'}</TabsTrigger>}
+                
+                {/* تبويب إدارة المدراء (حسب مستوى الصلاحية) */}
                 {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && <TabsTrigger value="admins" className="tab-trigger-premium"><UserCog className="h-4 w-4" />{t('dashboard.manage_admins')}</TabsTrigger>}
 
+                {/* إدارة الأدوار والمصفوفة (للمدير العام فقط) */}
                 {role === 'super_admin' && <TabsTrigger value="permissions" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأدوار' : 'Roles'}</TabsTrigger>}
                 {role === 'super_admin' && <TabsTrigger value="permissions_matrix" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'مصفوفة الصلاحيات' : 'Permissions Matrix'}</TabsTrigger>}
 
-
-
+                {/* تبويبات إدارة الكيانات (جامعات، كليات، أقسام، إلخ) */}
                 {hasPermission('manage_universities') && <TabsTrigger value="universities" className="tab-trigger-premium"><Building2 className="h-4 w-4" />{t('nav.universities')}</TabsTrigger>}
                 {hasPermission('manage_colleges') && <TabsTrigger value="colleges" className="tab-trigger-premium"><BookOpen className="h-4 w-4" />{t('universities.colleges')}</TabsTrigger>}
                 {hasPermission('manage_departments') && <TabsTrigger value="departments" className="tab-trigger-premium"><FileText className="h-4 w-4" />{t('universities.departments')}</TabsTrigger>}
@@ -131,15 +139,14 @@ const Dashboard: React.FC = () => {
                 {hasPermission('manage_graduates') && <TabsTrigger value="graduates" className="tab-trigger-premium"><GraduationCap className="h-4 w-4" />{t('nav.graduates')}</TabsTrigger>}
                 {hasPermission('manage_research') && <TabsTrigger value="research" className="tab-trigger-premium"><FileText className="h-4 w-4" />{t('nav.research')}</TabsTrigger>}
                 {hasPermission('manage_fees') && <TabsTrigger value="fees" className="tab-trigger-premium"><DollarSign className="h-4 w-4" />{t('nav.fees')}</TabsTrigger>}
+                
+                {/* أدوات النظام المتقدمة (سجلات، نسخ احتياطي) */}
                 {role === 'super_admin' && <TabsTrigger value="error_logs" className="tab-trigger-premium text-red-500"><AlertTriangle className="h-4 w-4" />{language === 'ar' ? 'الأخطاء' : 'Logs'}</TabsTrigger>}
                 {role === 'super_admin' && <TabsTrigger value="backup" className="tab-trigger-premium text-amber-600"><Archive className="h-4 w-4" />{language === 'ar' ? 'النسخ' : 'Backup'}</TabsTrigger>}
                 {role === 'super_admin' && <TabsTrigger value="about_us" className="tab-trigger-premium"><Info className="h-4 w-4" />{language === 'ar' ? 'إدارة من نحن' : 'Manage About Us'}</TabsTrigger>}
 
-
-
-
+                {/* إعدادات الأمان الشخصية */}
                 <TabsTrigger value="security" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأمان' : 'Security'}</TabsTrigger>
-
               </TabsList>
             </div>
 
@@ -274,7 +281,9 @@ const Dashboard: React.FC = () => {
         </div>
       </main>
 
-      {/* --- Global Action Dialogs --- */}
+      {/* --- نوافذ الإجراءات العامة (Global Action Dialogs) --- */}
+      
+      {/* 1. نافذة الإضافة والتعديل الموحدة (Entity Dialog) */}
       <EntityDialog
         isOpen={dialogs.dialogOpen} onClose={dialogs.close} activeForm={dialogs.activeForm}
         formData={dialogs.formData} setFormData={dialogs.setFormData}
@@ -283,6 +292,7 @@ const Dashboard: React.FC = () => {
         colleges={data.colleges} departments={data.departments} role={role}
       />
 
+      {/* 2. نافذة تأكيد الحذف الجمالية (Delete Confirmation) */}
       <DeleteConfirmDialog
         isOpen={!!actions.deleteConfirm}
         onClose={actions.cancelDelete}
@@ -290,6 +300,7 @@ const Dashboard: React.FC = () => {
         itemName={actions.deleteConfirm?.name || ''}
       />
 
+      {/* 3. نافذة استعراض المتقدمين للوظائف (Applicants Viewer) */}
       <JobApplicationsViewer
         jobId={dialogs.viewingJobId}
         onClose={() => dialogs.setViewingJobId(null)}

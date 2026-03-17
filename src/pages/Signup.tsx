@@ -1,55 +1,67 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { GraduationCap, CheckCircle } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import apiClient from '@/lib/apiClient';
+// 1. استيراد المكتبات والمكونات اللازمة
+import React, { useState } from 'react'; // مكتبة ريأكت وإدارة الحالة
+import { Link } from 'react-router-dom'; // مكون الروابط للتنقل بين الصفحات
+import { useLanguage } from '@/contexts/LanguageContext'; // سياق اللغة (عربي/إنجليزي)
+import { useAuth } from '@/contexts/AuthContext'; // سياق المصادقة (تسجيل، دخول)
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'; // مكونات البطاقة الجمالية
+import { Input } from '@/components/ui/input'; // مكون حقول الإدخال
+import { Button } from '@/components/ui/button'; // مكون الأزرار
+import { Label } from '@/components/ui/label'; // مكون عناوين الحقول
+import { GraduationCap, CheckCircle } from 'lucide-react'; // أيقونات جمالية
+import { useToast } from '@/hooks/use-toast'; // أداة إظهار رسائل التنبيه الجانبية
+import apiClient from '@/lib/apiClient'; // أداة الاتصال بالسيرفر
 
 const Signup: React.FC = () => {
-  const { t, language } = useLanguage();
-  const { signUp } = useAuth();
-  const { toast } = useToast();
+  // 2. تهيئة الدوال الأساسية من السياقات
+  const { t, language } = useLanguage(); // دالة الترجمة واللغة الحالية
+  const { signUp } = useAuth(); // دالة إنشاء الحساب من الـ AuthContext
+  const { toast } = useToast(); // دالة إظهار الإشعارات
 
-  const [step, setStep] = useState(1); // 1: Identity, 2: Verification, 3: Password
-  const [regType, setRegType] = useState<'email' | 'phone'>('email');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [fullName, setFullName] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const [expectedCode, setExpectedCode] = useState('');
+  // 3. تعريف حالات المكون (State Management)
+  const [step, setStep] = useState(1); // تتبع الخطوة الحالية (1: البيانات، 2: التحقق، 3: كلمة المرور)
+  const [regType, setRegType] = useState<'email' | 'phone'>('email'); // نوع التسجيل (إيميل أو هاتف)
+  const [email, setEmail] = useState(''); // تخزين الإيميل
+  const [phone, setPhone] = useState(''); // تخزين رقم الهاتف
+  const [fullName, setFullName] = useState(''); // تخزين الاسم الكامل
+  const [verificationCode, setVerificationCode] = useState(''); // تخزين الكود المدخل من المستخدم
+  const [password, setPassword] = useState(''); // تخزين كلمة المرور
+  const [loading, setLoading] = useState(false); // حالة التحميل (لتعطيل الأزرار أثناء الطلب)
+  const [success, setSuccess] = useState(false); // حالة نجاح العملية بالكامل
+  const [expectedCode, setExpectedCode] = useState(''); // الكود الصحيح القادم من السيرفر للمقارنة
 
+  // 4. معالجة الانتقال بين الخطوات
   const handleNextStep = async (e: React.FormEvent) => {
-    e.preventDefault();
+    e.preventDefault(); // منع الصفحة من إعادة التحميل عند ضغط الزر
+    
+    // الخطوة الأولى: إرسال كود التحقق بناءً على الإيميل أو الهاتف
     if (step === 1) {
-      setLoading(true);
+      setLoading(true); // بدء حالة التحميل
       try {
+        // طلب إرسال الكود من السيرفر
         const res = await apiClient('/auth/send-register-code', {
             method: 'POST',
             body: JSON.stringify(regType === 'email' ? { email } : { phone }),
         });
-        setExpectedCode(res.code);
-        setStep(2);
+        setExpectedCode(res.code); // حفظ الكود القادم (للتطوير المحلي)
+        setStep(2); // الانتقال للخطوة التالية
         toast({ title: t('auth.code_sent'), description: language === 'ar' ? 'تم إرسال رمز التحقق' : 'Verification code sent' });
       } catch (err: any) {
+        // إظهار خطأ في حال فشل الإرسال
         toast({ title: err.message || "Error", variant: 'destructive' });
       } finally {
-        setLoading(false);
+        setLoading(false); // إنهاء حالة التحميل
       }
-    } else if (step === 2) {
+    } 
+    // الخطوة الثانية: مقارنة الكود المدخل بالكود المتوقع
+    else if (step === 2) {
       if (verificationCode === expectedCode) {
-        setStep(3);
+        setStep(3); // الانتقال لخطوة تعيين كلمة المرور في حال مطابقة الكود
       } else {
         toast({ title: language === 'ar' ? 'رمز غير صحيح' : 'Invalid code', variant: 'destructive' });
       }
-    } else if (step === 3) {
+    } 
+    // الخطوة الثالثة: إتمام عملية التسجيل النهائية وحفظ البيانات
+    else if (step === 3) {
       setLoading(true);
       const { error } = await signUp(
         regType === 'email' ? email : null,
@@ -61,16 +73,19 @@ const Signup: React.FC = () => {
       if (error) {
         toast({ title: error.message, variant: 'destructive' });
       } else {
-        setSuccess(true);
+        setSuccess(true); // إظهار واجهة النجاح
       }
     }
   };
 
+  // 5. دالة مسؤولة عن عرض محتوى كل خطوة (تُستخدم داخل الجسم الرئيسي للمكون)
   const renderStepContent = () => {
     switch (step) {
       case 1:
+        // الخطوة 1: اختيار وسيلة التسجيل وإدخال الاسم والبيانات الأساسية
         return (
           <form onSubmit={handleNextStep} className="space-y-6">
+            {/* أزرار التبديل بين البريد الإلكتروني ورقم الهاتف */}
             <div className="flex bg-slate-100/50 p-1.5 rounded-2xl gap-2">
               <Button
                 type="button"
@@ -90,6 +105,7 @@ const Signup: React.FC = () => {
               </Button>
             </div>
 
+            {/* حقل الاسم الكامل */}
             <div className="space-y-3">
               <Label className="text-sm font-bold text-primary/80 ms-1">{t('auth.full_name')}</Label>
               <Input
@@ -101,6 +117,7 @@ const Signup: React.FC = () => {
               />
             </div>
 
+            {/* إظهار حقل الإيميل أو الهاتف بناءً على الاختيار */}
             {regType === 'email' ? (
               <div className="space-y-3">
                 <Label className="text-sm font-bold text-primary/80 ms-1">{t('auth.email')}</Label>
@@ -127,6 +144,7 @@ const Signup: React.FC = () => {
               </div>
             )}
 
+            {/* زر الانتقال للخطوة التالية */}
             <Button type="submit" className="w-full h-14 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-lg shadow-xl shadow-primary/20 transition-all active:scale-[0.98]" disabled={loading}>
               {loading ? (
                 <div className="flex items-center gap-2">
@@ -138,6 +156,7 @@ const Signup: React.FC = () => {
           </form>
         );
       case 2:
+        // الخطوة 2: إدخال رمز التحقق
         return (
           <form onSubmit={handleNextStep} className="space-y-6">
             <div className="text-center bg-gold/5 p-6 rounded-[2rem] border border-gold/20">
@@ -167,6 +186,7 @@ const Signup: React.FC = () => {
           </form>
         );
       case 3:
+        // الخطوة 3: تعيين كلمة المرور النهائية لتنفيذ التسجيل
         return (
           <form onSubmit={handleNextStep} className="space-y-6">
             <div className="space-y-3">

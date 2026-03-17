@@ -1,7 +1,8 @@
+// 1. استيراد المكتبات والمكونات اللازمة من React و UI ومن ملفات المشروع
 import React, { useEffect, useState } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { useAuth } from '@/contexts/AuthContext';
-import apiClient from '@/lib/apiClient';
+import { useLanguage } from '@/contexts/LanguageContext'; // سياق للتحكم في اللغة (عربي/إنجلزي)
+import { useAuth } from '@/contexts/AuthContext'; // سياق المصادقة والتحقق من الصلاحيات
+import apiClient from '@/lib/apiClient'; // أداة الاتصال بالـ API مع التوكن
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,8 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Shield, ShieldOff, KeyRound, UserCog, Trash2, Edit } from 'lucide-react';
+import { Plus, Shield, ShieldOff, KeyRound, UserCog, Trash2, Edit } from 'lucide-react'; // أيقونات Lucide
 
+// 2. تعريف واجهات البيانات (Interfaces) لضمان دقة أنواع البيانات في TypeScript
 interface AdminRole {
   id: string;
   email: string;
@@ -24,22 +26,27 @@ interface AdminRole {
 }
 
 interface Props {
-  universities: any[];
-  colleges: any[];
-  departments: any[];
+  universities: any[]; // قائمة الجامعات القادمة من المكون الأب
+  colleges: any[]; // قائمة الكليات
+  departments: any[]; // قائمة الأقسام
 }
 
 const AdminManagement: React.FC<Props> = ({ universities, colleges, departments }) => {
-  const { language } = useLanguage();
-  const { user, userRole, hasPermission } = useAuth();
+  // 3. تهيئة الأدوات والمقاييس الأساسية
+  const { language } = useLanguage(); 
+  const { user, userRole, hasPermission } = useAuth(); // جلب صلاحيات المدير الحالي ونطاقه الإداري
   const { toast } = useToast();
-  const [admins, setAdmins] = useState<AdminRole[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [passwordDialog, setPasswordDialog] = useState<string | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [editingAdmin, setEditingAdmin] = useState<AdminRole | null>(null);
+  
+  // 4. تعريف حالات الحالة (States) لإدارة واجهة المستخدم
+  const [admins, setAdmins] = useState<AdminRole[]>([]); // قائمة المدراء المعروضة
+  const [loading, setLoading] = useState(false); // حالة التحميل العامة
+  const [dialogOpen, setDialogOpen] = useState(false); // فتح/إغلاق نافذة إضافة مدير
+  const [editDialogOpen, setEditDialogOpen] = useState(false); // فتح/إغلاق نافذة تعديل بيانات مدير
+  const [passwordDialog, setPasswordDialog] = useState<string | null>(null); // تتبع أي مدير يتم تغيير كلمة مروره
+  const [newPassword, setNewPassword] = useState(''); // تخزين كلمة المرور الجديدة المؤقتة
+  const [editingAdmin, setEditingAdmin] = useState<AdminRole | null>(null); // تخزين بيانات المدير الجاري تعديله
+  
+  // حالات تخزين بيانات النماذج (Forms)
   const [form, setForm] = useState({
     email: '', password: '', full_name: '', role: '',
     university_id: '', college_id: '', department_id: '',
@@ -47,17 +54,20 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
   const [editForm, setEditForm] = useState({
     full_name: '', email: '', role: '', university_id: '', college_id: '', department_id: '',
   });
-  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false);
-  const [selectedAdminForPermissions, setSelectedAdminForPermissions] = useState<AdminRole | null>(null);
-  const [userPermissions, setUserPermissions] = useState<any[]>([]);
-  const [rolePermissions, setRolePermissions] = useState<any[]>([]);
+  // حالات إدارة الصلاحيات المخصصة (Permissions) لكل مستخدم
+  const [permissionsDialogOpen, setPermissionsDialogOpen] = useState(false); // فتح نافذة الصلاحيات
+  const [selectedAdminForPermissions, setSelectedAdminForPermissions] = useState<AdminRole | null>(null); // المدير الجاري تعديل صلاحياته
+  const [userPermissions, setUserPermissions] = useState<any[]>([]); // الصلاحيات المخصصة (Overrides)
+  const [rolePermissions, setRolePermissions] = useState<any[]>([]); // الصلاحيات الافتراضية للدور
 
   const isAr = language === 'ar';
   const role = userRole?.role;
 
+  // 5. دالة جلب قائمة المدراء من السيرفر
   const fetchAdmins = async () => {
     try {
-      const data = await apiClient('/admins');
+      const data = await apiClient('/admins'); // طلب GET إلى مسار المدراء المفلتر حسب الصلاحية
+
       setAdmins(data as AdminRole[]);
     } catch (err: any) {
       toast({ title: err.message, variant: 'destructive' });
@@ -68,18 +78,22 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     if (user && userRole) fetchAdmins();
   }, [user, userRole]);
 
+  // 6. دالة إنشاء مدير جديد
   const handleCreate = async () => {
+    // التحقق المبدئي من الحقول الإجبارية
     if (!form.email || !form.password || !form.role) {
       toast({ title: isAr ? 'أكمل جميع الحقول المطلوبة' : 'Fill all required fields', variant: 'destructive' });
       return;
     }
-    setLoading(true);
+    setLoading(true); // تفعيل واجهة "الرجاء الانتظار"
     try {
+      // تجهيز البيانات للإرسال مع تحديد النطاق الإداري تلقائياً بناءً على من يقوم بالعملية
       const submissionData = {
         email: form.email,
         password: form.password,
         full_name: form.full_name,
         role: form.role,
+        // إذا كان super_admin يختار الجامعة، وإلا تؤخذ جامعة المدير الحالي تلقائياً
         university_id: (role === 'super_admin') ? (form.university_id || null) : (userRole?.university_id || null),
         college_id: (role === 'super_admin' || role === 'university_admin') ? (form.college_id || null) : (userRole?.college_id || null),
         department_id: form.department_id || null,
@@ -90,15 +104,16 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         body: JSON.stringify(submissionData)
       });
       toast({ title: isAr ? 'تم إنشاء المدير بنجاح' : 'Admin created successfully' });
-      setDialogOpen(false);
-      setForm({ email: '', password: '', full_name: '', role: '', university_id: '', college_id: '', department_id: '' });
-      fetchAdmins();
+      setDialogOpen(false); // إغلاق النافذة
+      setForm({ email: '', password: '', full_name: '', role: '', university_id: '', college_id: '', department_id: '' }); // تصفير النموذج
+      fetchAdmins(); // تحديث القائمة
     } catch (err: any) {
       toast({ title: err.message, variant: 'destructive' });
     }
     setLoading(false);
   };
 
+  // 7. دالة تفعيل أو تعطيل الحساب
   const handleToggle = async (roleId: string, isActive: boolean) => {
     try {
       await apiClient(`/admins/${roleId}/toggle`, {
@@ -112,17 +127,20 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     }
   };
 
+  // 8. دالة حذف مدير (الحذف الفعلي)
   const handleDelete = async (roleId: string) => {
+    // إظهار رسالة تأكيد للمستخدم قبل الحذف
     if (!confirm(isAr ? 'هل أنت متأكد من حذف هذا المدير؟' : 'Are you sure you want to delete this admin?')) return;
     try {
       await apiClient(`/admins/${roleId}`, { method: 'DELETE' });
       toast({ title: isAr ? 'تم حذف المدير' : 'Admin deleted' });
-      fetchAdmins();
+      fetchAdmins(); // تحديث القائمة بعد الحذف
     } catch (err: any) {
       toast({ title: err.message, variant: 'destructive' });
     }
   };
 
+  // 9. دالة فتح نافذة التعديل وتعبئة البيانات الحالية
   const openEditDialog = (admin: AdminRole) => {
     setEditingAdmin(admin);
     setEditForm({
@@ -136,10 +154,12 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     setEditDialogOpen(true);
   };
 
+  // 10. دالة تنفيذ عملية التعديل (Update)
   const handleEdit = async () => {
     if (!editingAdmin || !editForm.role) return;
     setLoading(true);
     try {
+      // تجهيز البيانات الجديدة مع مراعاة صلاحيات النطاق
       const submissionData = {
         full_name: editForm.full_name,
         email: editForm.email,
@@ -163,6 +183,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     setLoading(false);
   };
 
+  // 11. دالة تغيير كلمة المرور للمدراء الآخرين (للمدير الأعلى)
   const handleChangePassword = async () => {
     if (!newPassword || newPassword.length < 6) {
       toast({ title: isAr ? 'كلمة المرور يجب أن تكون 6 أحرف على الأقل' : 'Password must be at least 6 characters', variant: 'destructive' });
@@ -174,16 +195,18 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         body: JSON.stringify({ new_password: newPassword })
       });
       toast({ title: isAr ? 'تم تغيير كلمة المرور' : 'Password changed' });
-      setPasswordDialog(null);
-      setNewPassword('');
+      setPasswordDialog(null); // إغلاق النافذة
+      setNewPassword(''); // تصفير الحقل
     } catch (err: any) {
       toast({ title: err.message, variant: 'destructive' });
     }
   };
 
+  // 12. دالة فتح نافذة الصلاحيات المخصصة (Permissions) جلبها من السيرفر
   const openPermissionsDialog = async (admin: AdminRole) => {
     setSelectedAdminForPermissions(admin);
     try {
+      // طلب الصلاحيات الخاصة بهذا المستخدم ( overrides + role defaults )
       const data: any = await apiClient(`/permissions/user/${admin.id}`);
       setRolePermissions(data.role_permissions || []);
       setUserPermissions(data.overrides || []);
@@ -193,6 +216,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     }
   };
 
+  // 13. دالة حفظ الصلاحيات المخصصة الجديدة للسيرفر
   const saveUserPermissions = async () => {
     if (!selectedAdminForPermissions) return;
     setLoading(true);
@@ -202,13 +226,14 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         body: JSON.stringify({ overrides: userPermissions })
       });
       toast({ title: isAr ? 'تم حفظ الصلاحيات بنجاح' : 'Permissions saved successfully' });
-      setPermissionsDialogOpen(false);
+      setPermissionsDialogOpen(true);
     } catch (err: any) {
       toast({ title: err.message, variant: 'destructive' });
     }
     setLoading(false);
   };
 
+  // 14. دالة تبديل حالة صلاحية معينة (مسموح/ممنوع) في الحالة المحلية
   const handlePermissionToggle = (key: string, enabled: boolean) => {
     const existing = userPermissions.find(p => p.permission_key === key);
     let newPerms: any[];
@@ -220,13 +245,18 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     setUserPermissions(newPerms);
   };
 
+  // 15. دالة لمعرفة حالة الصلاحية الحالية (تجمع بين صلاحية الدور وصلاحية المستخدم الفردية)
   const getPermissionStatus = (key: string) => {
+    // الأولوية للصلاحية المخصصة (Override)
     const override = userPermissions.find(p => p.permission_key === key);
     if (override) return override.is_enabled === 1 || override.is_enabled === true;
+    
+    // إذا لم توجد صلاحية مخصصة، نستخدم الافتراضية الخاصة بالدور
     const roleP = rolePermissions.find(p => p.permission_key === key);
     return roleP ? (roleP.is_enabled === 1 || roleP.is_enabled === true) : false;
   };
 
+  // 16. تحويل كود الدور إلى اسم بشري (مترجم)
   const getRoleName = (r: string) => {
     const names: Record<string, Record<string, string>> = {
       super_admin: { ar: 'مدير الموقع', en: 'Super Admin' },
@@ -237,29 +267,26 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     return names[r]?.[language] || r;
   };
 
+  // 17. دالة بناء اسم النطاق الإداري (مثلاً: قسم كذا - كلية كذا - جامعة كذا)
   const getEntityName = (admin: AdminRole) => {
     if (admin.role === 'super_admin') return isAr ? 'إدارة الموقع كاملة' : 'Full Site Management';
 
     const parts = [];
     
-    // Case 1: Department Admin
+    // الحالة 1: مدير قسم (نعرض اسم القسم والكلية والجامعة التابع لها)
     if (admin.department_id) {
       const dep = departments.find(d => d.id === admin.department_id);
       if (dep) {
         parts.push(isAr ? dep.name_ar : (dep.name_en || dep.name_ar));
-        
-        // Find parent college if not in admin object
         const col = colleges.find(c => c.id === (admin.college_id || dep.college_id));
         if (col) {
           parts.push(isAr ? col.name_ar : (col.name_en || col.name_ar));
-          
-          // Find parent university
           const uni = universities.find(u => u.id === (admin.university_id || col.university_id));
           if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
         }
       }
     } 
-    // Case 2: College Admin
+    // الحالة 2: مدير كلية (نعرض الكلية والجامعة)
     else if (admin.college_id) {
       const col = colleges.find(c => c.id === admin.college_id);
       if (col) {
@@ -268,13 +295,13 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
       }
     }
-    // Case 3: University Admin
+    // الحالة 3: مدير جامعة (نعرض اسم الجامعة فقط)
     else if (admin.university_id) {
       const uni = universities.find(u => u.id === admin.university_id);
       if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
     }
 
-    return parts.join(' - ');
+    return parts.join(' - '); // دمج الأسماء بفاصل
   };
 
   const availableRoles = () => {

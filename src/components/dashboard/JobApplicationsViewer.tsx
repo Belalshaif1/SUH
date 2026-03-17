@@ -1,29 +1,32 @@
+// 1. استيراد المكتبات والأدوات اللازمة
 import React, { useEffect, useState } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient, { getMediaUrl } from '@/lib/apiClient';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useLanguage } from '@/contexts/LanguageContext'; // سياق اللغة
+import apiClient, { getMediaUrl } from '@/lib/apiClient'; // أداة الاتصال بالسيرفر وجلب مسارات الملفات
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'; // نوافذ منبثقة
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, CheckCircle, XCircle, Mail, User } from 'lucide-react';
+import { Download, CheckCircle, XCircle, Mail, User } from 'lucide-react'; // أيقونات
 import { useToast } from '@/hooks/use-toast';
 
 interface Props {
-  jobId: string | null;
-  onClose: () => void;
+  jobId: string | null; // معرف الوظيفة المختار
+  onClose: () => void; // دالة لإغلاق النافذة
 }
 
 export const JobApplicationsViewer: React.FC<Props> = ({ jobId, onClose }) => {
   const { t, language } = useLanguage();
   const { toast } = useToast();
-  const [applications, setApplications] = useState<any[]>([]);
+  const [applications, setApplications] = useState<any[]>([]); // حالة تخزين طلبات التقديم
   const [loading, setLoading] = useState(false);
   const isAr = language === 'ar';
 
+  // 2. تأثير (Effect) لجلب البيانات عند تغير معرف الوظيفة
   useEffect(() => {
     if (!jobId) return;
     const fetchApps = async () => {
       setLoading(true);
       try {
+        // طلب قائمة المتقدمين لهذة الوظيفة تحديداً من السيرفر
         const data = await apiClient(`/job_applications/job/${jobId}`);
         setApplications(data || []);
       } catch (err: any) {
@@ -35,13 +38,16 @@ export const JobApplicationsViewer: React.FC<Props> = ({ jobId, onClose }) => {
     fetchApps();
   }, [jobId]);
 
+  // 3. دالة لتحديث حالة الطلب (قبول أو رفض)
   const handleStatusUpdate = async (appId: string, status: string) => {
     try {
+      // إرسال الحالة الجديدة للسيرفر
       await apiClient(`/job_applications/${appId}/status`, {
         method: 'PUT',
         body: JSON.stringify({ status })
       });
       toast({ title: isAr ? 'تم تحديث الحالة بنجاح' : 'Status updated successfully' });
+      // تحديث الحالة في الواجهة فورياً دون الحاجة لإعادة الجلب من السيرفر
       setApplications(prev => prev.map(a => a.id === appId ? { ...a, status } : a));
     } catch (err: any) {
       toast({ title: err.message || "Failed to update status", variant: 'destructive' });

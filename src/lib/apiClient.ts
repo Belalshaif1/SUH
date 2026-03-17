@@ -1,165 +1,165 @@
-// استيراد قاعدة البيانات المحلية ودوال المزامنة
-import { db, addToSyncQueue, processSyncQueue } from './offlineDb';
+// استيراد قاعدة البيانات المحلية ودوال المزامنة من ملف offlineDb
+import { db, addToSyncQueue, processSyncQueue } from './offlineDb'; 
 
-// مسار الخادم الأساسي يتم جلبه من المتغيرات البيئية أو مسار افتراضي
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+// مسار الخادم الأساسي يتم جلبه من المتغيرات البيئية أو استخدام مسار افتراضي (localhost:5000)
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'; 
 
-// واجهة تعريف خصائص الطلب المتوقعة
-interface RequestOptions extends RequestInit {
-    params?: Record<string, string>; // معاملات البحث (Query Params)
-    skipCache?: boolean; // خيار لتخطي الذاكرة المخبأة
-    skipQueueOnFail?: boolean; // منع إدخال الطلب في الطابور عند الفشل (لتجنب حلقة لا نهائية عند المزامنة)
+// تعريف واجهة (Interface) لخصائص الطلب المتوقعة لتسهيل التعامل مع TypeScript
+interface RequestOptions extends RequestInit { 
+    params?: Record<string, string>; // إضافة دعم لمعاملات البحث (Query Params) في الرابط
+    skipCache?: boolean; // خيار لتحديد ما إذا كان يجب تخطي الذاكرة المخبأة (Cache)
+    skipQueueOnFail?: boolean; // خيار لمنع إضافة الطلب في طابور المزامنة عند الفشل (لتجنب التكرار اللا نهائي)
 }
 
-// إنشاء عميل الشبكة العام
-const apiClient = async (endpoint: string, options: RequestOptions = {}) => {
-    // فصل الخصائص المخصصة عن الخصائص القياسية للطلب
-    const { params, skipCache, skipQueueOnFail, ...customConfig } = options;
-    // جلب رمز التحقق من التخزين المحلي
-    const token = localStorage.getItem('token');
-    // تحديد طريقة الإرسال (GET بشكل افتراضي إذا لم يتم إرساله)
-    const method = customConfig.method || 'GET';
+// إنشاء الوظيفة الأساسية للتواصل مع الـ API (apiClient)
+const apiClient = async (endpoint: string, options: RequestOptions = {}) => { 
+    // تفكيك الخصائص المخصصة وفصلها عن الخصائص القياسية للطلب (مثل headers, method)
+    const { params, skipCache, skipQueueOnFail, ...customConfig } = options; 
+    // جلب رمز التحقق (JWT Token) من التخزين المحلي للمتصفح (LocalStorage)
+    const token = localStorage.getItem('token'); 
+    // تحديد طريقة الإرسال (GET بشكل افتراضي إذا لم يتم تحديدها في الخصائص)
+    const method = customConfig.method || 'GET'; 
 
-    // تجهيز الترويسات
-    const headers: Record<string, string> = {
-        ...(customConfig.headers as Record<string, string>),
+    // تجهيز الترويسات (Headers) الخاصة بالطلب
+    const headers: Record<string, string> = { 
+        ...(customConfig.headers as Record<string, string>), // دمج أي ترويسات مرسلة مسبقاً
     };
 
-    // وضع نوع المحتوى الافتراضي كـ JSON ما لم تكن البيانات بصيغة FormData (للصور والملفات)
-    if (!(customConfig.body instanceof FormData)) {
-        headers['Content-Type'] = 'application/json';
+    // تعيين نوع المحتوى كـ JSON بشكل تلقائي ما لم تكن البيانات بصيغة FormData (المستخدمة لرفع الملفات)
+    if (!(customConfig.body instanceof FormData)) { 
+        headers['Content-Type'] = 'application/json'; 
     }
 
-    // إضافة ترويسة المصادقة إذا وُجد الرمز
-    if (token) {
-        headers.Authorization = `Bearer ${token}`;
+    // إضافة ترويسة المصادقة (Authorization) إذا كان هناك رمز دخول مخزن
+    if (token) { 
+        headers.Authorization = `Bearer ${token}`; 
     }
 
-    // بناء الرابط النهائي
-    let url = `${API_URL}${endpoint}`;
-    if (params) {
-        // إضافة محددات البحث إلى الرابط إذا وجدت
-        const searchParams = new URLSearchParams(params);
-        url += `?${searchParams.toString()}`;
+    // بناء الرابط النهائي للطلب من خلال دمج المسار الأساسي مع المسار الفرعي (Endpoint)
+    let url = `${API_URL}${endpoint}`; 
+    if (params) { 
+        // إذا وجدت معاملات بحث، يتم تحويلها إلى نص (Query String) وإضافتها للرابط
+        const searchParams = new URLSearchParams(params); 
+        url += `?${searchParams.toString()}`; 
     }
 
-    // الإعدادات النهائية للطلب
-    const config: RequestInit = {
-        ...customConfig,
-        headers,
+    // تجميع الإعدادات النهائية لعملية الجلب (Fetch)
+    const config: RequestInit = { 
+        ...customConfig, // دمج الإعدادات المخصصة
+        headers, // إضافة الترويسات التي تم تجهيزها
     };
 
-    // تحديد اسم الجدول من الرابط لمزامنة الأوفلاين
-    const tableName = endpoint.replace(/^\//, '').split('/')[0];
-    // تحديد الجداول المدعومة في وضع الأوفلاين
-    const isSupportedTable = ['universities', 'colleges', 'departments', 'announcements', 'research', 'graduates', 'jobs'].includes(tableName);
+    // استخراج اسم الجدول من المسار الفرعي (مثلاً /universities تصبح universities) لاستخدامه في المزامنة
+    const tableName = endpoint.replace(/^\//, '').split('/')[0]; 
+    // تحديد الجداول التي تدعم العمل في وضع "بدون إنترنت" (Offline Mode)
+    const isSupportedTable = ['universities', 'colleges', 'departments', 'announcements', 'research', 'graduates', 'jobs'].includes(tableName); 
 
-    // معالجة طلبات الجلب (GET) للحفظ المؤقت في الجهاز
-    if (method === 'GET' && isSupportedTable && !skipCache) {
-        try {
-            // محاولة جلب البيانات من الخادم أولاً
-            const response = await fetch(url, config);
-            if (response.ok) {
-                const data = await response.json();
-                // إذا كانت سلسلة بيانات، قم بحفظها في قاعدة البيانات المحلية لاستخدامها لاحقاً
-                if (Array.isArray(data) && !params) {
-                    await db.table(tableName).clear(); // مسح البيانات القديمة
-                    await db.table(tableName).bulkAdd(data); // إدخال الجديدة (المحفظ حتى في جهاز المستخدم)
+    // معالجة طلبات جلب البيانات (GET) لدعم التخزين المؤقت (Caching)
+    if (method === 'GET' && isSupportedTable && !skipCache) { 
+        try { 
+            // محاولة جلب أحدث البيانات من الخادم عبر الإنترنت
+            const response = await fetch(url, config); 
+            if (response.ok) { 
+                const data = await response.json(); // تحويل الاستجابة إلى كائن JSON
+                // إذا كانت البيانات عبارة عن قائمة (Array) وبدون معاملات بحث خاصة، يتم تحديث التخزين المحلي
+                if (Array.isArray(data) && !params) { 
+                    await db.table(tableName).clear(); // مسح البيانات القديمة المخزنة في الجهاز
+                    await db.table(tableName).bulkAdd(data); // إضافة البيانات الجديدة المستلمة من الخادم
                 }
-                return data; // إرجاع البيانات الجديدة للمكون
+                return data; // إرجاع البيانات المستلمة للمكون الذي طلبها
             }
-        } catch (error) {
-            // في حالة انقطاع الإنترنت أو وجود عطل، أبلغ في الكونسول
-            console.warn('Network error, attempting to serve from cache:', endpoint);
-            // محاولة جلبها من التخزين المحلي (IndexedDB)
-            const cachedData = await db.table(tableName).toArray();
-            if (cachedData.length > 0) return cachedData; // إرجاعها إن وجدت
-            throw error; // وإلا قذف المشكلة لمن يتعامل معها
+        } catch (error) { 
+            // في حال فشل الاتصال بالإنترنت، يتم طباعة تحذير ومحاولة جلب البيانات من الذاكرة المحلية
+            console.warn('Network error, attempting to serve from cache:', endpoint); 
+            // البحث عن البيانات في قاعدة البيانات المحلية (IndexedDB)
+            const cachedData = await db.table(tableName).toArray(); 
+            if (cachedData.length > 0) return cachedData; // إرجاع البيانات المخزنة محلياً إذا وُجدت
+            throw error; // إذا لم توجد بيانات مخزنة، يتم إرسال الخطأ للأعلى
         }
     }
 
-    // تنفيذ بقية أنواع الطلبات والمعالجة الأساسية
-    try {
-        const response = await fetch(url, config);
-        const data = await response.json();
+    // تنفيذ بقية أنواع الطلبات (POST, PUT, DELETE) ومعالجة الاستجابات
+    try { 
+        const response = await fetch(url, config); // إرسال الطلب للخادم
+        const data = await response.json(); // قراءة الاستجابة
 
-        // إرجاع البيانات بنجاح إذا كان الكود سليم
-        if (response.ok) {
-            return data;
-        } else {
-            // معالجة الأخطاء القادمة من السيرفر وعرضها حسب اللغة
-            const isAr = localStorage.getItem('language') === 'ar';
-            const genericMsg = isAr ? 'حدث خطأ غير متوقع، يرجى المحاولة لاحقاً' : 'An unexpected error occurred, please try again later';
-            const serverMsg = data.error || genericMsg;
+        // في حال نجاح الطلب (كود الحالة 200-299)
+        if (response.ok) { 
+            return data; // إرجاع البيانات بنجاح
+        } else { 
+            // معالجة الأخطاء المرسلة من الخادم بناءً على لغة المستخدم
+            const isAr = localStorage.getItem('language') === 'ar'; 
+            const genericMsg = isAr ? 'حدث خطأ غير متوقع، يرجى المحاولة لاحقاً' : 'An unexpected error occurred, please try again later'; 
+            const serverMsg = data.error || genericMsg; // استخدام رسالة الخطأ من السيرفر أو الرسالة العامة
 
-            // تسجيل الخطأ آليًا في الخادم لتحليله من قبل مدير الموقع (إذا لم يكن هو مسار الأخطاء نفسه لتجنب الشلل)
-            if (endpoint !== '/error_logs') {
-                try {
-                    fetch(`${API_URL}/error_logs`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            message: serverMsg,
-                            stack_trace: `Status: ${response.status}`,
-                            source: 'frontend_apiClient',
-                            user_id: localStorage.getItem('token') ? 'authenticated' : 'anonymous'
-                        })
-                    }).catch(() => { });
-                } catch (e) { }
+            // إرسال تقرير بالخطأ للخادم (Error Logging) لتحليله لاحقاً من قبل المطورين
+            if (endpoint !== '/error_logs') { 
+                try { 
+                    fetch(`${API_URL}/error_logs`, { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify({ 
+                            message: serverMsg, 
+                            stack_trace: `Status: ${response.status}`, 
+                            source: 'frontend_apiClient', 
+                            user_id: localStorage.getItem('token') ? 'authenticated' : 'anonymous' 
+                        }) 
+                    }).catch(() => { }); // تجاهل أي خطأ قد يحدث أثناء إرسال سجل الخطأ
+                } catch (e) { } 
             }
 
-            if (response.status >= 500) {
-                // خطأ داخلي في الخادم
-                throw new Error(genericMsg);
+            // إذا كان الخطأ داخلي في الخادم (500 وما فوق) يتم عرض رسالة عامة
+            if (response.status >= 500) { 
+                throw new Error(genericMsg); 
             }
-            // رسالة اعتيادية
-            throw new Error(serverMsg);
+            // إرسال رسالة الخطأ المحددة
+            throw new Error(serverMsg); 
         }
-    } catch (error: any) {
-        // إذا فشل الطلب بالكامل وحدث انقطاع للشبكة وكانت العملية تغيير (إضافة/حذف/تعديل)
-        if (method !== 'GET' && isSupportedTable && !skipQueueOnFail && (error.message.includes('Failed to fetch') || !navigator.onLine)) {
-            // تسجيل العملية في جهاز المستخدم لمزامنتها عند توفر الإنترنت لاحقاً
-            console.log('Offline: Queuing mutation for', endpoint);
-            await addToSyncQueue(tableName, method === 'POST' ? 'create' : method === 'DELETE' ? 'delete' : 'update', JSON.parse(customConfig.body as string || '{}'));
-            return { message: 'Action queued for sync', offline: true };
+    } catch (error: any) { 
+        // في حال فشل الطلب بسبب انقطاع الإنترنت وكانت العملية (تعديل/إضافة/حذف)
+        if (method !== 'GET' && isSupportedTable && !skipQueueOnFail && (error.message.includes('Failed to fetch') || !navigator.onLine)) { 
+            // إضافة العملية إلى طابور المزامنة (Sync Queue) ليتم تنفيذها تلقائياً عند عودة الإنترنت
+            console.log('Offline: Queuing mutation for', endpoint); 
+            await addToSyncQueue(tableName, method === 'POST' ? 'create' : method === 'DELETE' ? 'delete' : 'update', JSON.parse(customConfig.body as string || '{}')); 
+            return { message: 'Action queued for sync', offline: true }; // إخبار المستخدم بأن العملية تمت جدولتها
         }
 
-        // إذا فشل بسبب آخر (موقع معطل تماما) يبلغ عنه
-        if (endpoint !== '/error_logs' && !skipQueueOnFail) {
-            try {
-                fetch(`${API_URL}/error_logs`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        message: error.message || 'Unknown network error',
-                        stack_trace: error.stack || '',
-                        source: 'frontend_network',
-                        user_id: localStorage.getItem('token') ? 'authenticated' : 'anonymous'
-                    })
-                }).catch(() => { });
-            } catch (e) { }
+        // تسجيل أخطاء الشبكة العامة في سجل الأخطاء
+        if (endpoint !== '/error_logs' && !skipQueueOnFail) { 
+            try { 
+                fetch(`${API_URL}/error_logs`, { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ 
+                        message: error.message || 'Unknown network error', 
+                        stack_trace: error.stack || '', 
+                        source: 'frontend_network', 
+                        user_id: localStorage.getItem('token') ? 'authenticated' : 'anonymous' 
+                    }) 
+                }).catch(() => { }); 
+            } catch (e) { } 
         }
-        console.error('API Error:', error.message);
-        throw error; // قذف الخطأ للمكون ليظهره للمستخدم
+        console.error('API Error:', error.message); // طباعة الخطأ في الكونسول
+        throw error; // إعادة إرسال الخطأ ليتم معالجته في المكون الرسومي
     }
 };
 
-// مستمع لحدث رجوع الإنترنت يقوم بمزامنة التخزين المحلي المؤجل
-if (typeof window !== 'undefined') {
-    window.addEventListener('online', () => {
-        // تشغيل جميع العمليات المتأخرة
-        processSyncQueue(apiClient).catch(console.error);
+// إضافة مستمع (Listener) لحدث عودة الاتصال بالإنترنت لمزامنة البيانات المؤجلة تلقائياً
+if (typeof window !== 'undefined') { 
+    window.addEventListener('online', () => { 
+        // البدء في معالجة العمليات التي تم جدولتها أثناء انقطاع الإنترنت
+        processSyncQueue(apiClient).catch(console.error); 
     });
 }
 
-// دالة تفريغ روابط الملفات (تكميل المسارات لتكون مطلقة بالكامل)
-export const getMediaUrl = (path: string | null | undefined) => {
-    if (!path) return ''; // لا يوجد رابط مسار
-    if (path.startsWith('http')) return path; // المسار المطلق كامل جاهز
-    // إضافة رابط الخادم كجذر لتكوين الرابط المطلق
-    const baseUrl = API_URL.replace(/\/api$/, '');
-    return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
+// دالة مساعدة لتحويل مسارات الوسائط (الصور والملفات) إلى روابط كاملة وصحيحة
+export const getMediaUrl = (path: string | null | undefined) => { 
+    if (!path) return ''; // إذا لم يكن هناك مسار، يتم إرجاع نص فارغ
+    if (path.startsWith('http')) return path; // إذا كان المسار رابطاً كاملاً بالفعل، يتم إرجاعه كما هو
+    // تكوين الرابط الكامل من خلال دمج رابط الخادم مع مسار الملف
+    const baseUrl = API_URL.replace(/\/api$/, ''); 
+    return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`; 
 };
 
-// تصدير واجهة الاتصال كافتراض
+// تصدير عميل الـ API ليكون متاحاً للاستخدام في جميع أنحاء التطبيق
 export default apiClient;

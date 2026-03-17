@@ -23,20 +23,24 @@ const Universities: React.FC = () => {
   const isAr = language === 'ar';
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
+  // 1. جلب البيانات بناءً على معطيات الرابط (Params)
   useEffect(() => {
     const fetchData = async () => {
       try {
         if (collegeId) {
+          // إذا كان الرابط يحتوي على معرف كلية، نجلب الأقسام التابعة لها
           const deps = await apiClient('/departments', { params: { college_id: collegeId } });
           setDepartments(deps || []);
           const college = await apiClient(`/colleges/${collegeId}`);
           setCurrentCollege(college);
         } else if (universityId) {
+          // إذا كان الرابط يحتوي على معرف جامعة، نجلب الكليات التابعة لها
           const cols = await apiClient('/colleges', { params: { university_id: universityId } });
           setColleges(cols || []);
           const uni = await apiClient(`/universities/${universityId}`);
           setCurrentUni(uni);
         } else {
+          // إذا لم يوجد شيء، نعرض قائمة بكل الجامعات المتاحة
           const unis = await apiClient('/universities', { params: { sort: sortBy } });
           setUniversities(unis || []);
         }
@@ -47,14 +51,16 @@ const Universities: React.FC = () => {
     fetchData();
   }, [universityId, collegeId, sortBy]);
 
+  // وظائف مساعدة لجلب الاسم والوصف باللغة المختارة
   const getName = (item: any) => language === 'ar' ? item.name_ar : (item.name_en || item.name_ar);
   const getDesc = (item: any) => language === 'ar' ? item.description_ar : (item.description_en || item.description_ar);
 
+  // تصفية الجامعات بناءً على نص البحث
   const filteredUniversities = universities.filter(u =>
     getName(u).toLowerCase().includes(search.toLowerCase())
   );
 
-  // Show departments for a college
+  // --- الحالة الأولى: عرض الأقسام داخل كلية معينة ---
   if (collegeId) {
     return (
       <div className="container mx-auto px-4 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -149,7 +155,7 @@ const Universities: React.FC = () => {
     );
   }
 
-  // Show colleges for a university
+  // --- الحالة الثانية: عرض الكليات داخل جامعة معينة ---
   if (universityId) {
     return (
       <div className="container mx-auto px-4 py-12 animate-in fade-in slide-in-from-bottom-4 duration-700">

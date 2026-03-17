@@ -13,16 +13,19 @@ const Index: React.FC = () => {
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const isAr = language === 'ar';
 
+  // 1. جلب الإحصائيات العامة من السيرفر عند تحميل الصفحة
   useEffect(() => {
     const fetchStats = async () => {
       try {
+        // تنفيذ عدة طلبات في وقت واحد (Parallel) لزيادة السرعة
         const [u, c, d, g, r] = await Promise.all([
-          apiClient('/universities'),
-          apiClient('/colleges'),
-          apiClient('/departments'),
-          apiClient('/graduates'),
-          apiClient('/research'),
+          apiClient('/universities'), // جلب الجامعات
+          apiClient('/colleges'),     // جلب الكليات
+          apiClient('/departments'),  // جلب الأقسام
+          apiClient('/graduates'),    // جلب الخريجين
+          apiClient('/research'),     // جلب الأبحاث
         ]);
+        // تحديث حالة الإحصائيات في الواجهة
         setStats({
           universities: u.length || 0,
           colleges: c.length || 0,
@@ -34,6 +37,8 @@ const Index: React.FC = () => {
         console.error("Error fetching stats:", err);
       }
     };
+
+    // 2. جلب آخر 3 إعلانات لعرضها في قسم "آخر الإعلانات"
     const fetchAnnouncements = async () => {
       try {
         const data = await apiClient('/announcements', { params: { limit: '3' } });
@@ -42,6 +47,7 @@ const Index: React.FC = () => {
         console.error("Error fetching announcements:", err);
       }
     };
+    
     fetchStats();
     fetchAnnouncements();
   }, []);
@@ -58,24 +64,31 @@ const Index: React.FC = () => {
 
   return (
     <div className="animate-fade-in">
-      {/* Hero Section */}
+      {/* قسم الترحيب الرئيسي (Hero Section) */}
       <section className="relative py-32 text-center overflow-hidden min-h-[80vh] flex items-center bg-primary text-white">
+        {/* خلفية أكاديمية متدرجة مع تأثيرات زجاجية */}
         <div className="absolute inset-0 gradient-academic opacity-100" />
-        {/* Decorative Glass Orbs for depth (as seen in premium designs) */}
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-white/5 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
         <div className="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gold/5 rounded-full blur-[120px] translate-x-1/2 translate-y-1/2" />
 
         <div className="container mx-auto px-4 relative z-10">
+          {/* شارة علوية تعريفية */}
           <Badge variant="outline" className="px-6 py-2 rounded-full border-white/20 text-gold bg-white/5 mb-10 font-bold text-sm uppercase tracking-[0.2em] shadow-sm backdrop-blur-sm">
             <GraduationCap className="h-5 w-5 me-2 inline" />
             {isAr ? 'منصة التعليم الجامعي الذكي' : 'SMART UNIVERSITY PLATFORM'}
           </Badge>
+          
+          {/* عنوان الترحيب الرئيسي */}
           <h1 className="mb-10 text-5xl md:text-8xl font-black tracking-tight text-white leading-[1.1]">
             {t('home.welcome')}
           </h1>
+          
+          {/* نص وصفي فرعي */}
           <p className="mx-auto mb-12 max-w-3xl text-xl md:text-2xl text-white/70 font-medium leading-relaxed">
             {t('home.subtitle')}
           </p>
+          
+          {/* زر الاستكشاف للذهاب لصفحة الجامعات */}
           <Link to="/universities">
             <Button size="lg" className="h-16 px-12 bg-gold text-gold-foreground hover:bg-gold/90 rounded-2xl shadow-xl shadow-gold/20 text-xl font-black transition-all hover:scale-105 active:scale-95 group border-none">
               {t('home.explore')}
@@ -85,16 +98,19 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Stats Section */}
+      {/* قسم الإحصائيات الرقمية (Stats Section) */}
       <section className="container mx-auto -mt-12 px-4 relative z-20">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
           {statItems.map((item) => (
             <Card key={item.key} className="card-premium border border-border/50 bg-white/80 backdrop-blur-md">
               <CardContent className="flex flex-col items-center p-8 text-center">
+                {/* الأيقونة المعبرة عن الإحصائية */}
                 <div className="p-4 rounded-2xl bg-primary/5 mb-4 group-hover:bg-primary/10 transition-colors">
                   <item.icon className={`h-8 w-8 ${item.color}`} />
                 </div>
+                {/* القيمة الرقمية المستلمة من السيرفر */}
                 <span className="text-4xl font-bold text-primary mb-1">{stats[item.key as keyof typeof stats]}</span>
+                {/* التسمية (جامعة، كلية، إلخ) */}
                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest leading-none">
                   {t(`home.stats.${item.key}`)}
                 </span>
@@ -104,9 +120,10 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Quick Access Section */}
+      {/* قسم روابط الوصول السريع (Quick Access) */}
       <section className="container mx-auto px-4 py-24">
         <div className="flex items-center gap-3 mb-12">
+          {/* لمسة تصميمية (خط جانبي بلون ذهبي) */}
           <div className="h-8 w-2 bg-gold rounded-full" />
           <h2 className="text-3xl font-bold text-primary">{t('home.quick_links')}</h2>
         </div>
@@ -120,9 +137,11 @@ const Index: React.FC = () => {
             <Link key={link.path} to={link.path}>
               <Card className="card-premium group hover:border-gold/30 border-2 border-transparent bg-white h-full">
                 <CardContent className="flex flex-col items-center gap-8 p-12">
+                  {/* حاوية الأيقونة مع تأثيرات Hover جذابة */}
                   <div className="h-24 w-24 rounded-[2.5rem] bg-primary/5 flex items-center justify-center group-hover:bg-primary transition-all duration-500 shadow-inner">
                     <link.icon className="h-12 w-12 text-primary group-hover:text-white transition-colors" />
                   </div>
+                  {/* تسمية الرابط السريع */}
                   <span className="text-2xl font-bold text-primary group-hover:text-gold transition-colors">{link.label}</span>
                 </CardContent>
               </Card>
@@ -131,17 +150,19 @@ const Index: React.FC = () => {
         </div>
       </section>
 
-      {/* Announcements Section */}
+      {/* قسم عرض آخر الإعلانات (Announcements Section) */}
       {announcements.length > 0 && (
         <section className="container mx-auto px-4 pb-32">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16">
             <div className="space-y-4">
+              {/* شارة إعلانية جمالية */}
               <Badge variant="outline" className="px-4 py-1.5 rounded-full border-gold/40 text-gold bg-gold/5 font-bold text-xs uppercase tracking-widest">
                 <Sparkles className="h-4 w-4 me-2" />
                 {t('home.latest_announcements')}
               </Badge>
               <h2 className="text-4xl md:text-6xl font-bold text-primary">{t('home.latest_announcements')}</h2>
             </div>
+            {/* زر للانتقال لصفحة كافة الإعلانات */}
             <Link to="/announcements">
               <Button variant="ghost" className="text-primary font-bold hover:text-primary hover:bg-primary/5 rounded-2xl h-14 px-8 group/all text-lg">
                 {t('common.view_all')}
@@ -150,30 +171,37 @@ const Index: React.FC = () => {
             </Link>
           </div>
 
+          {/* شبكة عرض كروت الإعلانات */}
           <div className="grid gap-8 md:grid-cols-3">
             {announcements.map((a) => (
               <Card key={a.id} className="card-premium group relative bg-white border border-border/50 overflow-hidden flex flex-col h-full hover:border-gold/30">
+                {/* خلفية زخرفية تختفي وتظهر عند التحويم */}
                 <div className="absolute top-0 right-0 w-40 h-40 bg-primary/5 rounded-full -mr-20 -mt-20 group-hover:scale-150 transition-transform duration-700 z-0" />
 
                 <CardContent className="p-10 flex flex-col flex-grow relative z-10">
                   <div className="flex items-center justify-between mb-8">
+                    {/* نطاق الإعلان (عام أو مؤسسي) */}
                     <Badge className="bg-primary text-primary-foreground border-none rounded-full px-4 py-1.5 text-xs font-bold uppercase tracking-widest shadow-lg shadow-primary/10">
                       {a.scope === 'global' ? (language === 'ar' ? 'عام' : 'Global') : (language === 'ar' ? 'مؤسسي' : 'Institutional')}
                     </Badge>
+                    {/* تاريخ النشر بتنسيق محلي */}
                     <div className="flex items-center gap-2 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       <Calendar className="h-4 w-4 text-gold" />
                       <span>{new Date(a.created_at).toLocaleDateString(language === 'ar' ? 'ar-IQ' : 'en-US', { day: 'numeric', month: 'short' })}</span>
                     </div>
                   </div>
 
+                  {/* عنوان الإعلان (بالعربية أو الإنجليزية حسب الاختيار) */}
                   <h3 className="text-2xl font-bold text-primary mb-4 line-clamp-2 leading-tight group-hover:text-gold transition-colors duration-300">
                     {language === 'ar' ? a.title_ar : (a.title_en || a.title_ar)}
                   </h3>
 
+                  {/* محتوى الإعلان مختصر */}
                   <p className="text-muted-foreground text-base leading-relaxed mb-10 line-clamp-3">
                     {language === 'ar' ? a.content_ar : (a.content_en || a.content_ar)}
                   </p>
 
+                  {/* رابط لقراءة التفاصيل الكاملة */}
                   <Link to="/announcements" className="mt-auto flex items-center justify-between group/btn">
                     <span className="text-lg font-bold text-primary group-hover/btn:text-gold transition-colors">
                       {language === 'ar' ? 'اقرأ المزيد' : 'Read More'}

@@ -1,12 +1,12 @@
-import * as React from "react";
-import * as LabelPrimitive from "@radix-ui/react-label";
-import { Slot } from "@radix-ui/react-slot";
-import { Controller, ControllerProps, FieldPath, FieldValues, FormProvider, useFormContext } from "react-hook-form";
+import * as React from "react"; // استيراد مكتبة React الأساسية
+import * as LabelPrimitive from "@radix-ui/react-label"; // استيراد مكونات التسمية من Radix UI
+import { Slot } from "@radix-ui/react-slot"; // استيراد مكون Slot لدمج الخصائص مع العناصر الأبناء
+import { Controller, ControllerProps, FieldPath, FieldValues, FormProvider, useFormContext } from "react-hook-form"; // استيراد أدوات إدارة النماذج من react-hook-form
 
-import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils"; // استيراد أداة دمج الأصناف cn
+import { Label } from "@/components/ui/label"; // استيراد مكون التسمية المخصص
 
-const Form = FormProvider;
+const Form = FormProvider; // استخدام FormProvider كمكون أساسي للنماذج
 
 type FormFieldContextValue<
   TFieldValues extends FieldValues = FieldValues,
@@ -15,8 +15,10 @@ type FormFieldContextValue<
   name: TName;
 };
 
+// إنشاء سياق (Context) لحقل النموذج
 const FormFieldContext = React.createContext<FormFieldContextValue>({} as FormFieldContextValue);
 
+// مكون حقل النموذج (FormField) الذي يغلف المتحكم (Controller)
 const FormField = <
   TFieldValues extends FieldValues = FieldValues,
   TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
@@ -30,6 +32,7 @@ const FormField = <
   );
 };
 
+// هوك (Hook) مخصص للوصول إلى بيانات حقل النموذج الحالي
 const useFormField = () => {
   const fieldContext = React.useContext(FormFieldContext);
   const itemContext = React.useContext(FormItemContext);
@@ -44,12 +47,12 @@ const useFormField = () => {
   const { id } = itemContext;
 
   return {
-    id,
-    name: fieldContext.name,
-    formItemId: `${id}-form-item`,
-    formDescriptionId: `${id}-form-item-description`,
-    formMessageId: `${id}-form-item-message`,
-    ...fieldState,
+    id, // معرف الحقل الفريد
+    name: fieldContext.name, // اسم الحقل
+    formItemId: `${id}-form-item`, // معرف عنصر النموذج
+    formDescriptionId: `${id}-form-item-description`, // معرف وصف الحقل
+    formMessageId: `${id}-form-item-message`, // معرف رسالة الخطأ
+    ...fieldState, // حالة الحقل (خطأ، لمس، إلخ)
   };
 };
 
@@ -57,11 +60,13 @@ type FormItemContextValue = {
   id: string;
 };
 
+// إنشاء سياق (Context) لعنصر النموذج (FormItem)
 const FormItemContext = React.createContext<FormItemContextValue>({} as FormItemContextValue);
 
+// مكون عنصر النموذج (FormItem) الذي يحوي التسمية والحقل
 const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
-    const id = React.useId();
+    const id = React.useId(); // توليد معرف فريد
 
     return (
       <FormItemContext.Provider value={{ id }}>
@@ -72,16 +77,18 @@ const FormItem = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivEl
 );
 FormItem.displayName = "FormItem";
 
+// مكون تسمية الحقل (FormLabel)
 const FormLabel = React.forwardRef<
   React.ElementRef<typeof LabelPrimitive.Root>,
   React.ComponentPropsWithoutRef<typeof LabelPrimitive.Root>
 >(({ className, ...props }, ref) => {
-  const { error, formItemId } = useFormField();
+  const { error, formItemId } = useFormField(); // الحصول على حالة الخطأ والمعرف
 
-  return <Label ref={ref} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />;
+  return <Label ref={ref} className={cn(error && "text-destructive", className)} htmlFor={formItemId} {...props} />; // تلوين التسمية بالأحمر عند وجود خطأ
 });
 FormLabel.displayName = "FormLabel";
 
+// مكون متحكم النموذج (FormControl) الذي يربط العنصر بالنظام
 const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.ComponentPropsWithoutRef<typeof Slot>>(
   ({ ...props }, ref) => {
     const { error, formItemId, formDescriptionId, formMessageId } = useFormField();
@@ -90,8 +97,8 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
       <Slot
         ref={ref}
         id={formItemId}
-        aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`}
-        aria-invalid={!!error}
+        aria-describedby={!error ? `${formDescriptionId}` : `${formDescriptionId} ${formMessageId}`} // ربط الوصف والخطأ للوصولية (Accessibility)
+        aria-invalid={!!error} // تأشير الحقل كغير صالح عند وجود خطأ
         {...props}
       />
     );
@@ -99,19 +106,21 @@ const FormControl = React.forwardRef<React.ElementRef<typeof Slot>, React.Compon
 );
 FormControl.displayName = "FormControl";
 
+// مكون وصف الحقل (FormDescription)
 const FormDescription = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, ...props }, ref) => {
     const { formDescriptionId } = useFormField();
 
-    return <p ref={ref} id={formDescriptionId} className={cn("text-sm text-muted-foreground", className)} {...props} />;
+    return <p ref={ref} id={formDescriptionId} className={cn("text-sm text-muted-foreground", className)} {...props} />; // نص صغير باهت للوصف
   },
 );
 FormDescription.displayName = "FormDescription";
 
+// مكون رسالة الخطأ (FormMessage)
 const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HTMLParagraphElement>>(
   ({ className, children, ...props }, ref) => {
     const { error, formMessageId } = useFormField();
-    const body = error ? String(error?.message) : children;
+    const body = error ? String(error?.message) : children; // عرض رسالة الخطأ من التحقق أو الأبناء
 
     if (!body) {
       return null;
@@ -126,4 +135,4 @@ const FormMessage = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<
 );
 FormMessage.displayName = "FormMessage";
 
-export { useFormField, Form, FormItem, FormLabel, FormControl, FormDescription, FormMessage, FormField };
+export { useFormField, Form, FormItem, FormLabel, FormControl, FormDescription, FormMessage, FormField }; // تصدير كافة المكونات والهوكات

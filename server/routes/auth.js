@@ -1,53 +1,66 @@
-const express = require('express');
-const router = express.Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const db = require('../db');
+// 1. استيراد المكتبات اللازمة
+const express = require('express'); // إطار عمل الويب
+const router = express.Router(); // منظم المسارات
+const bcrypt = require('bcryptjs'); // لتشفير وفك تشفير كلمات المرور
+const jwt = require('jsonwebtoken'); // لإنشاء رموز التحقق (Tokens)
+const crypto = require('crypto'); // للعمليات التشفيرية
+const db = require('../db'); // الربط مع قاعدة البيانات
 
+// 2. مفتاح التشفير الخاص بالـ JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
-// Helper to get merged permissions
+// 3. دالة مساعدة لجلب الصلاحيات الفعلية للمستخدم (دمج صلاحيات الدور مع التجاوزات)
 async function getEffectivePermissions(userId, role) {
+    // جلب الصلاحيات المرتبطة بدور المستخدم (مثل super_admin)
     const rolePerms = await db.query('SELECT permission_key, is_enabled FROM role_permissions WHERE role = $1', [role]);
+    // جلب أي صلاحيات خاصة تم إعطاؤها أو سحبها من هذا المستخدم تحديداً
     const userOverrides = await db.query('SELECT permission_key, is_enabled FROM user_permissions WHERE user_id = $1', [userId]);
 
     const permissions = {};
+    // إضافة صلاحيات الدور إلى الكائن
     rolePerms.forEach(p => {
         permissions[p.permission_key] = p.is_enabled === 1;
     });
+    // تحديث الصلاحيات بناءً على التجاوزات الخاصة بالمستخدم (تأخذ الأولوية)
     userOverrides.forEach(p => {
         permissions[p.permission_key] = p.is_enabled === 1;
     });
     return permissions;
 }
 
-// Login Route
+// 4. مسار تسجيل الدخول (Login)
 router.post('/login', async (req, res) => {
     try {
+        // استخراج معرف المستخدم (إيميل أو هاتف) وكلمة المرور من الطلب
         const { identifier, password } = req.body;
+        // التأكد من إرسال البيانات المطلوبة
         if (!identifier || !password) {
             return res.status(400).json({ error: 'Identifier and password are required' });
         }
 
+        // البحث عن المستخدم باستخدام الإيميل أو رقم الهاتف
         const user = await db.getAsync(
             'SELECT * FROM users WHERE email = $1 OR phone = $2',
             [identifier, identifier]
         );
 
+        // إذا لم يتم العثور على المستخدم
         if (!user) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
+        // مقارنة كلمة المرور المدخلة مع المشفرة في قاعدة البيانات
         const validPassword = await bcrypt.compare(password, user.password);
         if (!validPassword) {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
+        // التأكد من أن الحساب نشط وغير محظور
         if (!user.is_active) {
             return res.status(403).json({ error: 'Account is inactive' });
         }
 
+        // إنشاء Token يحتوي على بيانات المستخدم الأساسية وصلاحيته لمدة 24 ساعة
         const token = jwt.sign({
             id: user.id,
             role: user.role,
@@ -56,8 +69,10 @@ router.post('/login', async (req, res) => {
             department_id: user.department_id
         }, JWT_SECRET, { expiresIn: '24h' });
 
+        // جلب قائمة الصلاحيات المتاحة لهذا المستخدم
         const permissions = await getEffectivePermissions(user.id, user.role);
 
+        // إرسال الـ Token وبيانات المستخدم إلى الواجهة الأمامية
         res.json({
             token, user: {
                 id: user.id,
@@ -73,68 +88,79 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (err) {
+        // في حال حدوث خطأ غير متوقع
         console.error('Login error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Register Route
+// 5. مسار إنشاء حساب جديد (Register)
 router.post('/register', async (req, res) => {
     try {
+        // استخراج البيانات المرسلة من المستخدم
         const { email, phone, password, full_name } = req.body;
-        const { v4: uuidv4 } = require('uuid');
+        const { v4: uuidv4 } = require('uuid'); // استيراد أداة إنشاء المعرفات الفريدة
 
+        // التأكد من توفر وسيلة اتصال (إيميل أو هاتف)
         if (!email && !phone) {
             return res.status(400).json({ error: 'Email or Phone is required' });
         }
+        // التأكد من قوة كلمة المرور
         if (!password || password.length < 6) {
             return res.status(400).json({ error: 'Password must be at least 6 characters' });
         }
 
-        // Check if user already exists
+        // التحقق من عدم وجود حساب مسبق بنفس البيانات
         let existingUser;
         if (email) {
             existingUser = await db.getAsync('SELECT id FROM users WHERE email = $1', [email]);
         } else if (phone) {
-            existingUser = await db.getAsync('SELECT id FROM users WHERE phone = $1', [phone]);
+            existingUser = await db.getAsync('SELECT id FROM users WHERE phone = $2', [phone]);
         }
 
+        // إذا وجد حساب مسبق، نرسل خطأ
         if (existingUser) {
             return res.status(400).json({ error: 'User already exists' });
         }
 
+        // إنشاء معرف فريد جديد للمستخدم
         const userId = uuidv4();
+        // تشفير كلمة المرور قبل حفظها
         const hashedPassword = await bcrypt.hash(password, 12);
 
+        // إدخال بيانات المستخدم الجديد في قاعدة البيانات
         await db.runAsync(
             'INSERT INTO users (id, email, phone, password, full_name, role, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7)',
             [userId, email || null, phone || null, hashedPassword, full_name, 'user', 1]
         );
 
+        // إرسال رد بنجاح العملية
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
+        // طباعة أي خطأ برمي في السيرفر
         console.error('Register error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
 
-// Send Registration Code (OTP)
+// 6. مسار إرسال كود التحقق للتسجيل (Registration OTP)
 router.post('/send-register-code', async (req, res) => {
     try {
+        // استخراج البيانات المطلوبة
         const { email, phone } = req.body;
         if (!email && !phone) return res.status(400).json({ error: 'Email or phone required' });
 
-        // Check if user already exists
+        // التحقق من عدم وجود الحساب قبل البدء
         let existingUser;
         if (email) existingUser = await db.getAsync('SELECT id FROM users WHERE email = $1', [email]);
         else if (phone) existingUser = await db.getAsync('SELECT id FROM users WHERE phone = $1', [phone]);
 
         if (existingUser) return res.status(400).json({ error: 'User already exists' });
 
-        // Generate Code
+        // توليد كود عشوائي من 6 أرقام
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
         
-        // Mock sending with Beautiful Template
+        // محاكاة الإرسال عبر الطباعة في Terminal السيرفر بقالب جمالي
         const methodLabel = email ? 'EMAIL' : 'SMS';
         const targetValue = email || phone;
         
@@ -149,10 +175,10 @@ router.post('/send-register-code', async (req, res) => {
 ╚════════════════════════════════════════════════════════════╝
         `);
 
-        // Return code (for local dev purposes only, normally you'd save it in redis/db and not return it)
-        // To make it easy to test without email provider, we return it here.
+        // ملاحظة: لأغراض التطوير المحلي، يتم إرسال الكود في الرد للسماح بتجربة البرنامج بدون إرسال حقيقي
         res.json({ success: true, code: resetCode });
     } catch (err) {
+        // معالجة الخطأ
         console.error('Send register code error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
@@ -363,32 +389,36 @@ router.put('/change-password/:userId', require('../middleware/auth').authenticat
     }
 });
 
-// Forgot Password - إرسال token عشوائي آمن
+// 7. مسار استعادة كلمة المرور (Forgot Password)
 router.post('/forgot-password', async (req, res) => {
     try {
+        // استخراج معرف الحساب (إيميل أو هاتف)
         const { identifier } = req.body;
         if (!identifier) return res.status(400).json({ error: 'Identifier is required' });
 
+        // البحث عن المستخدم في قاعدة البيانات
         const user = await db.getAsync(
             'SELECT id, email, phone FROM users WHERE email = $1 OR phone = $2',
             [identifier, identifier]
         );
 
-        // لأمان أعلى: لا نكشف إذا كان المستخدم موجوداً أم لا
+        // لأسباب أمنية: لا نخبر المخترقين إذا كان الحساب موجوداً أم لا
         if (!user) {
             return res.json({ success: true, message: 'If the account exists, a reset code has been sent.' });
         }
 
-        // توليد كود عشوائي آمن (6 أرقام)
+        // توليد كود التحقق الآمن (6 أرقام)
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
-        const resetExpires = new Date(Date.now() + 15 * 60 * 1000); // صلاحية 15 دقيقة
+        // الكود صالح لمدة 15 دقيقة فقط
+        const resetExpires = new Date(Date.now() + 15 * 60 * 1000);
 
+        // حفظ كود التحقق ووقت انتهائه في سجل المستخدم
         await db.runAsync(
             'UPDATE users SET reset_token = $1, reset_token_expires = $2 WHERE id = $3',
             [resetCode, resetExpires.toISOString(), user.id]
         );
 
-        // Beautiful Template for Forgot Password
+        // محاكاة إرسال الرسالة بقالب جمالي في سجلات السيرفر
         const methodLabel = user.email ? 'EMAIL' : 'SMS';
         const targetValue = user.email || user.phone;
         
@@ -403,13 +433,15 @@ router.post('/forgot-password', async (req, res) => {
 ╚════════════════════════════════════════════════════════════╝
         `);
 
+        // الرد على الواجهة الأمامية بالنجاح مع تحديد طريقة الإرسال والمعرف
         res.json({
             success: true,
             message: 'Verification code sent',
             context_id: user.id,
-            method
+            method: methodLabel.toLowerCase()
         });
     } catch (err) {
+        // معالجة الخطأ العام
         console.error('Forgot password error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }

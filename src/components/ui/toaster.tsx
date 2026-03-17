@@ -1,24 +1,25 @@
-import { useToast } from "@/hooks/use-toast";
-import { Toast, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "@/components/ui/toast";
+import { useToast } from "@/hooks/use-toast"; // استيراد الخطاف المخصص لإدارة التنبيهات
+import { Toast, ToastClose, ToastDescription, ToastProvider, ToastTitle, ToastViewport } from "@/components/ui/toast"; // استيراد مكونات التنبيه
 
+// مكون التوستر (Toaster) المسؤول عن عرض كافة التنبيهات النشطة
 export function Toaster() {
-  const { toasts } = useToast();
+  const { toasts } = useToast(); // استخراج قائمة التنبيهات من الخطاف
 
   return (
-    <ToastProvider>
+    <ToastProvider> {/* مزود سياق التنبيهات */}
       {toasts.map(function ({ id, title, description, action, ...props }) {
         return (
-          <Toast key={id} {...props}>
+          <Toast key={id} {...props}> {/* مكون التنبيه الفردي */}
             <div className="grid gap-1">
-              {title && <ToastTitle>{title}</ToastTitle>}
-              {description && <ToastDescription>{description}</ToastDescription>}
+              {title && <ToastTitle>{title}</ToastTitle>} {/* عرض العنوان إذا وجد */}
+              {description && <ToastDescription>{description}</ToastDescription>} {/* عرض الوصف إذا وجد */}
             </div>
-            {action}
-            <ToastClose />
+            {action} {/* عرض الإجراء الإضافي إن وجد */}
+            <ToastClose /> {/* زر الإغلاق */}
           </Toast>
         );
       })}
-      <ToastViewport />
+      <ToastViewport /> {/* منطقة عرض التنبيهات على الشاشة */}
     </ToastProvider>
   );
 }

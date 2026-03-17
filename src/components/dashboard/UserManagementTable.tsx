@@ -64,23 +64,26 @@ const UserManagementTable: React.FC<Props> = ({ onAddAdmin }) => {
     inactive: users.filter(u => u.is_active === false).length,
   };
 
+  // 1. جلب قائمة المستخدمين عند تحميل المكون
   useEffect(() => {
     fetchUsers();
   }, []);
 
   const isSuperAdmin = userRole?.role === 'super_admin';
 
+  // 2. دالة جلب البيانات من السيرفر
   const fetchUsers = async () => {
-    setLoading(true);
+    setLoading(true); // بدء حالة التحميل
     try {
       const data = await apiClient('/auth/users');
       setUsers(data as UserWithRole[]);
     } catch (err: any) {
       console.error('Fetch users error:', err);
     }
-    setLoading(false);
+    setLoading(false); // انتهاء التحميل
   };
 
+  // 3. تفعيل أو إيقاف حساب المستخدم
   const handleToggleStatus = async (userId: string, currentStatus: boolean) => {
     try {
       await apiClient(`/auth/users/${userId}`, {
@@ -88,12 +91,13 @@ const UserManagementTable: React.FC<Props> = ({ onAddAdmin }) => {
         body: JSON.stringify({ is_active: !currentStatus })
       });
       toast({ title: isAr ? 'تم تحديث الحالة' : 'Status updated' });
-      fetchUsers();
+      fetchUsers(); // إعادة الجلب لتحديث الجدول
     } catch (err: any) {
       toast({ title: err.message, variant: 'destructive' });
     }
   };
 
+  // 4. حذف مستخدم نهائياً
   const handleDeleteUser = async (userId: string) => {
     if (!confirm(isAr ? 'هل أنت متأكد من حذف هذا المستخدم؟' : 'Are you sure you want to delete this user?')) return;
     try {
@@ -105,6 +109,7 @@ const UserManagementTable: React.FC<Props> = ({ onAddAdmin }) => {
     }
   };
 
+  // 5. التحضير لعملية التعديل (فتح النافذة وتعبئة البيانات)
   const handleEditClick = (u: UserWithRole) => {
     setSelectedUser(u);
     setEditFormData({
@@ -116,6 +121,7 @@ const UserManagementTable: React.FC<Props> = ({ onAddAdmin }) => {
     setIsEditDialogOpen(true);
   };
 
+  // 6. إرسال البيانات المحدثة للسيرفر
   const handleUpdateUser = async () => {
     if (!selectedUser) return;
     try {

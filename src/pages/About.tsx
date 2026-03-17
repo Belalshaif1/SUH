@@ -3,7 +3,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import apiClient from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { User, Info, Mail, Globe, Code } from 'lucide-react';
+import { User, Info, Mail, Globe, Code, FileText } from 'lucide-react';
 
 const About: React.FC = () => {
     const { t, language } = useLanguage();
@@ -109,12 +109,20 @@ const About: React.FC = () => {
                                 </Badge>
 
                                 <div className="flex justify-center gap-4">
-                                    <a href="mailto:contact@example.com" className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-primary/5 flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300 border border-border/50 group-hover:-translate-y-1">
+                                    <a href={`mailto:${data?.developer_email || 'contact@example.com'}`} className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-primary/5 flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300 border border-border/50 group-hover:-translate-y-1">
                                         <Mail className="h-6 w-6" />
                                     </a>
-                                    <a href="#" className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-primary/5 flex items-center justify-center hover:bg-gold hover:text-white transition-all duration-300 border border-border/50 group-hover:-translate-y-1">
-                                        <Code className="h-6 w-6" />
-                                    </a>
+                                    {data?.developer_cv_url && (
+                                        <a 
+                                            href={data.developer_cv_url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                            className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-primary/5 flex items-center justify-center hover:bg-gold hover:text-white transition-all duration-300 border border-border/50 group-hover:-translate-y-1"
+                                            title={language === 'ar' ? 'تحميل السيرة الذاتية' : 'Download CV'}
+                                        >
+                                            <FileText className="h-6 w-6" />
+                                        </a>
+                                    )}
                                     <a href="#" className="h-14 w-14 rounded-2xl bg-white shadow-xl shadow-primary/5 flex items-center justify-center hover:bg-primary hover:text-white transition-all duration-300 border border-border/50 group-hover:-translate-y-1">
                                         <Globe className="h-6 w-6" />
                                     </a>

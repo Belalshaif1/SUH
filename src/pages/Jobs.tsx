@@ -23,6 +23,7 @@ const Jobs: React.FC = () => {
   const [isApplying, setIsApplying] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  // 1. جلب قائمة الوظائف من السيرفر عند تحميل الصفحة
   useEffect(() => {
     apiClient('/jobs')
       .then(data => {
@@ -37,6 +38,7 @@ const Jobs: React.FC = () => {
 
   const isAr = language === 'ar';
 
+  // 2. تصفية (Filtering) الوظائف بناءً على نص البحث
   const filteredJobs = jobs.filter(j => {
     const title = isAr ? j.title_ar : (j.title_en || j.title_ar);
     const company = j.universities ? (language === 'ar' ? j.universities.name_ar : j.universities.name_en) : '';
@@ -44,27 +46,31 @@ const Jobs: React.FC = () => {
       company.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
+  // 3. معالجة النقر على زر تقديم (التحقق من تسجيل الدخول)
   const handleApplyClick = (jobId: string) => {
     if (!user) {
       toast({ title: isAr ? 'الرجاء تسجيل الدخول للتقديم' : 'Please log in to apply', variant: 'destructive' });
       navigate('/login');
       return;
     }
-    setSelectedJob(jobId);
+    setSelectedJob(jobId); // فتح نافذة رفع السيرة الذاتية
   };
 
+  // 4. إرسال طلب التوظيف (رفع الملف + إنشاء سجل في قاعدة البيانات)
   const handleApply = async () => {
     if (!selectedJob || !cvFile) {
       toast({ title: isAr ? 'الرجاء اختيار ملف' : 'Please select a file', variant: 'destructive' });
       return;
     }
 
-    setIsApplying(true);
+    setIsApplying(true); // حالة تحميل أثناء الإرسال
     try {
       const formData = new FormData();
       formData.append('file', cvFile);
+      // أولاً: رفع ملف السيرة الذاتية للسيرفر
       const uploadData = await apiClient('/upload', { method: 'POST', body: formData });
 
+      // ثانياً: ربط الملف بالوظيفة المختارة في قاعدة البيانات
       await apiClient('/job_applications', {
         method: 'POST',
         body: JSON.stringify({ job_id: selectedJob, file_url: uploadData.url })
@@ -78,7 +84,6 @@ const Jobs: React.FC = () => {
     }
     setIsApplying(false);
   };
-
   return (
     <div className="container mx-auto px-4 py-16 animate-fade-in min-h-[80vh]">
       {/* Header Section */}
