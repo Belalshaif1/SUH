@@ -66,7 +66,7 @@ const Research: React.FC = () => {
         else if (sortOrder === 'name') sorted.sort((a, b) => {
           const nameA = language === 'ar' ? a.title_ar : (a.title_en || a.title_ar);
           const nameB = language === 'ar' ? b.title_ar : (b.title_en || b.title_ar);
-          return nameA.localeCompare(nameB, language === 'ar' ? 'ar' : 'en');
+          return (nameA || '').localeCompare(nameB || '', language === 'ar' ? 'ar' : 'en');
         });
         setResearch(sorted);
         setLoading(false);
@@ -82,7 +82,7 @@ const Research: React.FC = () => {
   const filteredResearch = research.filter(r => {
     const title = isAr ? r.title_ar : (r.title_en || r.title_ar);
     const author = r.author_name || '';
-    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const matchesSearch = (title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       author.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });

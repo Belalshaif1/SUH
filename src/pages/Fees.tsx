@@ -29,10 +29,10 @@ const Fees: React.FC = () => {
   const isAr = language === 'ar';
 
   const filteredFees = fees.filter(f => {
-    const deptName = f.departments ? (isAr ? f.departments.name_ar : f.departments.name_en) : '';
-    const colName = f.departments?.colleges ? (isAr ? f.departments.colleges.name_ar : f.departments.colleges.name_en) : '';
-    const matchesSearch = deptName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      colName.toLowerCase().includes(searchTerm.toLowerCase());
+    const deptName = f.departments ? (isAr ? f.departments.name_ar : (f.departments.name_en || f.departments.name_ar)) : '';
+    const colName = f.departments?.colleges ? (isAr ? f.departments.colleges.name_ar : (f.departments.colleges.name_en || f.departments.colleges.name_ar)) : '';
+    const matchesSearch = (deptName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (colName || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || f.fee_type === typeFilter;
     return matchesSearch && matchesType;
   });

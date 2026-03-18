@@ -63,7 +63,7 @@ const Graduates: React.FC = () => {
         else if (sortOrder === 'name') sorted.sort((a, b) => {
           const nameA = isAr ? a.full_name_ar : (a.full_name_en || a.full_name_ar);
           const nameB = isAr ? b.full_name_ar : (b.full_name_en || b.full_name_ar);
-          return nameA.localeCompare(nameB, isAr ? 'ar' : 'en');
+          return (nameA || '').localeCompare(nameB || '', isAr ? 'ar' : 'en');
         });
         setGraduates(sorted);
         setLoading(false);
@@ -78,7 +78,7 @@ const Graduates: React.FC = () => {
 
   const filteredGraduates = graduates.filter(g => {
     const name = isAr ? g.full_name_ar : (g.full_name_en || g.full_name_ar);
-    return name.toLowerCase().includes(searchTerm.toLowerCase());
+    return (name || '').toLowerCase().includes(searchTerm.toLowerCase());
   });
 
   return (
