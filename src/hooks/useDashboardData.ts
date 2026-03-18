@@ -81,115 +81,131 @@ export const useDashboardData = () => {
             // --- RBAC Logic (Role-Based Access Control) ---
             // We process the global result based on what the user is allowed to see.
 
+            const safeURes = uRes || [];
+            const safeCRes = cRes || [];
+            const safeDRes = dRes || [];
+            const safeGRes = gRes || [];
+            const safeRRes = rRes || [];
+            const safeJRes = jRes || [];
+            const safeARes = aRes || [];
+            const safeFRes = fRes || [];
+
             if (role === 'super_admin') {
                 // Super Admins see everything directly without filtering
-                setUniversities(uRes || []);
-                setColleges(cRes || []);
-                setDepartments(dRes || []);
-                setGraduates(gRes || []);
-                setResearch(rRes || []);
-                setJobs(jRes || []);
-                setAnnouncements(aRes || []);
-                setFees(fRes || []);
+                setUniversities(safeURes);
+                setColleges(safeCRes);
+                setDepartments(safeDRes);
+                setGraduates(safeGRes);
+                setResearch(safeRRes);
+                setJobs(safeJRes);
+                setAnnouncements(safeARes);
+                setFees(safeFRes);
                 setErrorLogs(logsRes || []);
                 setAboutData(aboutRes);
 
                 // Calculate global stats for Super Admin
                 setStats({
-                    universities: uRes.length || 0,
-                    colleges: cRes.length || 0,
-                    departments: dRes.length || 0,
-                    graduates: gRes.length || 0,
-                    research: rRes.length || 0,
+                    universities: safeURes.length,
+                    colleges: safeCRes.length,
+                    departments: safeDRes.length,
+                    graduates: safeGRes.length,
+                    research: safeRRes.length,
                     users: 0 // User counting logic can be added here if needed
                 });
             } else if (role === 'university_admin') {
                 // University Admins see data related ONLY to their specific University ID
                 const uid = userRole.university_id;
-                const filteredUniversities = (uRes || []).filter((u: any) => u.id === uid);
-                const filteredColleges = (cRes || []).filter((c: any) => c.university_id === uid);
-                const filteredDepartments = (dRes || []).filter((d: any) => d.university_id === uid);
+                const filteredUniversities = safeURes.filter((u: any) => u.id === uid);
+                const filteredColleges = safeCRes.filter((c: any) => c.university_id === uid);
+                const filteredDepartments = safeDRes.filter((d: any) => d.university_id === uid);
                 const collegeIds = filteredColleges.map((c: any) => c.id);
 
                 // Complex filtering for announcements based on scope (Multi-level access)
-                const filteredAnnouncements = (aRes || []).filter((a: any) =>
+                const filteredAnnouncements = safeARes.filter((a: any) =>
                     (a.scope === 'university' && a.university_id === uid) ||
                     (a.scope === 'college' && collegeIds.includes(a.college_id))
                 );
 
+                const filteredGraduates = safeGRes.filter((g: any) => filteredDepartments.some((d: any) => d.id === g.department_id));
+                const filteredResearch = safeRRes.filter((r: any) => filteredDepartments.some((d: any) => d.id === r.department_id));
+
                 setUniversities(filteredUniversities);
                 setColleges(filteredColleges);
                 setDepartments(filteredDepartments);
-                setJobs((jRes || []).filter((j: any) => collegeIds.includes(j.college_id)));
+                setJobs(safeJRes.filter((j: any) => collegeIds.includes(j.college_id)));
                 setAnnouncements(filteredAnnouncements);
-                setGraduates((gRes || []).filter((g: any) => filteredDepartments.some((d: any) => d.id === g.department_id)));
-                setResearch((rRes || []).filter((r: any) => filteredDepartments.some((d: any) => d.id === r.department_id)));
-                setFees((fRes || []).filter((f: any) => filteredDepartments.some((d: any) => d.id === f.department_id)));
+                setGraduates(filteredGraduates);
+                setResearch(filteredResearch);
+                setFees(safeFRes.filter((f: any) => filteredDepartments.some((d: any) => d.id === f.department_id)));
 
                 setStats({
                     universities: 1,
                     colleges: filteredColleges.length,
                     departments: filteredDepartments.length,
-                    graduates: graduates.length,
-                    research: research.length,
+                    graduates: filteredGraduates.length,
+                    research: filteredResearch.length,
                     users: 0
                 });
 
             } else if (role === 'college_admin') {
                 // College Admins see ONLY data within their college
                 const cid = userRole.college_id;
-                const myCollege = (cRes || []).filter((c: any) => c.id === cid);
-                const myDepts = (dRes || []).filter((d: any) => d.college_id === cid);
+                const myCollege = safeCRes.filter((c: any) => c.id === cid);
+                const myDepts = safeDRes.filter((d: any) => d.college_id === cid);
                 const deptIds = myDepts.map((d: any) => d.id);
-                const myUni = (uRes || []).filter((u: any) =>
+                const myUni = safeURes.filter((u: any) =>
                     myCollege.some((c: any) => c.university_id === u.id)
                 );
+                const myGraduates = safeGRes.filter((g: any) => deptIds.includes(g.department_id));
+                const myResearch = safeRRes.filter((r: any) => deptIds.includes(r.department_id));
 
                 setUniversities(myUni);
                 setColleges(myCollege);
                 setDepartments(myDepts);
-                setJobs((jRes || []).filter((j: any) => j.college_id === cid));
-                setGraduates((gRes || []).filter((g: any) => deptIds.includes(g.department_id)));
-                setResearch((rRes || []).filter((r: any) => deptIds.includes(r.department_id)));
-                setFees((fRes || []).filter((f: any) => deptIds.includes(f.department_id)));
-                setAnnouncements((aRes || []).filter((a: any) =>
+                setJobs(safeJRes.filter((j: any) => j.college_id === cid));
+                setGraduates(myGraduates);
+                setResearch(myResearch);
+                setFees(safeFRes.filter((f: any) => deptIds.includes(f.department_id)));
+                setAnnouncements(safeARes.filter((a: any) =>
                     a.scope === 'college' && a.college_id === cid
                 ));
                 setStats({
                     universities: myUni.length,
                     colleges: 1,
                     departments: myDepts.length,
-                    graduates: 0, research: 0, users: 0
+                    graduates: myGraduates.length, research: myResearch.length, users: 0
                 });
 
             } else if (role === 'department_admin') {
                 // Department Admins see ONLY data within their department
                 const did = userRole.department_id;
-                const myDept = (dRes || []).filter((d: any) => d.id === did);
+                const myDept = safeDRes.filter((d: any) => d.id === did);
                 const myCollege = myDept.length > 0
-                    ? (cRes || []).filter((c: any) => c.id === myDept[0]?.college_id)
+                    ? safeCRes.filter((c: any) => c.id === myDept[0]?.college_id)
                     : [];
                 const myUni = myCollege.length > 0
-                    ? (uRes || []).filter((u: any) => u.id === myCollege[0]?.university_id)
+                    ? safeURes.filter((u: any) => u.id === myCollege[0]?.university_id)
                     : [];
+                const myGraduates = safeGRes.filter((g: any) => g.department_id === did);
+                const myResearch = safeRRes.filter((r: any) => r.department_id === did);
 
                 setUniversities(myUni);
                 setColleges(myCollege);
                 setDepartments(myDept);
-                setJobs((jRes || []).filter((j: any) =>
+                setJobs(safeJRes.filter((j: any) =>
                     myCollege.some((c: any) => c.id === j.college_id)
                 ));
-                setGraduates((gRes || []).filter((g: any) => g.department_id === did));
-                setResearch((rRes || []).filter((r: any) => r.department_id === did));
-                setFees((fRes || []).filter((f: any) => f.department_id === did));
-                setAnnouncements((aRes || []).filter((a: any) =>
+                setGraduates(myGraduates);
+                setResearch(myResearch);
+                setFees(safeFRes.filter((f: any) => f.department_id === did));
+                setAnnouncements(safeARes.filter((a: any) =>
                     a.created_by === user?.id || (a.scope === 'college' && myCollege.some((c: any) => c.id === a.college_id))
                 ));
                 setStats({
                     universities: myUni.length,
                     colleges: myCollege.length,
                     departments: 1,
-                    graduates: 0, research: 0, users: 0
+                    graduates: myGraduates.length, research: myResearch.length, users: 0
                 });
             }
         } catch (err) {
@@ -199,7 +215,7 @@ export const useDashboardData = () => {
             // Ensure loading state is turned off regardless of success or failure
             setLoading(false);
         }
-    }, [user, userRole, graduates.length, research.length]); // Dependencies for the callback
+    }, [user, userRole]); // Dependencies for the callback
 
     /**
      * processData - Utility to sort and filter lists before rendering

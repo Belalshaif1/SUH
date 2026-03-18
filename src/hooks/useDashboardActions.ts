@@ -102,6 +102,11 @@ export const useDashboardActions = (fetchData: () => void, onSuccess: () => void
                 delete payload.is_pinned;
             }
 
+            // Remove internal file fields (File objects are not JSON-serializable)
+            Object.keys(payload).forEach(key => {
+                if (key.startsWith('_')) delete payload[key];
+            });
+
             // Note: Logic for other forms (Announcements, Research, etc.) follows the same pattern.
             // We would ideally use a strategy pattern here if the number of entities grows very large.
 

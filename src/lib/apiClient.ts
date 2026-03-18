@@ -63,17 +63,32 @@ const apiClient = async (endpoint: string, options: RequestOptions = {}) => {
                 const data = await response.json(); // تحويل الاستجابة إلى كائن JSON
                 // إذا كانت البيانات عبارة عن قائمة (Array) وبدون معاملات بحث خاصة، يتم تحديث التخزين المحلي
                 if (Array.isArray(data) && !params) { 
-                    await db.table(tableName).clear(); // مسح البيانات القديمة المخزنة في الجهاز
-                    await db.table(tableName).bulkAdd(data); // إضافة البيانات الجديدة المستلمة من الخادم
+                    try {
+                        await db.table(tableName).clear(); // مسح البيانات القديمة المخزنة في الجهاز
+                        await db.table(tableName).bulkAdd(data); // إضافة البيانات الجديدة المستلمة من الخادم
+                    } catch (cacheError) {
+                        console.warn('Cache update failed, continuing without cache:', cacheError);
+                    }
                 }
                 return data; // إرجاع البيانات المستلمة للمكون الذي طلبها
             }
-        } catch (error) { 
+            // إذا كانت الاستجابة غير ناجحة، نعالجها مباشرة بدلاً من السقوط للمعالج العام
+            const errorData = await response.json().catch(() => ({}));
+            const isAr = localStorage.getItem('language') === 'ar';
+            const genericMsg = isAr ? 'حدث خطأ غير متوقع، يرجى المحاولة لاحقاً' : 'An unexpected error occurred, please try again later';
+            throw new Error(errorData.error || genericMsg);
+        } catch (error: any) { 
             // في حال فشل الاتصال بالإنترنت، يتم طباعة تحذير ومحاولة جلب البيانات من الذاكرة المحلية
-            console.warn('Network error, attempting to serve from cache:', endpoint); 
-            // البحث عن البيانات في قاعدة البيانات المحلية (IndexedDB)
-            const cachedData = await db.table(tableName).toArray(); 
-            if (cachedData.length > 0) return cachedData; // إرجاع البيانات المخزنة محلياً إذا وُجدت
+            if (error.message?.includes('Failed to fetch') || !navigator.onLine) {
+                console.warn('Network error, attempting to serve from cache:', endpoint); 
+                try {
+                    // البحث عن البيانات في قاعدة البيانات المحلية (IndexedDB)
+                    const cachedData = await db.table(tableName).toArray(); 
+                    if (cachedData.length > 0) return cachedData; // إرجاع البيانات المخزنة محلياً إذا وُجدت
+                } catch (cacheReadError) {
+                    console.warn('Cache read failed:', cacheReadError);
+                }
+            }
             throw error; // إذا لم توجد بيانات مخزنة، يتم إرسال الخطأ للأعلى
         }
     }
