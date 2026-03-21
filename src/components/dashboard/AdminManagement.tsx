@@ -267,7 +267,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
     return names[r]?.[language] || r;
   };
 
-  // 17. دالة بناء اسم النطاق الإداري (مثلاً: قسم كذا - كلية كذا - جامعة كذا)
+  // 17. دالة بناء اسم النطاق الإداري (مثلاً: قسم كذا - الكلية - الجامعة)
   const getEntityName = (admin: AdminRole) => {
     if (admin.role === 'super_admin') return isAr ? 'إدارة الموقع كاملة' : 'Full Site Management';
 
@@ -286,7 +286,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         }
       }
     } 
-    // الحالة 2: مدير كلية (نعرض الكلية والجامعة)
+    // الحالة 2: مدير الكلية (نعرض الكلية والجامعة)
     else if (admin.college_id) {
       const col = colleges.find(c => c.id === admin.college_id);
       if (col) {
@@ -295,7 +295,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
         if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
       }
     }
-    // الحالة 3: مدير جامعة (نعرض اسم الجامعة فقط)
+    // الحالة 3: مدير الجامعة (نعرض اسم الجامعة فقط)
     else if (admin.university_id) {
       const uni = universities.find(u => u.id === admin.university_id);
       if (uni) parts.push(isAr ? uni.name_ar : (uni.name_en || uni.name_ar));
@@ -502,7 +502,7 @@ const AdminManagement: React.FC<Props> = ({ universities, colleges, departments 
       </div>
 
       {/* Create Admin Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(isOpen) => setDialogOpen(isOpen)}>
         <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{isAr ? 'إضافة مدير جديد' : 'Add New Admin'}</DialogTitle>

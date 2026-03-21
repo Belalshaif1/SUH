@@ -61,8 +61,8 @@ const Graduates: React.FC = () => {
         if (sortOrder === 'newest') sorted.sort((a, b) => new Date(b.created_at || b.id).getTime() - new Date(a.created_at || a.id).getTime());
         else if (sortOrder === 'oldest') sorted.sort((a, b) => new Date(a.created_at || a.id).getTime() - new Date(b.created_at || b.id).getTime());
         else if (sortOrder === 'name') sorted.sort((a, b) => {
-          const nameA = isAr ? a.full_name_ar : (a.full_name_en || a.full_name_ar);
-          const nameB = isAr ? b.full_name_ar : (b.full_name_en || b.full_name_ar);
+          const nameA = (isAr ? a.full_name_ar : (a.full_name_en || a.full_name_ar)) || '';
+          const nameB = (isAr ? b.full_name_ar : (b.full_name_en || b.full_name_ar)) || '';
           return nameA.localeCompare(nameB, isAr ? 'ar' : 'en');
         });
         setGraduates(sorted);
@@ -72,12 +72,12 @@ const Graduates: React.FC = () => {
         console.error("Error fetching graduates:", err);
         setLoading(false);
       });
-  }, [selectedUni, selectedCollege, selectedDept, sortOrder]);
+  }, [selectedUni, selectedCollege, selectedDept, sortOrder, language]); // Added language to dependencies as it affects sorting by name
 
   const isAr = language === 'ar';
 
   const filteredGraduates = graduates.filter(g => {
-    const name = isAr ? g.full_name_ar : (g.full_name_en || g.full_name_ar);
+    const name = (isAr ? g.full_name_ar : (g.full_name_en || g.full_name_ar)) || '';
     return name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 

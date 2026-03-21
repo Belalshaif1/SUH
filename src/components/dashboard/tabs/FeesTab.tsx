@@ -45,7 +45,7 @@ export const FeesTab: React.FC<FeesTabProps> = ({
                 </div>
                 {/* Creation Action - Standardized Gold theme */}
                 {canAdd && (
-                <Button onClick={onAdd} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
+                <Button onClick={() => onAdd()} className="h-12 px-6 rounded-xl bg-gold text-white font-bold shadow-xl shadow-gold/20 transition-all hover:scale-105 active:scale-95">
                     <Plus className="h-5 w-5 me-2" />{t('common.add')}
                 </Button>
                 )}

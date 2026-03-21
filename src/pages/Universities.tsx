@@ -119,7 +119,7 @@ const Universities: React.FC = () => {
                 {d.study_plan_url && (
                   <div className="flex gap-4 mt-auto">
                     <a
-                      href={d.study_plan_url.startsWith('http') ? d.study_plan_url : `http://localhost:5000${d.study_plan_url}`}
+                      href={getMediaUrl(d.study_plan_url)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1"

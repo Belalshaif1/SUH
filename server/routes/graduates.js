@@ -68,6 +68,10 @@ router.post('/', authenticateToken, checkPermission('manage_graduates'), async (
     try {
         const { department_id, full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en } = req.body;
 
+        if (!department_id || !full_name_ar || !graduation_year) {
+            return res.status(400).json({ error: 'Department ID, Full Name (AR), and Graduation Year are required' });
+        }
+
         if (req.user.role !== 'super_admin') {
             const dept = await db.getAsync(`
                 SELECT d.id, c.university_id, d.college_id 
@@ -104,6 +108,10 @@ router.post('/', authenticateToken, checkPermission('manage_graduates'), async (
 router.put('/:id', authenticateToken, checkPermission('manage_graduates'), async (req, res) => {
     try {
         const { full_name_ar, full_name_en, graduation_year, gpa, specialization_ar, specialization_en } = req.body;
+
+        if (!full_name_ar || !graduation_year) {
+            return res.status(400).json({ error: 'Full Name (AR) and Graduation Year are required' });
+        }
         const target = await db.getAsync(`
             SELECT g.id, c.university_id, d.college_id, g.department_id 
             FROM graduates g 

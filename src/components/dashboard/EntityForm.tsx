@@ -4,19 +4,19 @@
  * It manages field visibility, validation requirements, and localized labels.
  */
 
-import React from 'react'; // React UI library
-import { useLanguage } from '@/contexts/LanguageContext'; // For AR/EN support
-import { Label } from '@/components/ui/label'; // UI Label component
-import { Input } from '@/components/ui/input'; // UI Input field
-import { Textarea } from '@/components/ui/textarea'; // UI Textarea field
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Select components
-import { Pin } from 'lucide-react'; // Icons
+import React from 'react'; // Import React for building UI components
+import { useLanguage } from '@/contexts/LanguageContext'; // Import language context for localization
+import { Label } from '@/components/ui/label'; // Import Label component for form labels
+import { Input } from '@/components/ui/input'; // Import Input component for text fields
+import { Textarea } from '@/components/ui/textarea'; // Import Textarea component for multiline text fields
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'; // Import Select components for dropdowns
+import { Pin } from 'lucide-react'; // Import Pin icon for pinning functionality
 
 /**
  * Props for EntityForm
  */
 interface EntityFormProps {
-    activeForm: string; // The type of entity being edited (e.g. 'university')
+    activeForm: string; // The type of entity being edited (e.g., 'university')
     formData: any; // The current form state
     setFormData: (data: any) => void; // State updater function
     role: string | undefined; // Current user role for RBAC checks
@@ -26,10 +26,14 @@ interface EntityFormProps {
     t: (key: string) => string; // Translation function
 }
 
+/**
+ * EntityForm Component
+ * @description Renders dynamic forms based on the activeForm prop.
+ */
 export const EntityForm: React.FC<EntityFormProps> = ({
     activeForm, formData, setFormData, role, universities, colleges, departments, t
 }) => {
-    const { language } = useLanguage(); // User language preference
+    const { language } = useLanguage(); // Get the current language preference
 
     /**
      * f - Standard Field Generator
@@ -37,30 +41,33 @@ export const EntityForm: React.FC<EntityFormProps> = ({
      */
     const f = (key: string, label: string, type = 'text', required = false, placeholder = '', desc = '', disabled = false) => (
         <div className="space-y-1" key={key}>
+            {/* Label and Required Indicator */}
             <div className="flex items-center justify-between">
                 <Label className="font-bold text-primary/80">{label}</Label>
                 {required && <span className="text-[10px] text-red-500 font-black uppercase">{language === 'ar' ? 'مطلوب' : 'Required'}</span>}
             </div>
+            {/* Input or Textarea Field */}
             {type === 'textarea' ? (
                 <Textarea
-                    placeholder={placeholder || label}
-                    value={formData[key] || ''}
-                    onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                    required={required}
-                    disabled={disabled}
+                    placeholder={placeholder || label} // Placeholder text
+                    value={formData[key] || ''} // Bind value to formData
+                    onChange={e => setFormData({ ...formData, [key]: e.target.value })} // Update state on change
+                    required={required} // Mark as required if applicable
+                    disabled={disabled} // Disable field if applicable
                     className="min-h-[120px] resize-none focus-visible:ring-primary/20 rounded-xl"
                 />
             ) : (
                 <Input
-                    type={type}
-                    placeholder={placeholder || label}
-                    value={formData[key] || ''}
-                    onChange={e => setFormData({ ...formData, [key]: e.target.value })}
-                    required={required}
-                    disabled={disabled}
+                    type={type} // Input type (e.g., text, number)
+                    placeholder={placeholder || label} // Placeholder text
+                    value={formData[key] || ''} // Bind value to formData
+                    onChange={e => setFormData({ ...formData, [key]: e.target.value })} // Update state on change
+                    required={required} // Mark as required if applicable
+                    disabled={disabled} // Disable field if applicable
                     className="h-12 focus-visible:ring-primary/20 rounded-xl"
                 />
             )}
+            {/* Description Text */}
             {desc && <p className="text-[11px] text-primary/30 leading-tight px-1 italic">{desc}</p>}
         </div>
     );
@@ -72,14 +79,14 @@ export const EntityForm: React.FC<EntityFormProps> = ({
         role === 'super_admin' ? (
             <div className="flex items-center gap-2 pt-4 border-t mt-6 bg-slate-50/50 p-4 rounded-xl">
                 <input
-                    type="checkbox"
-                    id="is_pinned"
-                    checked={!!formData.is_pinned}
-                    onChange={e => setFormData({ ...formData, is_pinned: e.target.checked })}
+                    type="checkbox" // Checkbox input
+                    id="is_pinned" // Unique ID for the checkbox
+                    checked={!!formData.is_pinned} // Bind checked state to formData
+                    onChange={e => setFormData({ ...formData, is_pinned: e.target.checked })} // Update state on change
                     className="h-5 w-5 rounded-lg border-primary/20 text-primary focus:ring-primary/20"
                 />
                 <Label htmlFor="is_pinned" className="cursor-pointer font-black text-primary flex items-center gap-2">
-                    <Pin className="h-4 w-4" />
+                    <Pin className="h-4 w-4" /> {/* Pin icon */}
                     {language === 'ar' ? 'تثبيت في أعلى القائمة' : 'Pin to top of the list (Priority)'}
                 </Label>
             </div>
@@ -97,7 +104,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                     <SelectValue placeholder={language === 'ar' ? 'اختر من القائمة...' : 'Select from list...'} />
                 </SelectTrigger>
                 <SelectContent className="rounded-xl">
-                    {options.map(o => (
+                    {(options || []).map(o => (
                         <SelectItem key={o.id} value={o.id} className="font-bold">
                             {language === 'ar' ? o.name_ar : (o.name_en || o.name_ar)}
                         </SelectItem>

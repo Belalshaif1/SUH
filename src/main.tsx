@@ -1,35 +1,33 @@
-import React from "react"; // استيراد مكتبة React الأساسية
-import { createRoot } from "react-dom/client"; // استيراد وظيفة createRoot لإنشاء جذر تطبيق React
-import App from "./App.tsx"; // استيراد المكون الأساسي للتطبيق
-import "./index.css"; // استيراد ملفات التنسيق العامة
+import React from "react"; // Import the core React library
+import { createRoot } from "react-dom/client"; // Import the createRoot function to initialize the React app
+import App from "./App.tsx"; // Import the main App component
+import "./index.css"; // Import the global CSS styles
 
-createRoot(document.getElementById("root")!).render( // العثور على عنصر 'root' في HTML وبدء عرض التطبيق داخله
-  <React.StrictMode> // استخدام الوضع الصارم لـ React للمساعدة في اكتشاف المشاكل المحتملة
-    <App /> // عرض المكون الرئيسي للتطبيق
-  </React.StrictMode> // إغلاق وسم الوضع الصارم
-); // نهاية دالة العرض
+createRoot(document.getElementById("root")!).render( // Find the HTML element with id 'root' and render the React app inside it
+  <React.StrictMode> {/* Enable React's StrictMode for highlighting potential issues */}
+    <App /> {/* Render the main App component */}
+  </React.StrictMode> // Close the StrictMode wrapper
+); // End of the render function
 
-if ('serviceWorker' in navigator) { // التحقق مما إذا كان المتصفح يدعم Service Worker
-  window.addEventListener('load', () => { // انتظار تحميل نافذة المتصفح بالكامل قبل البدء
-    navigator.serviceWorker.register('/sw.js').then(registration => { // تسجيل ملف sw.js لتفعيل ميزات التطبيق المتقدمة (PWA)
-      // التحقق من وجود تحديثات عند كل تحميل
-      registration.update(); // التحقق من وجود تحديثات لـ Service Worker عند كل تحميل
+if ('serviceWorker' in navigator) { // Check if the browser supports Service Workers
+  window.addEventListener('load', () => { // Wait for the browser window to fully load before proceeding
+    navigator.serviceWorker.register('/sw.js').then(registration => { // Register the Service Worker file (sw.js) for enabling advanced app features (PWA)
+      registration.update(); // Check for updates to the Service Worker on every page load
 
-      registration.onupdatefound = () => { // في حال العثور على تحديث جديد
-        const installingWorker = registration.installing; // الحصول على الـ worker الذي يتم تثبيته حالياً
-        if (installingWorker) { // التأكد من وجود worker قيد التثبيت
-          installingWorker.onstatechange = () => { // مراقبة تغير حالة التثبيت
-            if (installingWorker.state === 'installed') { // إذا اكتمل التثبيت بنجاح
-              if (navigator.serviceWorker.controller) { // إذا كان هناك Service Worker قديم يتحكم في الصفحة حالياً
-                // محتوى جديد متاح؛ يرجى تحديث الصفحة.
-                console.log('New content is available; please refresh.'); // طباعة رسالة تفيد بوجود محتوى جديد يتطلب تحديث الصفحة
+      registration.onupdatefound = () => { // Triggered when a new Service Worker update is found
+        const installingWorker = registration.installing; // Get the currently installing Service Worker
+        if (installingWorker) { // Ensure there is a Service Worker being installed
+          installingWorker.onstatechange = () => { // Monitor the state changes of the installing Service Worker
+            if (installingWorker.state === 'installed') { // If the Service Worker is successfully installed
+              if (navigator.serviceWorker.controller) { // Check if there is an existing Service Worker controlling the page
+                console.log('New content is available; please refresh.'); // Log a message indicating new content is available
               }
             }
           };
         }
       };
-    }).catch(err => { // في حال فشل عملية التسجيل
-      console.log('SW registration failed: ', err); // طباعة رسالة الخطأ في لوحة التحكم
+    }).catch(err => { // Handle errors during the Service Worker registration process
+      console.log('SW registration failed: ', err); // Log the error message to the console
     });
   });
 }

@@ -68,6 +68,10 @@ router.get('/', async (req, res) => {
 router.post('/', authenticateToken, checkPermission('manage_research'), async (req, res) => {
     try {
         const { department_id, title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, students } = req.body;
+        
+        if (!department_id || !title_ar || !author_name) {
+            return res.status(400).json({ error: 'Department ID, Title (AR), and Author Name are required' });
+        }
 
         if (req.user.role !== 'super_admin') {
             const dept = await db.getAsync(`
@@ -105,6 +109,10 @@ router.post('/', authenticateToken, checkPermission('manage_research'), async (r
 router.put('/:id', authenticateToken, checkPermission('manage_research'), async (req, res) => {
     try {
         const { title_ar, title_en, abstract_ar, abstract_en, author_name, published, publish_date, pdf_url, students } = req.body;
+        
+        if (!title_ar || !author_name) {
+            return res.status(400).json({ error: 'Title (AR) and Author Name are required' });
+        }
         const target = await db.getAsync(`
             SELECT r.id, c.university_id, d.college_id, r.department_id 
             FROM research r 

@@ -130,8 +130,8 @@ export const useDashboardData = () => {
                     universities: 1,
                     colleges: filteredColleges.length,
                     departments: filteredDepartments.length,
-                    graduates: graduates.length,
-                    research: research.length,
+                    graduates: (gRes || []).filter((g: any) => filteredDepartments.some((d: any) => d.id === g.department_id)).length,
+                    research: (rRes || []).filter((r: any) => filteredDepartments.some((d: any) => d.id === r.department_id)).length,
                     users: 0
                 });
 
@@ -159,7 +159,9 @@ export const useDashboardData = () => {
                     universities: myUni.length,
                     colleges: 1,
                     departments: myDepts.length,
-                    graduates: 0, research: 0, users: 0
+                    graduates: (gRes || []).filter((g: any) => deptIds.includes(g.department_id)).length,
+                    research: (rRes || []).filter((r: any) => deptIds.includes(r.department_id)).length,
+                    users: 0
                 });
 
             } else if (role === 'department_admin') {
@@ -189,7 +191,9 @@ export const useDashboardData = () => {
                     universities: myUni.length,
                     colleges: myCollege.length,
                     departments: 1,
-                    graduates: 0, research: 0, users: 0
+                    graduates: (gRes || []).filter((g: any) => g.department_id === did).length,
+                    research: (rRes || []).filter((r: any) => r.department_id === did).length,
+                    users: 0
                 });
             }
         } catch (err) {
@@ -199,7 +203,7 @@ export const useDashboardData = () => {
             // Ensure loading state is turned off regardless of success or failure
             setLoading(false);
         }
-    }, [user, userRole, graduates.length, research.length]); // Dependencies for the callback
+    }, [user, userRole]); // Dependencies for the callback
 
     /**
      * processData - Utility to sort and filter lists before rendering

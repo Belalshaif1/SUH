@@ -29,8 +29,8 @@ const Fees: React.FC = () => {
   const isAr = language === 'ar';
 
   const filteredFees = fees.filter(f => {
-    const deptName = f.departments ? (isAr ? f.departments.name_ar : f.departments.name_en) : '';
-    const colName = f.departments?.colleges ? (isAr ? f.departments.colleges.name_ar : f.departments.colleges.name_en) : '';
+    const deptName = (f.departments ? (isAr ? f.departments.name_ar : f.departments.name_en) : '') || '';
+    const colName = (f.departments?.colleges ? (isAr ? f.departments.colleges.name_ar : f.departments.colleges.name_en) : '') || '';
     const matchesSearch = deptName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       colName.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || f.fee_type === typeFilter;
@@ -100,10 +100,10 @@ const Fees: React.FC = () => {
 
               <CardContent className="p-10 flex flex-col h-full relative z-10">
                 <div className="flex justify-between items-start mb-8">
-                  <div className={`h - 16 w - 16 rounded - 2xl flex items - center justify - center shadow - inner transition - all duration - 500 overflow - hidden ${f.fee_type === 'public' ? 'bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground' : 'bg-gold/5 text-gold group-hover:bg-gold group-hover:text-white'} `}>
+                  <div className={`h-16 w-16 rounded-2xl flex items-center justify-center shadow-inner transition-all duration-500 overflow-hidden ${f.fee_type === 'public' ? 'bg-primary/5 text-primary group-hover:bg-primary group-hover:text-primary-foreground' : 'bg-gold/5 text-gold group-hover:bg-gold group-hover:text-white'}`}>
                     {f.fee_type === 'public' ? <Building2 className="h-8 w-8" /> : <Wallet className="h-8 w-8" />}
                   </div>
-                  <Badge variant="outline" className={`rounded - full px - 5 py - 2 font - bold uppercase tracking - wider shadow - sm border - 2 ${f.fee_type === 'public' ? 'border-primary/20 text-primary bg-primary/5' : 'border-gold/20 text-gold bg-gold/5'} `}>
+                  <Badge variant="outline" className={`rounded-full px-5 py-2 font-bold uppercase tracking-wider shadow-sm border-2 ${f.fee_type === 'public' ? 'border-primary/20 text-primary bg-primary/5' : 'border-gold/20 text-gold bg-gold/5'}`}>
                     {f.fee_type === 'public' ? t('fees.public') : t('fees.private')}
                   </Badge>
                 </div>

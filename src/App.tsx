@@ -1,92 +1,63 @@
-import { Toaster } from "@/components/ui/toaster"; // استيراد مكون التنبيهات الافتراضي
-import { Toaster as Sonner } from "@/components/ui/sonner"; // استيراد مكون Sonner للتنبيهات المنبثقة
-import { TooltipProvider } from "@/components/ui/tooltip"; // استيراد موفر خدمة تلميحات الأدوات (Tooltips)
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; // استيراد مكتبة إدارة البيانات والطلبات (React Query)
-import { BrowserRouter, Routes, Route } from "react-router-dom"; // استيراد أدوات التوجيه (Routing) للتنقل بين الصفحات
-import { LanguageProvider } from "@/contexts/LanguageContext"; // استيراد موفر سياق اللغة لدعم تعدد اللغات
-import { ThemeProvider } from "@/contexts/ThemeContext"; // استيراد موفر سياق السمة (داكن/فاتح)
-import { AuthProvider } from "@/contexts/AuthContext"; // استيراد موفر سياق المصادقة لإدارة دخول المستخدمين
-import AppLayout from "@/components/layout/AppLayout"; // استيراد التخطيط العام للتطبيق
+import { Toaster } from "@/components/ui/toaster"; // Import the default Toaster component for notifications
+import { Toaster as Sonner } from "@/components/ui/sonner"; // Import the Sonner component for pop-up notifications
+import { TooltipProvider } from "@/components/ui/tooltip"; // Import the TooltipProvider for managing tooltips
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"; // Import React Query for data fetching and caching
+import { BrowserRouter, Routes, Route } from "react-router-dom"; // Import routing components for navigation
+import { LanguageProvider } from "@/contexts/LanguageContext"; // Import LanguageProvider for multi-language support
+import { ThemeProvider } from "@/contexts/ThemeContext"; // Import ThemeProvider for light/dark theme management
+import { AuthProvider } from "@/contexts/AuthContext"; // Import AuthProvider for user authentication context
+import AppLayout from "@/components/layout/AppLayout"; // Import the main layout component for the app
 
-import Index from "./pages/Index"; // استيراد الصفحة الرئيسية
-import Universities from "./pages/Universities"; // استيراد صفحة الجامعات
-import Services from "./pages/Services"; // استيراد صفحة الخدمات
-import Jobs from "./pages/Jobs"; // استيراد صفحة الوظائف
-import Research from "./pages/Research"; // استيراد صفحة الأبحاث
-import Graduates from "./pages/Graduates"; // استيراد صفحة الخريجين
-import Fees from "./pages/Fees"; // استيراد صفحة الرسوم
-import Announcements from "./pages/Announcements"; // استيراد صفحة الإعلانات
-import Chat from "./pages/Chat"; // استيراد صفحة الدردشة
-import Login from "./pages/Login"; // استيراد صفحة تسجيل الدخول
-import Signup from "./pages/Signup"; // استيراد صفحة إنشاء حساب
-import ForgotPassword from "./pages/ForgotPassword"; // استيراد صفحة استعادة كلمة المرور
-import Dashboard from "./pages/Dashboard"; // استيراد لوحة التحكم
-import Profile from "./pages/Profile"; // استيراد صفحة الملف الشخصي
-import More from "./pages/More"; // استيراد صفحة "المزيد"
-import About from "./pages/About"; // استيراد صفحة "عن التطبيق"
-import NotFound from "./pages/NotFound"; // استيراد صفحة الخطأ 404
+import Index from "./pages/Index"; // Import the Index page component
+import Universities from "./pages/Universities"; // Import the Universities page component
+import Services from "./pages/Services"; // Import the Services page component
+import Jobs from "./pages/Jobs"; // Import the Jobs page component
+import Research from "./pages/Research"; // Import the Research page component
+import Graduates from "./pages/Graduates"; // Import the Graduates page component
+import Fees from "./pages/Fees"; // Import the Fees page component
+import Announcements from "./pages/Announcements"; // Import the Announcements page component
+import Chat from "./pages/Chat"; // Import the Chat page component
+import Login from "./pages/Login"; // Import the Login page component
+import Signup from "./pages/Signup"; // Import the Signup page component
+import ForgotPassword from "./pages/ForgotPassword"; // Import the ForgotPassword page component
+import Dashboard from "./pages/Dashboard"; // Import the Dashboard page component
+import Profile from "./pages/Profile"; // Import the Profile page component
+import More from "./pages/More"; // Import the More page component
+import About from "./pages/About"; // Import the About page component
+import NotFound from "./pages/NotFound"; // Import the NotFound page component
 
-const queryClient = new QueryClient(); // إنشاء عميل جديد لـ React Query لإدارة الذاكرة المؤقتة للبيانات
+const queryClient = new QueryClient(); // Create a new QueryClient instance for managing data caching
 
-const App = () => ( // المكون الرئيسي للتطبيق (App)
-  <QueryClientProvider client={queryClient}>
-    {/* توفير عميل الطلبات لجميع مكونات التطبيق */}
-    <LanguageProvider>
-      {/* توفير سياق اللغة للتطبيق بالكامل */}
-      <ThemeProvider>
-        {/* توفير سياق السمة (الألوان) للتطبيق بالكامل */}
-        <AuthProvider>
-          {/* توفير سياق المصادقة للتطبيق بالكامل */}
-          <TooltipProvider>
-            {/* توفير سياق التلميحات للتطبيق بالكامل */}
-            <Toaster />
-            {/* عرض تنبيهات Toaster */}
-            <Sonner />
-            {/* عرض تنبيهات Sonner */}
-            <BrowserRouter>
-              {/* تفعيل نظام التوجيه باستخدام متصفح الويب */}
-              <AppLayout>
-                {/* تغليف الصفحات بالتخطيط العام (مثل الهيدر والفوتر) */}
-                <Routes>
-                  {/* تعريف قائمة المسارات (الروابط) */}
-                  <Route path="/" element={<Index />} />
-                  {/* مسار الصفحة الرئيسية */}
-                  <Route path="/universities" element={<Universities />} />
-                  {/* مسار الجامعات العام */}
-                  <Route path="/universities/:universityId" element={<Universities />} />
-                  {/* مسار جامعة محددة */}
-                  <Route path="/universities/:universityId/colleges/:collegeId" element={<Universities />} />
-                  {/* مسار كلية محددة داخل جامعة */}
-                  <Route path="/services" element={<Services />} />
-                  {/* مسار الخدمات */}
-                  <Route path="/jobs" element={<Jobs />} />
-                  {/* مسار الوظائف */}
-                  <Route path="/research" element={<Research />} />
-                  {/* مسار الأبحاث */}
-                  <Route path="/graduates" element={<Graduates />} />
-                  {/* مسار الخريجين */}
-                  <Route path="/fees" element={<Fees />} />
-                  {/* مسار الرسوم */}
-                  <Route path="/announcements" element={<Announcements />} />
-                  {/* مسار الإعلانات */}
-                  <Route path="/chat" element={<Chat />} />
-                  {/* مسار الدردشة */}
-                  <Route path="/login" element={<Login />} />
-                  {/* مسار تسجيل الدخول */}
-                  <Route path="/signup" element={<Signup />} />
-                  {/* مسار إنشاء حساب */}
-                  <Route path="/forgot-password" element={<ForgotPassword />} />
-                  {/* مسار استعادة كلمة المرور */}
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  {/* مسار لوحة التحكم */}
-                  <Route path="/profile" element={<Profile />} />
-                  {/* مسار الملف الشخصي */}
-                  <Route path="/more" element={<More />} />
-                  {/* مسار "المزيد" */}
-                  <Route path="/about" element={<About />} />
-                  {/* مسار صفحة عن التطبيق */}
-                  <Route path="*" element={<NotFound />} />
-                  {/* أي مسار غير معروف يؤدي لصفحة 404 */}
+const App = () => ( // Define the main App component
+  <QueryClientProvider client={queryClient}> {/* Provide the QueryClient to the entire app */}
+    <LanguageProvider> {/* Provide the Language context to the app */}
+      <ThemeProvider> {/* Provide the Theme context to the app */}
+        <AuthProvider> {/* Provide the Authentication context to the app */}
+          <TooltipProvider> {/* Provide the Tooltip context to the app */}
+            <Toaster /> {/* Render the default Toaster notifications */}
+            <Sonner /> {/* Render the Sonner pop-up notifications */}
+            <BrowserRouter> {/* Enable routing using the BrowserRouter */}
+              <AppLayout> {/* Wrap the app with the main layout */}
+                <Routes> {/* Define the routes for the app */}
+                  <Route path="/" element={<Index />} /> {/* Route for the Index page */}
+                  <Route path="/universities" element={<Universities />} /> {/* Route for the Universities page */}
+                  <Route path="/universities/:universityId" element={<Universities />} /> {/* Route for a specific university */}
+                  <Route path="/universities/:universityId/colleges/:collegeId" element={<Universities />} /> {/* Route for a specific college */}
+                  <Route path="/services" element={<Services />} /> {/* Route for the Services page */}
+                  <Route path="/jobs" element={<Jobs />} /> {/* Route for the Jobs page */}
+                  <Route path="/research" element={<Research />} /> {/* Route for the Research page */}
+                  <Route path="/graduates" element={<Graduates />} /> {/* Route for the Graduates page */}
+                  <Route path="/fees" element={<Fees />} /> {/* Route for the Fees page */}
+                  <Route path="/announcements" element={<Announcements />} /> {/* Route for the Announcements page */}
+                  <Route path="/chat" element={<Chat />} /> {/* Route for the Chat page */}
+                  <Route path="/login" element={<Login />} /> {/* Route for the Login page */}
+                  <Route path="/signup" element={<Signup />} /> {/* Route for the Signup page */}
+                  <Route path="/forgot-password" element={<ForgotPassword />} /> {/* Route for the ForgotPassword page */}
+                  <Route path="/dashboard" element={<Dashboard />} /> {/* Route for the Dashboard page */}
+                  <Route path="/profile" element={<Profile />} /> {/* Route for the Profile page */}
+                  <Route path="/more" element={<More />} /> {/* Route for the More page */}
+                  <Route path="/about" element={<About />} /> {/* Route for the About page */}
+                  <Route path="*" element={<NotFound />} /> {/* Route for undefined paths */}
                 </Routes>
               </AppLayout>
             </BrowserRouter>
@@ -95,6 +66,6 @@ const App = () => ( // المكون الرئيسي للتطبيق (App)
       </ThemeProvider>
     </LanguageProvider>
   </QueryClientProvider>
-); // نهاية المكون الرئيسي
+); // End of the App component
 
-export default App; // تصدير المكون App ليكون متاحاً للاستخدام في ملفات أخرى
+export default App; // Export the App component for use in other files

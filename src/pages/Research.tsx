@@ -64,8 +64,8 @@ const Research: React.FC = () => {
         if (sortOrder === 'newest') sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         else if (sortOrder === 'oldest') sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
         else if (sortOrder === 'name') sorted.sort((a, b) => {
-          const nameA = language === 'ar' ? a.title_ar : (a.title_en || a.title_ar);
-          const nameB = language === 'ar' ? b.title_ar : (b.title_en || b.title_ar);
+          const nameA = (language === 'ar' ? a.title_ar : (a.title_en || a.title_ar)) || '';
+          const nameB = (language === 'ar' ? b.title_ar : (b.title_en || b.title_ar)) || '';
           return nameA.localeCompare(nameB, language === 'ar' ? 'ar' : 'en');
         });
         setResearch(sorted);
@@ -80,7 +80,7 @@ const Research: React.FC = () => {
   const isAr = language === 'ar';
 
   const filteredResearch = research.filter(r => {
-    const title = isAr ? r.title_ar : (r.title_en || r.title_ar);
+    const title = (isAr ? r.title_ar : (r.title_en || r.title_ar)) || '';
     const author = r.author_name || '';
     const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       author.toLowerCase().includes(searchTerm.toLowerCase());
