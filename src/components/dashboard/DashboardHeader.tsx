@@ -1,91 +1,132 @@
 /**
- * @file components/dashboard/DashboardHeader.tsx
- * @description Renders the top navigation bar and the visual welcome banner for the Admin Dashboard.
- * Implements premium academic aesthetics and responsive layout.
+ * @file src/components/dashboard/DashboardHeader.tsx
+ * @description Renders the sticky top navigation bar and the visual welcome banner
+ *              at the top of the Admin Dashboard page.
+ *              - The nav bar shows the shield brand logo, dashboard title, username, role, and logout.
+ *              - The banner is a large decorative gradient block greeting the logged-in user.
  */
 
-import React from 'react'; // استيراد مكتبة ريأكت لبناء واجهة المستخدم
-import { useLanguage } from '@/contexts/LanguageContext'; // استيراد سياق اللغة لدعم العربية والإنجليزية
-import { useAuth } from '@/contexts/AuthContext'; // استيراد سياق المصادقة لعرض بيانات المستخدم
-import { Button } from '@/components/ui/button'; // استيراد مكون الزر القياسي
-import { LogOut, Shield } from 'lucide-react'; // استيراد أيونات الخروج والحماية من مكتبة lucide-react
+import React from 'react';                               // React for JSX and FC type
+import { useLanguage } from '@/contexts/LanguageContext'; // Translation + language direction
+import { useAuth }     from '@/contexts/AuthContext';     // User's name and role for the banner
+import { Button }      from '@/components/ui/button';    // Shadcn button for logout
+import { LogOut, Shield } from 'lucide-react';           // Shield for brand logo, LogOut for logout button
 
-/**
- * Props for DashboardHeader
- */
-interface DashboardHeaderProps { // تعريف واجهة الخصائص لمكون رأس لوحة القيادة
-    onLogout: () => void; // دالة للتعامل مع عملية تسجيل الخروج
+// ─── Props ────────────────────────────────────────────────────────────────
+
+/** Props for the DashboardHeader component */
+interface DashboardHeaderProps {
+    onLogout: () => void; // Callback that logs the user out and redirects to /login
 }
 
-export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) => { // تعريف مكون رأس لوحة القيادة كمكون وظيفي
-    const { t, language } = useLanguage(); // استخراج دالة الترجمة واللغة الحالية من سياق اللغة
-    const { user, userRole } = useAuth(); // استخراج بيانات المستخدم ودوره من سياق المصادقة
+// ─── Component ────────────────────────────────────────────────────────────
 
-    return ( // إرجاع هيكل واجهة المستخدم
-        <div className="space-y-0"> {/* حاوية رئيسية بتباعد صفري للحفاظ على تلاحم الرأس والبانر */}
+export const DashboardHeader: React.FC<DashboardHeaderProps> = ({ onLogout }) => {
+    const { t, language } = useLanguage(); // t() for translated nav title, language for inline checks
+    const { user, userRole } = useAuth();  // user.full_name for the banner, userRole.role for subtitle
 
-            {/* --- شريط التنقل العلوي --- */}
-            <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 px-6 h-20 flex items-center justify-between"> {/* رأس الصفحة مع خلفية شفافة وتأثير ضبابي */}
-                <div className="flex items-center gap-4"> {/* حاوية الشعار والعنوان */}
-                    {/* شعار العلامة التجارية */}
-                    <div className="h-10 w-10 rounded-xl bg-gold flex items-center justify-center text-white shadow-lg shadow-gold/20"> {/* حاوية أيقونة الشعار باللون الذهبي */}
-                        <Shield className="h-6 w-6" /> {/* عرض أيقونة الحماية */}
+    return (
+        <div className="space-y-0"> {/* Zero spacing keeps the nav and banner flush with each other */}
+
+            {/* ── Sticky navigation bar ── */}
+            <header className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/70 backdrop-blur-xl supports-[backdrop-filter]:bg-white/60 px-6 h-20 flex items-center justify-between">
+                {/*
+                  * sticky top-0 z-50 = stays at the top of the viewport while scrolling
+                  * backdrop-blur-xl = frosted glass effect when content scrolls underneath
+                  * h-20 = 80px tall header to provide enough tap area
+                */}
+
+                {/* Left: brand shield icon + "Dashboard" title */}
+                <div className="flex items-center gap-4">
+                    {/* Gold shield badge — brand identity mark for the admin portal */}
+                    <div className="h-10 w-10 rounded-xl bg-gold flex items-center justify-center text-white shadow-lg shadow-gold/20">
+                        <Shield className="h-6 w-6" /> {/* Shield icon represents the admin role */}
                     </div>
-                    <div> {/* حاوية النصوص الجانبية للشعار */}
-                        <h1 className="text-xl font-black text-primary leading-none">{t('nav.dashboard')}</h1> {/* عرض عنوان لوحة القيادة المترجم */}
-                        <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-none"> {/* عرض وصف فرعي للبوابة */}
-                            {language === 'ar' ? 'البوابة الإدارية المتكاملة' : 'Integrated Administrative Portal'} {/* نص الوصف حسب اللغة */}
+
+                    {/* Title text block */}
+                    <div>
+                        {/* Main dashboard title — translated via the i18n context */}
+                        <h1 className="text-xl font-black text-primary leading-none">
+                            {t('nav.dashboard')} {/* "لوحة التحكم" / "Dashboard" */}
+                        </h1>
+                        {/* Decorative subtitle — less prominent, provides context */}
+                        <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest leading-none">
+                            {language === 'ar'
+                                ? 'البوابة الإدارية المتكاملة'
+                                : 'Integrated Administrative Portal'
+                            }
                         </span>
                     </div>
                 </div>
 
-                {/* التحكم في الملف الشخصي والخروج */}
-                <div className="flex items-center gap-4"> {/* حاوية أزرار التحكم وبيانات المستخدم */}
-                    <div className="hidden md:flex flex-col items-end me-2"> {/* عرض اسم المستخدم ودوره في الشاشات المتوسطة وما فوق */}
-                        <span className="text-sm font-black text-primary leading-none">{user?.full_name}</span> {/* عرض الاسم الكامل للمستخدم */}
-                        <span className="text-[10px] font-bold text-primary/30 uppercase tracking-widest leading-none mt-1"> {/* عرض دور المستخدم */}
-                            {userRole?.role?.replace('_', ' ')} {/* استبدال الشرطة السفلية بمسافة في اسم الدور */}
+                {/* Right: user name + role + logout button */}
+                <div className="flex items-center gap-4">
+                    {/* Name and role block — hidden on small screens to save space */}
+                    <div className="hidden md:flex flex-col items-end me-2">
+                        {/* User's full name — retrieved from AuthContext */}
+                        <span className="text-sm font-black text-primary leading-none">
+                            {user?.full_name} {/* e.g. "Ahmad Al-Rasheed" */}
+                        </span>
+                        {/* Role slug — replace underscores with spaces for readability */}
+                        <span className="text-[10px] font-bold text-primary/30 uppercase tracking-widest leading-none mt-1">
+                            {userRole?.role?.replace('_', ' ')} {/* e.g. "super admin" */}
                         </span>
                     </div>
-                    <Button // زر تسجيل الخروج
-                        variant="ghost" // نمط الزر شفاف
-                        size="icon" // حجم الزر مخصص للأيقونة
-                        onClick={onLogout} // تنفيذ دالة الخروج عند النقر
-                        className="h-12 w-12 rounded-2xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all active:scale-90" // تنسيقات الزر والتأثيرات
+
+                    {/* Logout button — red to visually distinguish it as a destructive action */}
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onLogout} // Delegates to the logout logic in Dashboard.tsx
+                        className="h-12 w-12 rounded-2xl text-red-400 hover:text-red-600 hover:bg-red-50 transition-all active:scale-90"
+                        // active:scale-90 = satisfying press feedback animation
                     >
-                        <LogOut className="h-5 w-5" /> {/* أيقونة تسجيل الخروج */}
+                        <LogOut className="h-5 w-5" /> {/* Standard log-out arrow icon */}
                     </Button>
                 </div>
             </header>
 
-            {/* --- بانر الترحيب المرئي --- */}
-            <div className="px-6 py-8"> {/* حاوية البانر مع هوامش داخلية */}
-                <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary via-primary/95 to-primary/90 p-10 text-white shadow-2xl shadow-primary/20"> {/* خلفية متدرجة مع زوايا مستديرة كبيرة وظلال */}
-                    {/* عناصر زخرفية في الخلفية */}
-                    <div className="absolute top-0 right-0 h-64 w-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse" /> {/* دائرة زخرفية نبضية في الأعلى */}
-                    <div className="absolute bottom-0 left-0 h-48 w-48 bg-gold/5 rounded-full -ml-24 -mb-24 blur-3xl" /> {/* دائرة زخرفية ثابتة في الأسفل */}
+            {/* ── Welcome banner ── */}
+            <div className="px-6 py-8"> {/* Padding gives the banner breathing room from the nav bar */}
+                {/* Gradient card with large rounded corners for a premium academic feel */}
+                <div className="relative overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-primary via-primary/95 to-primary/90 p-10 text-white shadow-2xl shadow-primary/20">
 
-                    <div className="relative z-10 max-w-2xl"> {/* حاوية المحتوى النصي فوق العناصر الزخرفية */}
-                        {/* مجموعة ترحيب محلية */}
-                        <div className="flex items-center gap-3 mb-4"> {/* حاوية نص الترحيب العلوي مع خط زخرفي */}
-                            <div className="h-px w-8 bg-gold/50" /> {/* خط أفقي ذهبي رفيع */}
-                            <span className="text-xs font-black uppercase tracking-[0.3em] text-gold/80"> {/* نص "مرحباً بك مجدداً" */}
-                                {language === 'ar' ? 'مرحباً بك مجدداً' : 'WELCOME BACK'} {/* الترجمة حسب اللغة */}
+                    {/* Background decorative blobs — purely visual, no interactivity */}
+                    <div className="absolute top-0 right-0 h-64 w-64 bg-white/5 rounded-full -mr-32 -mt-32 blur-3xl animate-pulse" />
+                    {/* animate-pulse makes this blob slowly fade in and out for a subtle living effect */}
+                    <div className="absolute bottom-0 left-0 h-48 w-48 bg-gold/5 rounded-full -ml-24 -mb-24 blur-3xl" />
+
+                    {/* Text content — positioned above the blobs via z-10 */}
+                    <div className="relative z-10 max-w-2xl">
+
+                        {/* "Welcome back" micro-label with gold decorative line */}
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="h-px w-8 bg-gold/50" /> {/* Thin horizontal gold rule */}
+                            <span className="text-xs font-black uppercase tracking-[0.3em] text-gold/80">
+                                {language === 'ar' ? 'مرحباً بك مجدداً' : 'WELCOME BACK'}
                             </span>
                         </div>
 
-                        <h2 className="text-4xl md:text-5xl font-black mb-4 leading-tight"> {/* عنوان ترحيبي كبير يحتوي على اسم المستخدم */}
-                            {language === 'ar' ? `أهلاً بك، ${user?.full_name}` : `Hello, ${user?.full_name}`} {/* عرض التحية والاسم */}
+                        {/* Large personalised greeting with the logged-in user's name */}
+                        <h2 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
+                            {language === 'ar'
+                                ? `أهلاً بك، ${user?.full_name}`
+                                : `Hello, ${user?.full_name}`
+                            }
                         </h2>
 
-                        <p className="text-white/60 font-bold leading-relaxed max-w-lg"> {/* نص وصفي لوظيفة لوحة القيادة */}
+                        {/* Descriptive tagline — explains what the dashboard does */}
+                        <p className="text-white/60 font-bold leading-relaxed max-w-lg">
                             {language === 'ar'
-                                ? 'تحكم في كافة العمليات الأكاديمية والمؤسسات من لوحة قيادة واحدة ذكية ومتكاملة.' // الوصف بالعربي
-                                : 'Control all academic operations and institutions from a single, smart, and integrated dashboard.'} // الوصف بالإنجليزي
+                                ? 'تحكم في كافة العمليات الأكاديمية والمؤسسات من لوحة قيادة واحدة ذكية ومتكاملة.'
+                                : 'Control all academic operations and institutions from a single, smart, and integrated dashboard.'
+                            }
                         </p>
+
                     </div>
                 </div>
             </div>
+
         </div>
     );
 };

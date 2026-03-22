@@ -1,91 +1,132 @@
-import Dexie, { Table } from 'dexie'; // استيراد مكتبة Dexie للتعامل مع قاعدة بيانات المتصفح IndexedDB
+/**
+ * @file src/lib/offlineDb.ts
+ * @description Defines the client-side IndexedDB schema using Dexie.js.
+ *              Provides offline caching and a mutation sync queue so the app
+ *              can function without a network connection.
+ */
 
-// تعريف واجهة (Interface) لعنصر المزامنة لتحديد شكل البيانات المخزنة في الطابور
-export interface SyncItem { 
-    id?: number; // معرف تلقائي الزيادة للعنصر في طابور المزامنة
-    table: string; // اسم الجدول المتأثر بالعملية (مثل universities)
-    action: 'create' | 'update' | 'delete'; // نوع العملية (إضافة، تحديث، حذف)
-    data: any; // البيانات الفعلية المراد إرسالها للخادم
-    timestamp: number; // وقت تسجيل العملية لضمان ترتيب التنفيذ
+import Dexie, { Table } from 'dexie'; // Import Dexie — a wrapper that makes IndexedDB usable
+
+// ─── SyncItem Interface ────────────────────────────────────────────────────
+
+/**
+ * Defines the shape of a queued mutation stored locally when offline.
+ * When the user goes back online, each item is replayed against the server.
+ */
+export interface SyncItem {
+    id?: number;                          // Auto-incremented primary key assigned by Dexie
+    table: string;                        // The API resource name (e.g. 'universities', 'jobs')
+    action: 'create' | 'update' | 'delete'; // The operation that was attempted offline
+    data: any;                            // The full payload that should be sent to the server
+    timestamp: number;                    // Unix ms timestamp — used to process items in order
 }
 
-// تعريف فئة قاعدة بيانات التطبيق الذكي (SmartUniversityDB) ووراثة خصائص Dexie
-export class SmartUniversityDB extends Dexie { 
-    universities!: Table<any>; // جدول الجامعات
-    colleges!: Table<any>; // جدول الكليات
-    departments!: Table<any>; // جدول الأقسام
-    announcements!: Table<any>; // جدول الإعلانات
-    research!: Table<any>; // جدول الأبحاث
-    graduates!: Table<any>; // جدول الخريجين
-    jobs!: Table<any>; // جدول الوظائف
-    sync_queue!: Table<SyncItem>; // جدول طابور المزامنة للعمليات التي تتم بدون إنترنت
-    meta!: Table<{ key: string, value: any }>; // جدول لتخزين بيانات وصفية إضافية
+// ─── Database Class ────────────────────────────────────────────────────────
 
-    constructor() { 
-        super('SmartUniversityDB'); // تسمية قاعدة البيانات المحلية
-        // تحديد إصدار قاعدة البيانات وهيكل الجداول والفهارس (Indexes)
-        this.version(1).stores({ 
-            universities: 'id, name_ar, is_pinned', // الفهرسة حسب المعرف والاسم والحالة المثبتة
-            colleges: 'id, university_id, name_ar, is_pinned', 
-            departments: 'id, college_id, name_ar', 
-            announcements: 'id, university_id, college_id, is_pinned', 
-            research: 'id, department_id, title_ar', 
-            graduates: 'id, department_id, graduation_year', 
-            jobs: 'id, college_id, is_pinned', 
-            sync_queue: '++id, table, action', // ++id تعني معرف تلقائي الزيادة
-            meta: 'key' 
+/**
+ * SmartUniversityDB — the application's offline database.
+ * Each public property corresponds to a cached table in IndexedDB.
+ */
+export class SmartUniversityDB extends Dexie {
+    universities!: Table<any>;                   // Cached universities list
+    colleges!: Table<any>;                       // Cached colleges list
+    departments!: Table<any>;                    // Cached departments list
+    announcements!: Table<any>;                  // Cached announcements list
+    research!: Table<any>;                       // Cached research papers list
+    graduates!: Table<any>;                      // Cached graduates list
+    jobs!: Table<any>;                           // Cached jobs list
+    sync_queue!: Table<SyncItem>;                // Queue of mutations to replay when online
+    meta!: Table<{ key: string; value: any }>;  // Key/value store for misc metadata
+
+    constructor() {
+        super('SmartUniversityDB'); // The string is the IndexedDB database name in the browser
+
+        // Define schema version 1 — the string value is a comma-separated list of indexed fields
+        // The first field in each string is the primary key; '++id' means auto-increment
+        this.version(1).stores({
+            universities:  'id, name_ar, is_pinned',            // Indexed by id, name, and pin status
+            colleges:      'id, university_id, name_ar, is_pinned', // Indexed for university filtering
+            departments:   'id, college_id, name_ar',           // Indexed for college filtering
+            announcements: 'id, university_id, college_id, is_pinned', // Indexed for scope filtering
+            research:      'id, department_id, title_ar',       // Indexed for department filtering
+            graduates:     'id, department_id, graduation_year', // Indexed for year-based sorting
+            jobs:          'id, college_id, is_pinned',         // Indexed for college and pin filtering
+            sync_queue:    '++id, table, action',               // Auto-increment id for ordered replay
+            meta:          'key',                               // Simple key-value store
         });
     }
 }
 
-// إنشاء نسخة واحدة (Instance) من قاعدة البيانات وتصديرها للاستخدام
-export const db = new SmartUniversityDB(); 
+// ─── Singleton Instance ────────────────────────────────────────────────────
 
-// دالة مساعدة لإضافة العمليات التي تمت في وضع "بدون إنترنت" إلى طابور المزامنة
-export const addToSyncQueue = async (table: string, action: 'create' | 'update' | 'delete', data: any) => { 
-    // إضافة الإجراء المكتمل محلياً إلى جدول المزامنة مع تسجيل الوقت الحالي
-    await db.sync_queue.add({ 
-        table, 
-        action, 
-        data, 
-        timestamp: Date.now() 
+/** Single shared instance of the database — import `db` everywhere instead of creating new ones */
+export const db = new SmartUniversityDB();
+
+// ─── Helper: Add to Sync Queue ────────────────────────────────────────────
+
+/**
+ * Stores an offline mutation in the sync queue so it can be replayed later.
+ * Called by `apiClient` automatically when a mutation fails due to no network.
+ */
+export const addToSyncQueue = async (
+    table: string,                              // The API resource name (e.g. 'graduates')
+    action: 'create' | 'update' | 'delete',    // The type of mutation that was attempted
+    data: any                                   // The full request payload to replay
+): Promise<void> => {
+    await db.sync_queue.add({  // Insert a new record into the local sync queue table
+        table,                 // Which API resource to target when replaying
+        action,                // Which HTTP verb to use when replaying
+        data,                  // The body payload to send to the server
+        timestamp: Date.now(), // Record the current time so items are replayed in order
     });
 };
 
-// دالة لمعالجة وإرسال العمليات المخزنة في طابور المزامنة عند استعادة الاتصال بالإنترنت
-export const processSyncQueue = async (apiClient: any) => { 
-    // جلب جميع العمليات من الطابور وترتيبها حسب وقت الحدوث (الأقدم أولاً)
-    const queue = await db.sync_queue.orderBy('timestamp').toArray(); 
-    if (queue.length === 0) return; // الخروج إذا كان الطابور فارغاً
+// ─── Helper: Process Sync Queue ───────────────────────────────────────────
 
-    console.log(`Starting background sync for ${queue.length} items...`); // تسجيل بدء عملية المزامنة
-    
-    // التكرار عبر كل عنصر في الطابور لمحاولة إرساله للخادم
-    for (const item of queue) { 
-        try { 
-            // تحديد المسار الفرعي (Endpoint) وطريقة الإرسال (Method) بناءً على بيانات العنصر
-            let endpoint = `/${item.table}`; 
-            let method = 'POST'; // الطريقة الافتراضية للإضافة
-            if (item.action === 'update') { 
-                method = 'PUT'; // التحديث يستخدم طريقة PUT
-                endpoint += `/${item.data.id}`; // إضافة معرف العنصر للمسار
-            } else if (item.action === 'delete') { 
-                method = 'DELETE'; // الحذف يستخدم طريقة DELETE
-                endpoint += `/${item.data.id}`; // إضافة معرف العنصر للمسار
+/**
+ * Replays all queued offline mutations against the live server.
+ * Called automatically when the user comes back online (via 'online' event in apiClient).
+ * Each item is deleted from the queue only after a successful server response.
+ * Failures are logged but do NOT halt the loop — remaining items still get processed.
+ */
+export const processSyncQueue = async (apiClient: Function): Promise<void> => {
+    // Fetch all queued mutations sorted from oldest to newest for correct replay order
+    const queue = await db.sync_queue.orderBy('timestamp').toArray();
+
+    if (queue.length === 0) return; // Nothing to sync — exit early
+
+    console.log(`[SyncQueue] Starting background sync for ${queue.length} pending items`);
+
+    for (const item of queue) { // Iterate through each pending mutation one at a time
+        try {
+            // Build the API endpoint path from the table name and optionally the item's id
+            let endpoint = `/${item.table}`;
+
+            // For updates and deletes, append the record's id to target the specific resource
+            let method = 'POST'; // Default to POST for new record creation
+            if (item.action === 'update') {
+                method = 'PUT';                   // Use PUT for modifying an existing record
+                endpoint += `/${item.data.id}`;   // Append the id so the server knows which record to update
+            } else if (item.action === 'delete') {
+                method = 'DELETE';                // Use DELETE for removing a record
+                endpoint += `/${item.data.id}`;   // Append the id so the server knows which record to delete
             }
 
-            // تنفيذ الطلب الفعلي للخادم باستخدام عميل الـ API
-            await apiClient(endpoint, { 
-                method, 
-                body: JSON.stringify(item.data), // تحويل البيانات لنص JSON
-                skipQueueOnFail: true, // تفعيل هذا الخيار لمنع إعادة إضافة الطلب للطابور في حال فشل الاتصال مجدداً
+            // Send the replay request to the live server
+            await apiClient(endpoint, {
+                method,                               // The HTTP verb determined above
+                body: JSON.stringify(item.data),      // The original payload serialized to JSON
+                skipQueueOnFail: true,                // Prevent re-queueing if this replay also fails (avoids infinite loop)
             });
 
-            // في حال نجاح الإرسال، يتم حذف العملية من الطابور المحلي لضمان عدم تكرارها
-            if (item.id) await db.sync_queue.delete(item.id); 
-        } catch (err) { 
-            // تسجيل الخطأ في حال فشل مزامنة عنصر معين؛ سيظل العنصر في الطابور للمحاولة لاحقاً
-            console.error('Failed to sync item', item, err); 
+            // Only delete the queue item AFTER the server confirms success
+            if (item.id !== undefined) {
+                await db.sync_queue.delete(item.id); // Remove from queue to prevent double-execution
+            }
+        } catch (err) {
+            // Log the failure but continue processing the rest of the queue
+            // The failed item stays in the queue and will be retried on the next 'online' event
+            console.error('[SyncQueue] Failed to sync item:', { item, error: err });
         }
     }
 };

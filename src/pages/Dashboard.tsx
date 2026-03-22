@@ -1,312 +1,496 @@
 /**
- * @file pages/Dashboard.tsx
- * @description The main orchestrator for the Admin Dashboard.
- * This component follows Clean Architecture by decoupling business logic (hooks) 
- * from the presentation layer (modular components).
+ * @file src/pages/Dashboard.tsx
+ * @description The root orchestrator of the Admin Dashboard.
+ *              Composes custom hooks for data, dialogs, and actions, then
+ *              routes everything to the correct tab sub-component.
+ *              This component contains NO business logic itself — it only wires things together.
+ *
+ * BUG FIX: Replaced the blocking full-screen `data.loading` overlay (which captured
+ *           pointer events and prevented "Add" button clicks) with a non-blocking
+ *           corner indicator. The `actions.loading` overlay (for save/delete) is
+ *           intentionally full-screen since it's a deliberate blocking action.
  */
 
-import React from 'react'; // React library for building UI
-import { useNavigate } from 'react-router-dom'; // Navigation hook
-import { useLanguage } from '@/contexts/LanguageContext'; // Lang context
-import { useAuth } from '@/contexts/AuthContext'; // Auth context
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'; // Navigation tabs
+import React, { useEffect } from 'react';                                          // React core and useEffect for the auth guard
+import { useNavigate }      from 'react-router-dom';                               // Navigation hook to redirect unauthenticated users
+import { useLanguage }      from '@/contexts/LanguageContext';                     // Translation and direction
+import { useAuth }          from '@/contexts/AuthContext';                         // User, role, and hasPermission
 import {
-  UserCog, Shield, Building2, BookOpen, FileText, Megaphone,
-  Briefcase, GraduationCap, DollarSign, Info, AlertTriangle, Users, Check, Archive
-} from 'lucide-react'; // Visual icons
+    Tabs, TabsContent, TabsList, TabsTrigger
+} from '@/components/ui/tabs';                                                     // Shadcn tabs for the main navigation
+import {
+    UserCog, Shield, Building2, BookOpen, FileText,
+    Megaphone, Briefcase, GraduationCap, DollarSign,
+    Info, AlertTriangle, Users, Archive, Loader2
+} from 'lucide-react';                                                              // Icon set for tab triggers
 
+// ── Custom hooks (all business logic lives here) ──────────────────────────
+import { useDashboardData }    from '@/hooks/useDashboardData';    // Fetches and filters all entity lists
+import { useDashboardActions } from '@/hooks/useDashboardActions'; // Handles save, delete, file upload
+import { useDashboardDialogs } from '@/hooks/useDashboardDialogs'; // Manages dialog open/close state
 
-// --- Custom Hooks (Business Logic) ---
-import { useDashboardData } from '@/hooks/useDashboardData'; // Data fetching & state
-import { useDashboardActions } from '@/hooks/useDashboardActions'; // CRUD & Uploads
-import { useDashboardDialogs } from '@/hooks/useDashboardDialogs'; // Dialog & Form state
+// ── Shared dashboard UI components ───────────────────────────────────────
+import { DashboardHeader }       from '@/components/dashboard/DashboardHeader';       // Top header with user info and logout
+import { StatsOverview }         from '@/components/dashboard/StatsOverview';         // Stats cards row at the top
+import { EntityDialog }          from '@/components/dashboard/EntityDialog';          // Unified Add/Edit form dialog
+import { DeleteConfirmDialog }   from '@/components/dashboard/DeleteConfirmDialog';   // Themed confirmation dialog
+import { JobApplicationsViewer } from '@/components/dashboard/JobApplicationsViewer'; // Slide-out job applicants viewer
+import AdminManagement           from '@/components/dashboard/AdminManagement';       // Admin CRUD table
+import UserManagementTable       from '@/components/dashboard/UserManagementTable';   // User accounts table
+import RolePermissions           from '@/components/dashboard/RolePermissions';       // Role default permissions editor
+import PermissionsMatrix         from '@/components/dashboard/PermissionsMatrix';     // All-roles grid overview
+import SecurityTab               from '@/components/dashboard/SecurityTab';           // Password change tab
 
-// --- Modular UI Components ---
-import { DashboardHeader } from '@/components/dashboard/DashboardHeader'; // Header & Welcome
-import { StatsOverview } from '@/components/dashboard/StatsOverview'; // Stats cards
-import { EntityDialog } from '@/components/dashboard/EntityDialog'; // Unified Form/Dialog
-import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog'; // Premium confirm dialog
-import { JobApplicationsViewer } from '@/components/dashboard/JobApplicationsViewer'; // Applicants viewer
-import AdminManagement from '@/components/dashboard/AdminManagement'; // Admin table
-import UserManagementTable from '@/components/dashboard/UserManagementTable'; // User table
-import RolePermissions from '@/components/dashboard/RolePermissions'; // Role settings
-import PermissionsMatrix from '@/components/dashboard/PermissionsMatrix'; // Permission grid
-import SecurityTab from '@/components/dashboard/SecurityTab'; // Password settings
+// ── Domain-specific tab components ───────────────────────────────────────
+import { UniversityTab }   from '@/components/dashboard/tabs/UniversityTab';    // University CRUD list
+import { CollegeTab }      from '@/components/dashboard/tabs/CollegeTab';       // College CRUD list
+import { DepartmentTab }   from '@/components/dashboard/tabs/DepartmentTab';    // Department CRUD list
+import { AnnouncementsTab }from '@/components/dashboard/tabs/AnnouncementsTab'; // Announcement CRUD list
+import { JobsTab }         from '@/components/dashboard/tabs/JobsTab';          // Job postings CRUD list
+import { GraduatesTab }    from '@/components/dashboard/tabs/GraduatesTab';     // Graduate records CRUD list
+import { ResearchTab }     from '@/components/dashboard/tabs/ResearchTab';      // Research papers CRUD list
+import { FeesTab }         from '@/components/dashboard/tabs/FeesTab';          // Tuition fees CRUD list
+import { ErrorLogsTab }    from '@/components/dashboard/tabs/ErrorLogsTab';     // System error logs (super_admin only)
+import { BackupTab }       from '@/components/dashboard/tabs/BackupTab';        // Database backup tools
+import { AboutUsTab }      from '@/components/dashboard/tabs/AboutUsTab';       // About-page CMS editor
 
-// --- Domain Tab Components ---
-import { UniversityTab } from '@/components/dashboard/tabs/UniversityTab';
-import { CollegeTab } from '@/components/dashboard/tabs/CollegeTab';
-import { DepartmentTab } from '@/components/dashboard/tabs/DepartmentTab';
-import { AnnouncementsTab } from '@/components/dashboard/tabs/AnnouncementsTab';
-import { JobsTab } from '@/components/dashboard/tabs/JobsTab';
-import { GraduatesTab } from '@/components/dashboard/tabs/GraduatesTab';
-import { ResearchTab } from '@/components/dashboard/tabs/ResearchTab';
-import { FeesTab } from '@/components/dashboard/tabs/FeesTab';
-import { ErrorLogsTab } from '@/components/dashboard/tabs/ErrorLogsTab';
-import { BackupTab } from '@/components/dashboard/tabs/BackupTab';
-import { AboutUsTab } from '@/components/dashboard/tabs/AboutUsTab';
-
-
+// ─── Component ────────────────────────────────────────────────────────────
 
 /**
- * Dashboard Orchestrator
+ * Dashboard — the top-level page component for all admin roles.
+ * Renders a role-appropriate set of tabs, each powered by a domain tab component.
  */
 const Dashboard: React.FC = () => {
-  // --- 1. استرجاع البيانات والدوال ---
-  const { t, language } = useLanguage(); // ترجمة النصوص واللغة الحالية
-  const { user, userRole, loading: authLoading, hasPermission, signOut: logout } = useAuth(); // بيانات الجلسة والصلاحيات
-  const navigate = useNavigate(); // محرك التنقل بين الصفحات
 
-  const data = useDashboardData(); // حالة البيانات (جامعات، خريجون، إلخ)
-  const dialogs = useDashboardDialogs(); // حالة النوافذ المنبثقة (Modal)
-  const actions = useDashboardActions(data.fetchData, dialogs.close); // عمليات الإضافة والحذف والتعديل
+    // ── Context consumers ────────────────────────────────────────────────
+    const { t, language }   = useLanguage(); // t() for translations, language for inline conditionals
+    const {
+        user,          // The authenticated user object
+        userRole,      // The user's role object (role string + scope IDs + permissions map)
+        loading: authLoading, // True while the auth token is being validated on startup
+        hasPermission, // Checks a specific permission key against userRole.permissions
+        signOut: logout, // Clears the JWT and resets auth state
+    } = useAuth();
+    const navigate = useNavigate(); // Used to redirect to /login if not authenticated
 
-  // حارس الأمان (Security Guard): منع الوصول لغير المسجلين وإرجاعهم لصفحة الدخول
-  React.useEffect(() => {
-    if (!authLoading && (!user || !userRole)) {
-      navigate('/login');
+    // ── Hook composition ─────────────────────────────────────────────────
+    const data    = useDashboardData();                               // All entity lists, stats, loading, and sort/filter
+    const dialogs = useDashboardDialogs();                            // Dialog open/close state and form data buffer
+    const actions = useDashboardActions(data.fetchData, dialogs.close); // Save/delete handlers
+
+    // ── Auth guard ───────────────────────────────────────────────────────
+
+    useEffect(() => {
+        // After the auth check completes, redirect to login if there's no valid session
+        if (!authLoading && (!user || !userRole)) {
+            navigate('/login'); // Redirect unauthenticated visitors away from this protected page
+        }
+    }, [user, userRole, authLoading, navigate]); // Re-check whenever auth state changes
+
+    // ── Early returns ────────────────────────────────────────────────────
+
+    // Show a centered loading message while the JWT is being validated
+    if (authLoading) {
+        return (
+            <div className="flex items-center justify-center py-20 text-muted-foreground">
+                {t('common.loading')} {/* Localised "Loading..." string */}
+            </div>
+        );
     }
-  }, [user, userRole, authLoading, navigate]);
 
-  if (authLoading) return <div className="flex items-center justify-center py-20 text-muted-foreground">{t('common.loading')}</div>;
-  if (!user || !userRole) return null;
+    // After auth check, if still no user, render nothing (the useEffect will navigate away)
+    if (!user || !userRole) return null;
 
-  const role = userRole.role; // Helper for RBAC tags
+    const role = userRole.role; // Short alias used throughout JSX for role-based rendering
 
-  return (
-    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-500">
+    // ── Render ────────────────────────────────────────────────────────────
 
-      {/* 1. Header & Welcome Section */}
-      <DashboardHeader onLogout={logout} />
+    return (
+        <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 transition-colors duration-500">
 
-      {/* 2. Key Metrics Snapshot */}
-      <StatsOverview stats={data.stats} role={role} hasPermission={hasPermission} />
+            {/* ── Header (logo, user info, logout button) ── */}
+            <DashboardHeader onLogout={logout} />
 
-      {/* 3. Main Operational Tabs */}
-      <main className="container mx-auto px-4 pb-20 relative -mt-32 z-10">
-        {/* مؤشر التحميل العام عند جلب البيانات */}
-        {data.loading && (
-          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8FAFC]/70 dark:bg-slate-950/70 backdrop-blur-sm rounded-[2.5rem] mt-6 mx-6 mb-20 transition-all duration-300">
-            <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-            <h2 className="text-2xl font-black text-foreground">
-              {language === 'ar' ? 'الرجاء الانتظار...' : 'Please Wait...'}
-            </h2>
-            <p className="text-sm font-medium text-muted-foreground mt-2">
-              {language === 'ar' ? 'جاري تحميل وعرض البيانات' : 'Loading and rendering data'}
-            </p>
-          </div>
-        )}
-        
-        {/* شاشة انتظار عند تنفيذ عمليات برمجية (حفظ/حذف) */}
-        {actions.loading && (
-          <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/40 backdrop-blur-md transition-all duration-300">
-            <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center">
-              <div className="w-16 h-16 border-4 border-gold/30 border-t-gold rounded-full animate-spin mb-6"></div>
-              <h2 className="text-2xl font-black text-foreground mb-2">
-                {language === 'ar' ? 'الرجاء الانتظار...' : 'Please Wait...'}
-              </h2>
-              <p className="text-sm font-medium text-muted-foreground text-center max-w-xs">
-                {language === 'ar' ? 'جاري معالجة طلبك وتحديث البيانات في النظام' : 'Processing your request and updating system data'}
-              </p>
-            </div>
-          </div>
-        )}
+            {/* ── Statistics overview cards ── */}
+            <StatsOverview stats={data.stats} role={role} hasPermission={hasPermission} />
 
-        {/* الحاوية الرئيسية للتبويبات (Tabs Layout) */}
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-primary/5 border border-white/50 dark:border-white/5 overflow-hidden min-h-[500px]">
+            {/* ── Main content area — tabs and content ── */}
+            <main className="container mx-auto px-4 pb-20 relative -mt-32 z-10">
 
-          <Tabs defaultValue={role === 'super_admin' ? 'users' : 'admins'} className="w-full">
+                {/* BUG FIX: Data-loading indicator is now a NON-BLOCKING corner badge.
+                    Previously this was an `absolute inset-0` overlay that captured all
+                    pointer events and prevented the "Add" button from being clickable. */}
+                {data.loading && (
+                    <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 bg-white dark:bg-slate-800 text-primary text-xs font-semibold px-3 py-2 rounded-full shadow-lg border border-primary/10">
+                        <Loader2 className="h-3 w-3 animate-spin" /> {/* Spinning icon */}
+                        {language === 'ar' ? 'جاري التحميل...' : 'Loading...'} {/* Localised label */}
+                    </div>
+                )}
 
-            {/* القائمة الموحدة للتنقل بين التبويبات (Navigation List) */}
-            <div className="px-6 pt-6 border-b border-primary/5 bg-slate-50/30">
-              <TabsList className="flex flex-wrap gap-2 h-auto mb-4 bg-transparent p-0">
-                {/* تبويب إدارة المستخدمين (للمدير العام فقط) */}
-                {role === 'super_admin' && hasPermission('manage_users') && <TabsTrigger value="users" className="tab-trigger-premium"><Users className="h-4 w-4" />{language === 'ar' ? 'المستخدمين' : 'Users'}</TabsTrigger>}
-                
-                {/* تبويب إدارة المدراء (حسب مستوى الصلاحية) */}
-                {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && <TabsTrigger value="admins" className="tab-trigger-premium"><UserCog className="h-4 w-4" />{t('dashboard.manage_admins')}</TabsTrigger>}
+                {/* Save/Delete action loading — this IS intentionally full-screen blocking
+                    because we must prevent the user from clicking anything during a mutation */}
+                {actions.loading && (
+                    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/40 backdrop-blur-md">
+                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center">
+                            <Loader2 className="w-14 h-14 text-primary animate-spin mb-4" /> {/* Large spinner */}
+                            <h2 className="text-xl font-bold text-foreground mb-1">
+                                {language === 'ar' ? 'جاري المعالجة...' : 'Processing...'} {/* Saving / deleting label */}
+                            </h2>
+                            <p className="text-sm text-muted-foreground text-center max-w-xs">
+                                {language === 'ar'
+                                    ? 'جاري معالجة طلبك وتحديث البيانات'
+                                    : 'Processing your request and updating data'
+                                }
+                            </p>
+                        </div>
+                    </div>
+                )}
 
-                {/* إدارة الأدوار والمصفوفة (للمدير العام فقط) */}
-                {role === 'super_admin' && <TabsTrigger value="permissions" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأدوار' : 'Roles'}</TabsTrigger>}
-                {role === 'super_admin' && <TabsTrigger value="permissions_matrix" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'مصفوفة الصلاحيات' : 'Permissions Matrix'}</TabsTrigger>}
+                {/* ── Tabs container card ── */}
+                <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-primary/5 border border-white/50 dark:border-white/5 overflow-hidden min-h-[500px]">
 
-                {/* تبويبات إدارة الكيانات (جامعات، كليات، أقسام، إلخ) */}
-                {hasPermission('manage_universities') && <TabsTrigger value="universities" className="tab-trigger-premium"><Building2 className="h-4 w-4" />{t('nav.universities')}</TabsTrigger>}
-                {hasPermission('manage_colleges') && <TabsTrigger value="colleges" className="tab-trigger-premium"><BookOpen className="h-4 w-4" />{t('universities.colleges')}</TabsTrigger>}
-                {hasPermission('manage_departments') && <TabsTrigger value="departments" className="tab-trigger-premium"><FileText className="h-4 w-4" />{t('universities.departments')}</TabsTrigger>}
-                {hasPermission('manage_announcements') && <TabsTrigger value="announcements" className="tab-trigger-premium"><Megaphone className="h-4 w-4" />{t('nav.announcements')}</TabsTrigger>}
-                {hasPermission('manage_jobs') && <TabsTrigger value="jobs" className="tab-trigger-premium"><Briefcase className="h-4 w-4" />{t('nav.jobs')}</TabsTrigger>}
-                {hasPermission('manage_graduates') && <TabsTrigger value="graduates" className="tab-trigger-premium"><GraduationCap className="h-4 w-4" />{t('nav.graduates')}</TabsTrigger>}
-                {hasPermission('manage_research') && <TabsTrigger value="research" className="tab-trigger-premium"><FileText className="h-4 w-4" />{t('nav.research')}</TabsTrigger>}
-                {hasPermission('manage_fees') && <TabsTrigger value="fees" className="tab-trigger-premium"><DollarSign className="h-4 w-4" />{t('nav.fees')}</TabsTrigger>}
-                
-                {/* أدوات النظام المتقدمة (سجلات، نسخ احتياطي) */}
-                {role === 'super_admin' && <TabsTrigger value="error_logs" className="tab-trigger-premium text-red-500"><AlertTriangle className="h-4 w-4" />{language === 'ar' ? 'الأخطاء' : 'Logs'}</TabsTrigger>}
-                {role === 'super_admin' && <TabsTrigger value="backup" className="tab-trigger-premium text-amber-600"><Archive className="h-4 w-4" />{language === 'ar' ? 'النسخ' : 'Backup'}</TabsTrigger>}
-                {role === 'super_admin' && <TabsTrigger value="about_us" className="tab-trigger-premium"><Info className="h-4 w-4" />{language === 'ar' ? 'إدارة من نحن' : 'Manage About Us'}</TabsTrigger>}
+                    {/* Default tab depends on role: super_admin starts on Users, others on Admins */}
+                    <Tabs defaultValue={role === 'super_admin' ? 'users' : 'admins'} className="w-full">
 
-                {/* إعدادات الأمان الشخصية */}
-                <TabsTrigger value="security" className="tab-trigger-premium"><Shield className="h-4 w-4" />{language === 'ar' ? 'الأمان' : 'Security'}</TabsTrigger>
-              </TabsList>
-            </div>
+                        {/* ── Tab trigger list (navigation bar) ── */}
+                        <div className="px-6 pt-6 border-b border-primary/5 bg-slate-50/30">
+                            <TabsList className="flex flex-wrap gap-2 h-auto mb-4 bg-transparent p-0">
 
-            {/* Content Injection (Domain Components) */}
-            <TabsContent value="users"><UserManagementTable onAddAdmin={() => document.querySelector<HTMLElement>('[data-value="admins"]')?.click()} /></TabsContent>
-            <TabsContent value="admins"><AdminManagement universities={data.universities} colleges={data.colleges} departments={data.departments} /></TabsContent>
-            <TabsContent value="permissions">
-              <div className="p-6">
-                <RolePermissions />
-              </div>
-            </TabsContent>
-            <TabsContent value="permissions_matrix">
-              <div className="p-6">
-                <PermissionsMatrix />
-              </div>
-            </TabsContent>
+                                {/* Users tab — super_admin only */}
+                                {role === 'super_admin' && hasPermission('manage_users') && (
+                                    <TabsTrigger value="users" className="tab-trigger-premium">
+                                        <Users className="h-4 w-4" />
+                                        {language === 'ar' ? 'المستخدمين' : 'Users'}
+                                    </TabsTrigger>
+                                )}
 
-            <TabsContent value="universities">
-              <UniversityTab
-                universities={data.universities}
-                onAdd={() => dialogs.openAdd('university')}
-                onEdit={(i) => dialogs.openEdit('university', i)}
-                onDelete={(id, name) => actions.requestDelete('universities', id, name)}
-                processData={data.processData}
-                role={role} userRole={userRole}
-                canAdd={role === 'super_admin'}
-                canEdit={hasPermission('manage_universities')}
-                canDelete={role === 'super_admin'}
-              />
-            </TabsContent>
-            <TabsContent value="colleges">
-              <CollegeTab
-                colleges={data.colleges}
-                onAdd={() => dialogs.openAdd('college')}
-                onEdit={(i) => dialogs.openEdit('college', i)}
-                onDelete={(id, name) => actions.requestDelete('colleges', id, name)}
-                processData={data.processData}
-                role={role} userRole={userRole}
-                canAdd={role === 'super_admin' || role === 'university_admin'}
-                canEdit={hasPermission('manage_colleges')}
-                canDelete={role === 'super_admin' || role === 'university_admin'}
-              />
-            </TabsContent>
-            <TabsContent value="departments">
-              <DepartmentTab
-                departments={data.departments}
-                onAdd={() => dialogs.openAdd('department')}
-                onEdit={(i) => dialogs.openEdit('department', i)}
-                onDelete={(id, name) => actions.requestDelete('departments', id, name)}
-                processData={data.processData}
-                role={role} userRole={userRole}
-                canAdd={role === 'super_admin' || role === 'university_admin' || role === 'college_admin'}
-                canEdit={hasPermission('manage_departments')}
-                canDelete={role === 'super_admin' || role === 'university_admin' || role === 'college_admin'}
-              />
-            </TabsContent>
-            <TabsContent value="announcements">
-              <AnnouncementsTab 
-                announcements={data.announcements} 
-                onAdd={() => dialogs.openAdd('announcement')} 
-                onEdit={(i) => dialogs.openEdit('announcement', i)} 
-                onDelete={(id, title) => actions.requestDelete('announcements', id, title)} 
-                processData={data.processData} 
-                role={role} 
-                canAdd={hasPermission('manage_announcements')}
-                canEdit={hasPermission('manage_announcements')}
-                canDelete={hasPermission('manage_announcements')}
-              />
-            </TabsContent>
+                                {/* Admins tab — super, university, and college admins */}
+                                {(role === 'super_admin' || role === 'university_admin' || role === 'college_admin') && (
+                                    <TabsTrigger value="admins" className="tab-trigger-premium">
+                                        <UserCog className="h-4 w-4" />
+                                        {t('dashboard.manage_admins')} {/* Localised "Manage Admins" */}
+                                    </TabsTrigger>
+                                )}
 
-            <TabsContent value="jobs">
-              <JobsTab 
-                jobs={data.jobs} 
-                onAdd={() => dialogs.openAdd('job')} 
-                onEdit={(i) => dialogs.openEdit('job', i)} 
-                onDelete={(id, title) => actions.requestDelete('jobs', id, title)} 
-                onViewApplications={(id) => dialogs.setViewingJobId(id)} 
-                processData={data.processData} 
-                canAdd={hasPermission('manage_jobs')}
-                canEdit={hasPermission('manage_jobs')}
-                canDelete={hasPermission('manage_jobs')}
-              />
-            </TabsContent>
-            
-            <TabsContent value="graduates">
-              <GraduatesTab 
-                graduates={data.graduates} 
-                onAdd={() => dialogs.openAdd('graduate')} 
-                onEdit={(i) => dialogs.openEdit('graduate', i)} 
-                onDelete={(id, name) => actions.requestDelete('graduates', id, name)} 
-                processData={data.processData} 
-                canAdd={hasPermission('manage_graduates')}
-                canEdit={hasPermission('manage_graduates')}
-                canDelete={hasPermission('manage_graduates')}
-              />
-            </TabsContent>
-            
-            <TabsContent value="research">
-              <ResearchTab 
-                research={data.research} 
-                onAdd={() => dialogs.openAdd('research')} 
-                onEdit={(i) => dialogs.openEdit('research', i)} 
-                onDelete={(id, title) => actions.requestDelete('research', id, title)} 
-                processData={data.processData} 
-                canAdd={hasPermission('manage_research')}
-                canEdit={hasPermission('manage_research')}
-                canDelete={hasPermission('manage_research')}
-              />
-            </TabsContent>
-            
-            <TabsContent value="fees">
-              <FeesTab 
-                fees={data.fees} 
-                departments={data.departments} 
-                onAdd={() => dialogs.openAdd('fee')} 
-                onEdit={(i) => dialogs.openEdit('fee', i)} 
-                onDelete={(id, name) => actions.requestDelete('fees', id, name)} 
-                canAdd={hasPermission('manage_fees')}
-                canEdit={hasPermission('manage_fees')}
-                canDelete={hasPermission('manage_fees')}
-              />
-            </TabsContent>
-            <TabsContent value="error_logs"><ErrorLogsTab errorLogs={data.errorLogs} /></TabsContent>
-            <TabsContent value="backup"><BackupTab /></TabsContent>
-            {role === 'super_admin' && (
-              <TabsContent value="about_us"><AboutUsTab aboutData={data.aboutData} onSaved={data.fetchData} /></TabsContent>
-            )}
-            <TabsContent value="security"><SecurityTab userId={user.id} language={language} /></TabsContent>
+                                {/* Roles editor — super_admin only */}
+                                {role === 'super_admin' && (
+                                    <TabsTrigger value="permissions" className="tab-trigger-premium">
+                                        <Shield className="h-4 w-4" />
+                                        {language === 'ar' ? 'الأدوار' : 'Roles'}
+                                    </TabsTrigger>
+                                )}
 
+                                {/* Permissions matrix — super_admin only */}
+                                {role === 'super_admin' && (
+                                    <TabsTrigger value="permissions_matrix" className="tab-trigger-premium">
+                                        <Shield className="h-4 w-4" />
+                                        {language === 'ar' ? 'مصفوفة الصلاحيات' : 'Permissions Matrix'}
+                                    </TabsTrigger>
+                                )}
 
-          </Tabs>
+                                {/* Entity management tabs — shown based on permission keys */}
+                                {hasPermission('manage_universities') && (
+                                    <TabsTrigger value="universities" className="tab-trigger-premium">
+                                        <Building2 className="h-4 w-4" />
+                                        {t('nav.universities')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_colleges') && (
+                                    <TabsTrigger value="colleges" className="tab-trigger-premium">
+                                        <BookOpen className="h-4 w-4" />
+                                        {t('universities.colleges')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_departments') && (
+                                    <TabsTrigger value="departments" className="tab-trigger-premium">
+                                        <FileText className="h-4 w-4" />
+                                        {t('universities.departments')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_announcements') && (
+                                    <TabsTrigger value="announcements" className="tab-trigger-premium">
+                                        <Megaphone className="h-4 w-4" />
+                                        {t('nav.announcements')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_jobs') && (
+                                    <TabsTrigger value="jobs" className="tab-trigger-premium">
+                                        <Briefcase className="h-4 w-4" />
+                                        {t('nav.jobs')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_graduates') && (
+                                    <TabsTrigger value="graduates" className="tab-trigger-premium">
+                                        <GraduationCap className="h-4 w-4" />
+                                        {t('nav.graduates')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_research') && (
+                                    <TabsTrigger value="research" className="tab-trigger-premium">
+                                        <FileText className="h-4 w-4" />
+                                        {t('nav.research')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_fees') && (
+                                    <TabsTrigger value="fees" className="tab-trigger-premium">
+                                        <DollarSign className="h-4 w-4" />
+                                        {t('nav.fees')}
+                                    </TabsTrigger>
+                                )}
+
+                                {/* System tools — super_admin only */}
+                                {role === 'super_admin' && (
+                                    <TabsTrigger value="error_logs" className="tab-trigger-premium text-red-500">
+                                        <AlertTriangle className="h-4 w-4" />
+                                        {language === 'ar' ? 'الأخطاء' : 'Logs'}
+                                    </TabsTrigger>
+                                )}
+                                {role === 'super_admin' && (
+                                    <TabsTrigger value="backup" className="tab-trigger-premium text-amber-600">
+                                        <Archive className="h-4 w-4" />
+                                        {language === 'ar' ? 'النسخ' : 'Backup'}
+                                    </TabsTrigger>
+                                )}
+                                {role === 'super_admin' && (
+                                    <TabsTrigger value="about_us" className="tab-trigger-premium">
+                                        <Info className="h-4 w-4" />
+                                        {language === 'ar' ? 'إدارة من نحن' : 'Manage About Us'}
+                                    </TabsTrigger>
+                                )}
+
+                                {/* Security tab — always visible for personal password management */}
+                                <TabsTrigger value="security" className="tab-trigger-premium">
+                                    <Shield className="h-4 w-4" />
+                                    {language === 'ar' ? 'الأمان' : 'Security'}
+                                </TabsTrigger>
+
+                            </TabsList>
+                        </div>
+
+                        {/* ── Tab content panels ── */}
+
+                        {/* Users — full user accounts management */}
+                        <TabsContent value="users">
+                            <UserManagementTable
+                                onAddAdmin={() =>
+                                    // Switch to the Admins tab by programmatically clicking its trigger
+                                    document.querySelector<HTMLElement>('[data-value="admins"]')?.click()
+                                }
+                            />
+                        </TabsContent>
+
+                        {/* Admins — admin CRUD table with role assignment */}
+                        <TabsContent value="admins">
+                            <AdminManagement
+                                universities={data.universities} // Used to populate university scope selectors
+                                colleges={data.colleges}         // Used to populate college scope selectors
+                                departments={data.departments}   // Used to populate department scope selectors
+                            />
+                        </TabsContent>
+
+                        {/* Role defaults editor */}
+                        <TabsContent value="permissions">
+                            <div className="p-6">
+                                <RolePermissions /> {/* Lets super_admin set default permissions for each role */}
+                            </div>
+                        </TabsContent>
+
+                        {/* Permissions grid overview */}
+                        <TabsContent value="permissions_matrix">
+                            <div className="p-6">
+                                <PermissionsMatrix /> {/* Shows a grid of all roles × permissions for quick review */}
+                            </div>
+                        </TabsContent>
+
+                        {/* University CRUD */}
+                        <TabsContent value="universities">
+                            <UniversityTab
+                                universities={data.universities}                    // The filtered university list
+                                onAdd={() => dialogs.openAdd('university')}         // Open Add dialog with university form
+                                onEdit={(item) => dialogs.openEdit('university', item)} // Open Edit dialog pre-filled
+                                onDelete={(id, name) => actions.requestDelete('universities', id, name)} // Arm delete
+                                processData={data.processData}                      // Sort/filter utility
+                                role={role}                                         // For RBAC display logic within the tab
+                                userRole={userRole}                                 // Full role object for scope checks
+                                canAdd={role === 'super_admin'}                     // Only super_admin can add universities
+                                canEdit={hasPermission('manage_universities')}      // Based on permission key
+                                canDelete={role === 'super_admin'}                  // Only super_admin can delete
+                            />
+                        </TabsContent>
+
+                        {/* College CRUD */}
+                        <TabsContent value="colleges">
+                            <CollegeTab
+                                colleges={data.colleges}
+                                onAdd={() => dialogs.openAdd('college')}
+                                onEdit={(item) => dialogs.openEdit('college', item)}
+                                onDelete={(id, name) => actions.requestDelete('colleges', id, name)}
+                                processData={data.processData}
+                                role={role}
+                                userRole={userRole}
+                                canAdd={role === 'super_admin' || role === 'university_admin'}
+                                canEdit={hasPermission('manage_colleges')}
+                                canDelete={role === 'super_admin' || role === 'university_admin'}
+                            />
+                        </TabsContent>
+
+                        {/* Department CRUD */}
+                        <TabsContent value="departments">
+                            <DepartmentTab
+                                departments={data.departments}
+                                onAdd={() => dialogs.openAdd('department')}
+                                onEdit={(item) => dialogs.openEdit('department', item)}
+                                onDelete={(id, name) => actions.requestDelete('departments', id, name)}
+                                processData={data.processData}
+                                role={role}
+                                userRole={userRole}
+                                canAdd={role === 'super_admin' || role === 'university_admin' || role === 'college_admin'}
+                                canEdit={hasPermission('manage_departments')}
+                                canDelete={role === 'super_admin' || role === 'university_admin' || role === 'college_admin'}
+                            />
+                        </TabsContent>
+
+                        {/* Announcements CRUD */}
+                        <TabsContent value="announcements">
+                            <AnnouncementsTab
+                                announcements={data.announcements}
+                                onAdd={() => dialogs.openAdd('announcement')}
+                                onEdit={(item) => dialogs.openEdit('announcement', item)}
+                                onDelete={(id, title) => actions.requestDelete('announcements', id, title)}
+                                processData={data.processData}
+                                role={role}
+                                canAdd={hasPermission('manage_announcements')}
+                                canEdit={hasPermission('manage_announcements')}
+                                canDelete={hasPermission('manage_announcements')}
+                            />
+                        </TabsContent>
+
+                        {/* Jobs CRUD */}
+                        <TabsContent value="jobs">
+                            <JobsTab
+                                jobs={data.jobs}
+                                onAdd={() => dialogs.openAdd('job')}
+                                onEdit={(item) => dialogs.openEdit('job', item)}
+                                onDelete={(id, title) => actions.requestDelete('jobs', id, title)}
+                                onViewApplications={(id) => dialogs.setViewingJobId(id)} // Opens the applicants viewer
+                                processData={data.processData}
+                                canAdd={hasPermission('manage_jobs')}
+                                canEdit={hasPermission('manage_jobs')}
+                                canDelete={hasPermission('manage_jobs')}
+                            />
+                        </TabsContent>
+
+                        {/* Graduates CRUD */}
+                        <TabsContent value="graduates">
+                            <GraduatesTab
+                                graduates={data.graduates}
+                                onAdd={() => dialogs.openAdd('graduate')}
+                                onEdit={(item) => dialogs.openEdit('graduate', item)}
+                                onDelete={(id, name) => actions.requestDelete('graduates', id, name)}
+                                processData={data.processData}
+                                canAdd={hasPermission('manage_graduates')}
+                                canEdit={hasPermission('manage_graduates')}
+                                canDelete={hasPermission('manage_graduates')}
+                            />
+                        </TabsContent>
+
+                        {/* Research CRUD */}
+                        <TabsContent value="research">
+                            <ResearchTab
+                                research={data.research}
+                                onAdd={() => dialogs.openAdd('research')}
+                                onEdit={(item) => dialogs.openEdit('research', item)}
+                                onDelete={(id, title) => actions.requestDelete('research', id, title)}
+                                processData={data.processData}
+                                canAdd={hasPermission('manage_research')}
+                                canEdit={hasPermission('manage_research')}
+                                canDelete={hasPermission('manage_research')}
+                            />
+                        </TabsContent>
+
+                        {/* Fees CRUD */}
+                        <TabsContent value="fees">
+                            <FeesTab
+                                fees={data.fees}
+                                departments={data.departments}          // Used to show department names next to fees
+                                onAdd={() => dialogs.openAdd('fee')}
+                                onEdit={(item) => dialogs.openEdit('fee', item)}
+                                onDelete={(id, name) => actions.requestDelete('fees', id, name)}
+                                canAdd={hasPermission('manage_fees')}
+                                canEdit={hasPermission('manage_fees')}
+                                canDelete={hasPermission('manage_fees')}
+                            />
+                        </TabsContent>
+
+                        {/* Error logs — super_admin only */}
+                        <TabsContent value="error_logs">
+                            <ErrorLogsTab errorLogs={data.errorLogs} />
+                        </TabsContent>
+
+                        {/* Backup tools — super_admin only */}
+                        <TabsContent value="backup">
+                            <BackupTab />
+                        </TabsContent>
+
+                        {/* About-page CMS editor — super_admin only */}
+                        {role === 'super_admin' && (
+                            <TabsContent value="about_us">
+                                <AboutUsTab
+                                    aboutData={data.aboutData} // The current About-page content object
+                                    onSaved={data.fetchData}   // Refresh all data after saving
+                                />
+                            </TabsContent>
+                        )}
+
+                        {/* Personal security settings — always visible */}
+                        <TabsContent value="security">
+                            <SecurityTab userId={user.id} language={language} />
+                        </TabsContent>
+
+                    </Tabs>
+                </div>
+            </main>
+
+            {/* ── Global action dialogs (rendered outside the tabs to avoid z-index issues) ── */}
+
+            {/* Add / Edit entity dialog — shown when dialogs.dialogOpen is true */}
+            <EntityDialog
+                isOpen={dialogs.dialogOpen}         // Controls dialog visibility
+                onClose={dialogs.close}              // Resets state and hides dialog
+                activeForm={dialogs.activeForm}      // Tells EntityForm which fields to render
+                formData={dialogs.formData}          // Current form field values buffer
+                setFormData={dialogs.setFormData}    // onChange handler passed to form inputs
+                onSave={() => actions.handleSave(   // Called when the user clicks "Save"
+                    dialogs.activeForm,              // Entity type (e.g. 'university')
+                    dialogs.formData,                // Current field values
+                    dialogs.editId,                  // null = create, UUID = update
+                    role,                            // For RBAC scope injection in the action
+                    userRole                         // For college_id/university_id injection
+                )}
+                loading={actions.loading}           // Disables the Save button while saving
+                editId={dialogs.editId}             // Passed to EntityForm to show "Edit" vs "Add" label
+                universities={data.universities}    // For select dropdowns inside entity forms
+                colleges={data.colleges}            // For select dropdowns
+                departments={data.departments}      // For select dropdowns
+                role={role}                         // For hiding fields that the role can't set
+            />
+
+            {/* Delete confirmation dialog — shown when actions.deleteConfirm is populated */}
+            <DeleteConfirmDialog
+                isOpen={!!actions.deleteConfirm}    // Show when a deletion has been requested
+                onClose={actions.cancelDelete}       // Cancel without deleting
+                onConfirm={actions.confirmDelete}    // Execute the actual DELETE request
+                itemName={actions.deleteConfirm?.name || ''} // Show the item's name in the dialog
+            />
+
+            {/* Job applicants viewer — shown when dialogs.viewingJobId is a specific UUID */}
+            <JobApplicationsViewer
+                jobId={dialogs.viewingJobId}             // The job to show applicants for
+                onClose={() => dialogs.setViewingJobId(null)} // Save button closes the viewer
+            />
+
         </div>
-      </main>
-
-      {/* --- نوافذ الإجراءات العامة (Global Action Dialogs) --- */}
-      
-      {/* 1. نافذة الإضافة والتعديل الموحدة (Entity Dialog) */}
-      <EntityDialog
-        isOpen={dialogs.dialogOpen} onClose={dialogs.close} activeForm={dialogs.activeForm}
-        formData={dialogs.formData} setFormData={dialogs.setFormData}
-        onSave={() => actions.handleSave(dialogs.activeForm, dialogs.formData, dialogs.editId, role, userRole)}
-        loading={actions.loading} editId={dialogs.editId} universities={data.universities}
-        colleges={data.colleges} departments={data.departments} role={role}
-      />
-
-      {/* 2. نافذة تأكيد الحذف الجمالية (Delete Confirmation) */}
-      <DeleteConfirmDialog
-        isOpen={!!actions.deleteConfirm}
-        onClose={actions.cancelDelete}
-        onConfirm={actions.confirmDelete}
-        itemName={actions.deleteConfirm?.name || ''}
-      />
-
-      {/* 3. نافذة استعراض المتقدمين للوظائف (Applicants Viewer) */}
-      <JobApplicationsViewer
-        jobId={dialogs.viewingJobId}
-        onClose={() => dialogs.setViewingJobId(null)}
-      />
-    </div>
-  );
+    );
 };
 
-export default Dashboard;
+export default Dashboard; // Export so it can be used in the router definition

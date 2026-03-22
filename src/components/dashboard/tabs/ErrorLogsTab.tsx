@@ -1,95 +1,132 @@
 /**
- * @file components/dashboard/tabs/ErrorLogsTab.tsx
- * @description Provides a diagnostic interface for Super Administrators.
- * Displays system-level errors with stack traces for debugging.
+ * @file src/components/dashboard/tabs/ErrorLogsTab.tsx
+ * @description Renders the System Error Logs tab — visible to super_admin only.
+ *              Displays each error's message, source, stack trace, timestamp, and user context.
+ *              Shows a "system healthy" empty state when no errors exist.
  */
 
-import React from 'react'; // React library for components
-import { useLanguage } from '@/contexts/LanguageContext'; // Global translation / localization context
-import { Card, CardContent } from '@/components/ui/card'; // Card layout container
-import { AlertTriangle, ShieldCheck, Users } from 'lucide-react'; // Visual assets
-import { ErrorLog } from '@/types/dashboard'; // Type definitions for data safety
+import React from 'react';                               // React for JSX and FC type
+import { useLanguage } from '@/contexts/LanguageContext'; // Language for date localisation
+import { Card, CardContent } from '@/components/ui/card'; // Shadcn card layout
+import { AlertTriangle, ShieldCheck, Users } from 'lucide-react'; // Icon set
+import { ErrorLog } from '@/types/dashboard';             // TypeScript entity interface
 
-/**
- * Props for ErrorLogsTab
- */
+// ─── Props ────────────────────────────────────────────────────────────────
+
+/** Props for ErrorLogsTab — only needs the pre-fetched error logs array */
 interface ErrorLogsTabProps {
-    errorLogs: ErrorLog[]; // Data source: list of system error logs
+    errorLogs: ErrorLog[]; // Array of error records fetched from the server (super_admin only)
 }
 
+// ─── Component ────────────────────────────────────────────────────────────
+
 export const ErrorLogsTab: React.FC<ErrorLogsTabProps> = ({ errorLogs }) => {
-    const { language } = useLanguage(); // User's preference (ar/en)
+    const { language } = useLanguage(); // Language for date formatting (ar-IQ vs en-US)
 
     return (
-        <div className="p-6"> {/* Unified padding for consistency with other tabs */}
+        <div className="p-6"> {/* Standard section padding matches all other tabs */}
 
-            {/* --- Section Header --- */}
+            {/* ── Section header ── */}
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    {/* Main Title - Highlighted in red to emphasize importance/alert state */}
+                    {/* Red title to emphasize that this section shows errors/alerts */}
                     <h2 className="text-2xl font-black text-red-500 mb-1 flex items-center gap-3">
+                        {/* Red triangle icon badge for visual alarm signal */}
                         <div className="h-10 w-10 rounded-xl bg-red-50 flex items-center justify-center">
                             <AlertTriangle className="h-6 w-6 text-red-500" />
                         </div>
                         {language === 'ar' ? 'سجل الأخطاء النظامية' : 'System Error Logs'}
                     </h2>
-                    {/* Subtitle - Informative hint for admins */}
+                    {/* Contextual subtitle */}
                     <p className="text-sm text-primary/40 font-bold">
-                        {language === 'ar' ? 'مراقبة أخطاء النظام والبرمجيات' : 'Monitor system and software errors for maintenance'}
+                        {language === 'ar'
+                            ? 'مراقبة أخطاء النظام والبرمجيات'
+                            : 'Monitor system and software errors for maintenance'
+                        }
                     </p>
                 </div>
             </div>
 
-            {/* --- Content Logic (Empty State vs List) --- */}
+            {/* ── Conditional render: empty state OR log list ── */}
             {errorLogs.length === 0 ? (
-                // Happy State: No errors detected
+
+                // ── "System healthy" empty state ──────────────────────────────
+                // Only shown when there are no errors in the database — positive feedback for admins
                 <div className="text-center py-20 bg-slate-50 rounded-[3rem] border-2 border-dashed border-slate-200">
+                    {/* Green shield icon — communicates "all clear" */}
                     <ShieldCheck className="h-20 w-20 text-green-500/10 mx-auto mb-6" />
                     <p className="text-green-600/40 text-xl font-black">
                         {language === 'ar' ? 'النظام يعمل بشكل مثالي' : 'System is running perfectly'}
                     </p>
                 </div>
+
             ) : (
-                // List State: Displaying individual log entries
+
+                // ── Error log list ────────────────────────────────────────────
                 <div className="space-y-4">
                     {errorLogs.map((log: ErrorLog) => (
-                        <Card key={log.id} className="card-premium border-none border-s-4 border-s-red-500 shadow-lg overflow-hidden group hover:translate-x-1 transition-all">
+                        <Card
+                            key={log.id} // Stable React key using the log's UUID
+                            className="card-premium border-none border-s-4 border-s-red-500 shadow-lg overflow-hidden group hover:translate-x-1 transition-all"
+                            // `border-s-4 border-s-red-500` = left (start) red accent stripe for quick visual scanning
+                        >
                             <CardContent className="p-6">
+
+                                {/* ── Error message + source badge + timestamp ── */}
                                 <div className="flex justify-between items-start gap-4 mb-4">
                                     <div className="flex-1">
-                                        {/* Error Message - Key identifier */}
-                                        <span className="font-black text-red-600 text-lg">{log.message}</span>
+                                        {/* The main error message — large and red for immediate attention */}
+                                        <span className="font-black text-red-600 text-lg">
+                                            {log.message} {/* Human-readable error description */}
+                                        </span>
+
+                                        {/* Metadata row: source badge + timestamp */}
                                         <div className="flex items-center gap-3 mt-1">
-                                            {/* Log Source (Client vs Server) */}
+                                            {/* Source badge — indicates where the error originated (frontend/backend) */}
                                             <span className="px-2 py-0.5 rounded-md bg-red-50 text-[10px] font-black text-red-500 uppercase tracking-wider">
-                                                {log.source || 'CLIENT'}
+                                                {log.source || 'CLIENT'} {/* e.g. 'frontend_apiClient', 'backend' */}
                                             </span>
-                                            {/* Timestamp of occurrence */}
+                                            {/* Localised timestamp of when the error was logged */}
                                             <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">
-                                                {new Date(log.created_at).toLocaleString(language === 'ar' ? 'ar-IQ' : 'en-US')}
+                                                {new Date(log.created_at).toLocaleString(
+                                                    language === 'ar' ? 'ar-IQ' : 'en-US' // Arabic or English locale
+                                                )}
                                             </span>
                                         </div>
                                     </div>
                                 </div>
-                                {/* Code Block for Stack Trace - Mono font for readability */}
+
+                                {/* ── Stack trace code block ── */}
+                                {/* Dark background + monospace font makes stack traces readable */}
                                 <div className="bg-slate-900 p-4 rounded-xl font-mono text-[11px] text-red-400 overflow-auto max-h-40 whitespace-pre-wrap shadow-inner border border-white/5 selection:bg-red-500 selection:text-white">
                                     {log.stack_trace || 'No detailed stack trace available'}
+                                    {/* Fallback text shown when no stack trace was captured with the error */}
                                 </div>
-                                {/* Attribution Metadata */}
+
+                                {/* ── Attribution footer: user who triggered the error ── */}
                                 <div className="mt-4 pt-4 border-t border-slate-100 flex flex-wrap justify-between items-center gap-4">
+                                    {/* User display name or "Anonymous" */}
                                     <div className="flex items-center gap-2">
-                                        <Users className="h-3 w-3 text-primary/20" />
+                                        <Users className="h-3 w-3 text-primary/20" /> {/* People icon for user context */}
                                         <span className="text-[10px] font-black text-primary/40 uppercase tracking-widest leading-none">
-                                            {log.user_name ? `${log.user_name}` : (language === 'ar' ? 'مستخدم مجهول' : 'Anonymous User')}
+                                            {log.user_name
+                                                ? log.user_name // Display name if captured
+                                                : (language === 'ar' ? 'مستخدم مجهول' : 'Anonymous User') // Fallback
+                                            }
                                         </span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">{log.user_id}</span>
+                                    {/* User ID for more precise lookup if needed */}
+                                    <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest">
+                                        {log.user_id} {/* Usually 'authenticated' or 'anonymous' for frontend errors */}
+                                    </span>
                                 </div>
+
                             </CardContent>
                         </Card>
                     ))}
                 </div>
             )}
+
         </div>
     );
 };

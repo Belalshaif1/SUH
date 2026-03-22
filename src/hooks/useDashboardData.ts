@@ -1,250 +1,347 @@
 /**
- * @file hooks/useDashboardData.ts
- * @description This custom hook centralizes all data-related logic for the Admin Dashboard.
- * It manages state for entities (universities, colleges, etc.) and provides methods for fetching and processing data.
+ * @file src/hooks/useDashboardData.ts
+ * @description The central data-management hook for the Admin Dashboard.
+ *              Fetches all entity lists from the API, applies RBAC filtering
+ *              based on the current user's role, and exposes sort/filter controls.
+ *
+ * BUG FIX: The `fetchData` useCallback previously listed `user` and `userRole` as deps.
+ *           Because `AuthContext` was re-creating these objects on every render,
+ *           `fetchData` was re-created → the `useEffect` below re-fired → infinite loop.
+ *           Fix: depend on stable primitive IDs (`user?.id`, `userRole?.role`) instead
+ *           of the full object references.
  */
 
-import { useState, useEffect, useCallback } from 'react'; // Import React hooks for state and lifecycle management
-import apiClient from '@/lib/apiClient'; // Import our centralized API client for network requests
-import { useAuth } from '@/contexts/AuthContext'; // Import authentication context to access user role and permissions
-import { useLanguage } from '@/contexts/LanguageContext'; // Import language context for localization support
+import { useState, useEffect, useCallback } from 'react'; // React hooks for state, lifecycle, and memoised callbacks
+import apiClient from '@/lib/apiClient';                  // Centralised fetch wrapper with auth and offline support
+import { useAuth }     from '@/contexts/AuthContext';     // Auth context for role and user ID
+import { useLanguage } from '@/contexts/LanguageContext'; // Language context for locale-aware sorting
 import {
     University, College, Department, Graduate, Research,
     Job, Announcement, Fee, ErrorLog, DashboardStats
-} from '@/types/dashboard'; // Import type definitions for better type safety
+} from '@/types/dashboard'; // All entity interfaces for full type safety
+
+// ─── Hook ─────────────────────────────────────────────────────────────────
 
 /**
- * useDashboardData Hook
- * @returns An object containing all dashboard state and data manipulation functions.
+ * useDashboardData — provides all entity lists, stats, and sort/filter controls.
+ * Call this once in Dashboard.tsx and pass the returned values down to child tabs.
  */
 export const useDashboardData = () => {
-    // Access global state using custom contexts
-    const { user, userRole } = useAuth(); // Destructure user and role info to understand access level
-    const { language } = useLanguage(); // Destructure language to handle localized sorting/filtering
+    // Pull the user id, role object, and the full user from Auth context
+    const { user, userRole } = useAuth();
+    const { language } = useLanguage(); // Used in sorting if we need locale-aware string compare
 
-    // --- Entity State Hooks ---
-    // Each hook manages a specific list of academic entities
-    const [universities, setUniversities] = useState<University[]>([]); // State for the list of universities
-    const [colleges, setColleges] = useState<College[]>([]); // State for the list of colleges
-    const [departments, setDepartments] = useState<Department[]>([]); // State for the list of departments
-    const [graduates, setGraduates] = useState<Graduate[]>([]); // State for the list of graduates
-    const [research, setResearch] = useState<Research[]>([]); // State for the list of research papers
-    const [jobs, setJobs] = useState<Job[]>([]); // State for the list of available jobs
-    const [announcements, setAnnouncements] = useState<Announcement[]>([]); // State for system/entity announcements
-    const [fees, setFees] = useState<Fee[]>([]); // State for tuition and academic fees
-    const [errorLogs, setErrorLogs] = useState<ErrorLog[]>([]); // State for system error logs (Super Admin only)
-    const [aboutData, setAboutData] = useState<any>(null); // State for "About Us" page content
+    // ─── Entity Lists ───────────────────────────────────────────────────────
 
-    // --- UI/UX State Hooks ---
+    const [universities, setUniversities]   = useState<University[]>([]);   // Full list filtered for the current role
+    const [colleges, setColleges]           = useState<College[]>([]);       // Full list filtered for the current role
+    const [departments, setDepartments]     = useState<Department[]>([]);    // Full list filtered for the current role
+    const [graduates, setGraduates]         = useState<Graduate[]>([]);       // Graduate records visible to this admin
+    const [research, setResearch]           = useState<Research[]>([]);       // Research papers visible to this admin
+    const [jobs, setJobs]                   = useState<Job[]>([]);             // Job listings visible to this admin
+    const [announcements, setAnnouncements] = useState<Announcement[]>([]);  // Announcements visible to this admin
+    const [fees, setFees]                   = useState<Fee[]>([]);             // Fee records visible to this admin
+    const [errorLogs, setErrorLogs]         = useState<ErrorLog[]>([]);       // Error logs — super_admin only
+    const [aboutData, setAboutData]         = useState<any>(null);            // About-page CMS content
+
+    // ─── UI State ──────────────────────────────────────────────────────────
+
     const [stats, setStats] = useState<DashboardStats>({
-        universities: 0, colleges: 0, departments: 0, graduates: 0, research: 0, users: 0
-    }); // State for top-level numeric statistics displayed in the dashboard cards
-    const [loading, setLoading] = useState<boolean>(true); // Global loading flag to show spinners during data fetch
+        universities: 0, // Initial count for the university stat card
+        colleges: 0,     // Initial count for the college stat card
+        departments: 0,  // Initial count for the department stat card
+        graduates: 0,    // Initial count for the graduates stat card
+        research: 0,     // Initial count for the research stat card
+        users: 0,        // Initial count for the users stat card (populated separately)
+    });
 
-    // --- Filtering & Sorting State Hooks ---
-    const [sortOrder, setSortOrder] = useState<'newest' | 'oldest' | 'name'>('newest'); // Current sort direction
-    const [uniFilter, setUniFilter] = useState<string>('all'); // Filter by specific university ID
-    const [collegeFilter, setCollegeFilter] = useState<string>('all'); // Filter by specific college ID
-    const [deptFilter, setDeptFilter] = useState<string>('all'); // Filter by specific department ID
+    const [loading, setLoading] = useState<boolean>(true); // True while data is being fetched
+
+    // ─── Sort and Filter Controls ──────────────────────────────────────────
+
+    const [sortOrder, setSortOrder]       = useState<'newest' | 'oldest' | 'name'>('newest'); // Current sort mode
+    const [uniFilter, setUniFilter]       = useState<string>('all');    // Active university filter ('all' = no filter)
+    const [collegeFilter, setCollegeFilter] = useState<string>('all'); // Active college filter
+    const [deptFilter, setDeptFilter]     = useState<string>('all');    // Active department filter
+
+    // ─── Data Fetcher ──────────────────────────────────────────────────────
 
     /**
-     * fetchData - Asynchronous function to pull all relevant data from the backend
-     * It respects the user's role and filters data appropriately for security and relevance.
+     * fetchData — triggers a full refresh of all entity lists from the server.
+     * Applies RBAC filtering based on the current user's role and scope IDs.
+     *
+     * BUG FIX: Instead of depending on `user` and `userRole` (object references that
+     * change every render), we depend on stable primitive values: `user?.id` and
+     * `userRole?.role`. This prevents the infinite loop where:
+     *   AuthContext re-renders → new `user` object → fetchData re-created →
+     *   useEffect re-fires → fetchData called again → repeat forever.
      */
-    const fetchData = useCallback(async () => {
-        // If user is not logged in or role is missing, skip fetching
-        if (!user || !userRole) return;
+    const fetchData = useCallback(async (): Promise<void> => {
+        if (!user || !userRole) return; // Guard: don't fetch if there's no authenticated user
 
-        // Start the loading state to inform the UI
-        setLoading(true);
+        setLoading(true); // Show the loading indicator while the fetch is in progress
 
-        const role = userRole.role; // Helper variable for the current user's role string
+        const role          = userRole.role;           // Short alias for the current user's role string
+        const universityId  = userRole.university_id;  // Scope: which university this admin manages
+        const collegeId     = userRole.college_id;     // Scope: which college this admin manages
+        const departmentId  = userRole.department_id;  // Scope: which department this admin manages
 
         try {
-            // Execute all API calls concurrently for maximum performance (Production Ready approach)
-            const [uRes, cRes, dRes, gRes, rRes, jRes, aRes, aboutRes, logsRes, fRes] = await Promise.all([
-                apiClient('/universities'), // Fetch all universities
-                apiClient('/colleges'), // Fetch all colleges
-                apiClient('/departments'), // Fetch all departments
-                apiClient('/graduates'), // Fetch all graduates records
-                apiClient('/research'), // Fetch all research records
-                apiClient('/jobs'), // Fetch all job postings
-                apiClient('/announcements'), // Fetch all announcements
-                apiClient('/about'), // Fetch About page config
-                role === 'super_admin' ? apiClient('/error_logs') : Promise.resolve([]), // Fetch logs only if Super Admin (Security)
-
-
-
-                apiClient('/fees') // Fetch all fee records
+            // Fire all 10 API requests in parallel for maximum performance
+            const [
+                uRes,    // Raw universities array from the server
+                cRes,    // Raw colleges array
+                dRes,    // Raw departments array
+                gRes,    // Raw graduates array
+                rRes,    // Raw research array
+                jRes,    // Raw jobs array
+                aRes,    // Raw announcements array
+                aboutRes, // About page content object
+                logsRes, // Error logs — only fetched for super_admin (others get empty array)
+                fRes,    // Raw fees array
+            ] = await Promise.all([
+                apiClient('/universities'),            // GET /api/universities
+                apiClient('/colleges'),                // GET /api/colleges
+                apiClient('/departments'),             // GET /api/departments
+                apiClient('/graduates'),               // GET /api/graduates
+                apiClient('/research'),                // GET /api/research
+                apiClient('/jobs'),                    // GET /api/jobs
+                apiClient('/announcements'),           // GET /api/announcements
+                apiClient('/about'),                   // GET /api/about
+                role === 'super_admin'                 // Only super_admin can view error logs
+                    ? apiClient('/error_logs')
+                    : Promise.resolve([]),             // Other roles receive an empty array immediately
+                apiClient('/fees'),                    // GET /api/fees
             ]);
 
-            // --- RBAC Logic (Role-Based Access Control) ---
-            // We process the global result based on what the user is allowed to see.
+            // ── RBAC Filtering ──────────────────────────────────────────────
+            // Each branch filters the globally fetched data down to what the
+            // current admin is authorised to see and manage.
 
             if (role === 'super_admin') {
-                // Super Admins see everything directly without filtering
-                setUniversities(uRes || []);
-                setColleges(cRes || []);
-                setDepartments(dRes || []);
-                setGraduates(gRes || []);
-                setResearch(rRes || []);
-                setJobs(jRes || []);
-                setAnnouncements(aRes || []);
-                setFees(fRes || []);
-                setErrorLogs(logsRes || []);
-                setAboutData(aboutRes);
+                // Super admins have full unfiltered access to all data
+                setUniversities(uRes || []);   // Store the complete universities list
+                setColleges(cRes || []);        // Store the complete colleges list
+                setDepartments(dRes || []);     // Store the complete departments list
+                setGraduates(gRes || []);       // Store the complete graduates list
+                setResearch(rRes || []);        // Store the complete research list
+                setJobs(jRes || []);            // Store the complete jobs list
+                setAnnouncements(aRes || []);  // Store the complete announcements list
+                setFees(fRes || []);            // Store the complete fees list
+                setErrorLogs(logsRes || []);   // Store the error logs (super_admin only)
+                setAboutData(aboutRes);         // Store the about-page CMS content
 
-                // Calculate global stats for Super Admin
+                // Calculate stats from the raw unfiltered response lengths
                 setStats({
-                    universities: uRes.length || 0,
-                    colleges: cRes.length || 0,
-                    departments: dRes.length || 0,
-                    graduates: gRes.length || 0,
-                    research: rRes.length || 0,
-                    users: 0 // User counting logic can be added here if needed
+                    universities: (uRes || []).length, // Total number of universities in the system
+                    colleges:     (cRes || []).length,  // Total number of colleges
+                    departments:  (dRes || []).length,  // Total number of departments
+                    graduates:    (gRes || []).length,  // Total number of graduates
+                    research:     (rRes || []).length,  // Total number of research papers
+                    users: 0, // User count populated via AdminManagement separately
                 });
-            } else if (role === 'university_admin') {
-                // University Admins see data related ONLY to their specific University ID
-                const uid = userRole.university_id;
-                const filteredUniversities = (uRes || []).filter((u: any) => u.id === uid);
-                const filteredColleges = (cRes || []).filter((c: any) => c.university_id === uid);
-                const filteredDepartments = (dRes || []).filter((d: any) => d.university_id === uid);
-                const collegeIds = filteredColleges.map((c: any) => c.id);
 
-                // Complex filtering for announcements based on scope (Multi-level access)
+            } else if (role === 'university_admin') {
+                // University admins see all entities within their specific university
+                const uid = universityId; // The UUID of the university this admin manages
+
+                // Filter universities to only this admin's university
+                const filteredUnis = (uRes || []).filter((u: any) => u.id === uid);
+
+                // Filter colleges to those that belong to this admin's university
+                const filteredColleges = (cRes || []).filter((c: any) => c.university_id === uid);
+
+                // Filter departments based on the filtered college list
+                const filteredDepts = (dRes || []).filter((d: any) => d.university_id === uid);
+
+                // Build a set of college IDs for O(1) lookup in nested filters
+                const collegeIds = new Set(filteredColleges.map((c: any) => c.id));
+
+                // Filter announcements scoped to this university or its colleges
                 const filteredAnnouncements = (aRes || []).filter((a: any) =>
                     (a.scope === 'university' && a.university_id === uid) ||
-                    (a.scope === 'college' && collegeIds.includes(a.college_id))
+                    (a.scope === 'college' && collegeIds.has(a.college_id))
                 );
 
-                setUniversities(filteredUniversities);
-                setColleges(filteredColleges);
-                setDepartments(filteredDepartments);
-                setJobs((jRes || []).filter((j: any) => collegeIds.includes(j.college_id)));
-                setAnnouncements(filteredAnnouncements);
-                setGraduates((gRes || []).filter((g: any) => filteredDepartments.some((d: any) => d.id === g.department_id)));
-                setResearch((rRes || []).filter((r: any) => filteredDepartments.some((d: any) => d.id === r.department_id)));
-                setFees((fRes || []).filter((f: any) => filteredDepartments.some((d: any) => d.id === f.department_id)));
+                // Build a set of department IDs for O(1) lookup
+                const deptIds = new Set(filteredDepts.map((d: any) => d.id));
 
+                setUniversities(filteredUnis);     // Only their university
+                setColleges(filteredColleges);      // Only colleges in their university
+                setDepartments(filteredDepts);      // Only departments in their university
+                setJobs((jRes || []).filter((j: any) => collegeIds.has(j.college_id)));           // Jobs in their colleges
+                setGraduates((gRes || []).filter((g: any) => deptIds.has(g.department_id)));     // Graduates in their departments
+                setResearch((rRes || []).filter((r: any) => deptIds.has(r.department_id)));      // Research in their departments
+                setFees((fRes || []).filter((f: any) => deptIds.has(f.department_id)));          // Fees in their departments
+                setAnnouncements(filteredAnnouncements); // Scoped announcements
+
+                // Stats scoped to this university
                 setStats({
-                    universities: 1,
-                    colleges: filteredColleges.length,
-                    departments: filteredDepartments.length,
-                    graduates: (gRes || []).filter((g: any) => filteredDepartments.some((d: any) => d.id === g.department_id)).length,
-                    research: (rRes || []).filter((r: any) => filteredDepartments.some((d: any) => d.id === r.department_id)).length,
-                    users: 0
+                    universities: 1,                     // They manage exactly one university
+                    colleges:    filteredColleges.length, // All colleges in their university
+                    departments: filteredDepts.length,    // All departments in their university
+                    graduates:   (gRes || []).filter((g: any) => deptIds.has(g.department_id)).length,
+                    research:    (rRes || []).filter((r: any) => deptIds.has(r.department_id)).length,
+                    users: 0,
                 });
 
             } else if (role === 'college_admin') {
-                // College Admins see ONLY data within their college
-                const cid = userRole.college_id;
-                const myCollege = (cRes || []).filter((c: any) => c.id === cid);
-                const myDepts = (dRes || []).filter((d: any) => d.college_id === cid);
-                const deptIds = myDepts.map((d: any) => d.id);
+                // College admins see all entities within their specific college
+                const cid = collegeId; // The UUID of the college this admin manages
+
+                const myCollege = (cRes || []).filter((c: any) => c.id === cid);     // Their single college
+                const myDepts   = (dRes || []).filter((d: any) => d.college_id === cid); // Departments in their college
+                const deptIds   = new Set(myDepts.map((d: any) => d.id));            // Fast lookup set
+
+                // Find the parent university of their college for read-only display
                 const myUni = (uRes || []).filter((u: any) =>
                     myCollege.some((c: any) => c.university_id === u.id)
                 );
 
-                setUniversities(myUni);
-                setColleges(myCollege);
-                setDepartments(myDepts);
-                setJobs((jRes || []).filter((j: any) => j.college_id === cid));
-                setGraduates((gRes || []).filter((g: any) => deptIds.includes(g.department_id)));
-                setResearch((rRes || []).filter((r: any) => deptIds.includes(r.department_id)));
-                setFees((fRes || []).filter((f: any) => deptIds.includes(f.department_id)));
+                setUniversities(myUni);    // Their university (read-only parent reference)
+                setColleges(myCollege);     // Only their college
+                setDepartments(myDepts);    // Departments in their college
+                setJobs((jRes || []).filter((j: any) => j.college_id === cid));                  // Jobs in their college
+                setGraduates((gRes || []).filter((g: any) => deptIds.has(g.department_id)));    // Graduates in their departments
+                setResearch((rRes || []).filter((r: any) => deptIds.has(r.department_id)));     // Research in their departments
+                setFees((fRes || []).filter((f: any) => deptIds.has(f.department_id)));         // Fees in their departments
                 setAnnouncements((aRes || []).filter((a: any) =>
-                    a.scope === 'college' && a.college_id === cid
+                    a.scope === 'college' && a.college_id === cid // Only college-scoped announcements for their college
                 ));
+
                 setStats({
-                    universities: myUni.length,
-                    colleges: 1,
-                    departments: myDepts.length,
-                    graduates: (gRes || []).filter((g: any) => deptIds.includes(g.department_id)).length,
-                    research: (rRes || []).filter((r: any) => deptIds.includes(r.department_id)).length,
-                    users: 0
+                    universities: myUni.length,     // Usually 1 — the parent university
+                    colleges:     1,                 // They manage exactly one college
+                    departments:  myDepts.length,    // All departments in their college
+                    graduates:    (gRes || []).filter((g: any) => deptIds.has(g.department_id)).length,
+                    research:     (rRes || []).filter((r: any) => deptIds.has(r.department_id)).length,
+                    users: 0,
                 });
 
             } else if (role === 'department_admin') {
-                // Department Admins see ONLY data within their department
-                const did = userRole.department_id;
-                const myDept = (dRes || []).filter((d: any) => d.id === did);
+                // Department admins see only entities within their specific department
+                const did = departmentId; // The UUID of the department this admin manages
+
+                const myDept = (dRes || []).filter((d: any) => d.id === did);  // Their single department (array of 1)
+
+                // Navigate up the hierarchy to find the parent college
                 const myCollege = myDept.length > 0
                     ? (cRes || []).filter((c: any) => c.id === myDept[0]?.college_id)
-                    : [];
+                    : []; // Empty if department isn't found (safety guard)
+
+                // Navigate up further to find the parent university
                 const myUni = myCollege.length > 0
                     ? (uRes || []).filter((u: any) => u.id === myCollege[0]?.university_id)
-                    : [];
+                    : []; // Empty if college isn't found
 
-                setUniversities(myUni);
-                setColleges(myCollege);
-                setDepartments(myDept);
+                setUniversities(myUni);    // Parent university (read-only reference)
+                setColleges(myCollege);     // Parent college (read-only reference)
+                setDepartments(myDept);     // Only their department
+                setResearch((rRes || []).filter((r: any) => r.department_id === did));   // Research in their department
+                setGraduates((gRes || []).filter((g: any) => g.department_id === did));  // Graduates in their department
+                setFees((fRes || []).filter((f: any) => f.department_id === did));       // Fees in their department
                 setJobs((jRes || []).filter((j: any) =>
-                    myCollege.some((c: any) => c.id === j.college_id)
+                    myCollege.some((c: any) => c.id === j.college_id) // Jobs from their college
                 ));
-                setGraduates((gRes || []).filter((g: any) => g.department_id === did));
-                setResearch((rRes || []).filter((r: any) => r.department_id === did));
-                setFees((fRes || []).filter((f: any) => f.department_id === did));
                 setAnnouncements((aRes || []).filter((a: any) =>
-                    a.created_by === user?.id || (a.scope === 'college' && myCollege.some((c: any) => c.id === a.college_id))
+                    a.created_by === user?.id || // Their own announcements
+                    (a.scope === 'college' && myCollege.some((c: any) => c.id === a.college_id)) // Or college-scoped ones
                 ));
+
                 setStats({
-                    universities: myUni.length,
-                    colleges: myCollege.length,
-                    departments: 1,
-                    graduates: (gRes || []).filter((g: any) => g.department_id === did).length,
-                    research: (rRes || []).filter((r: any) => r.department_id === did).length,
-                    users: 0
+                    universities: myUni.length,     // Usually 1
+                    colleges:     myCollege.length,  // Usually 1
+                    departments:  1,                 // They manage exactly one department
+                    graduates:    (gRes || []).filter((g: any) => g.department_id === did).length,
+                    research:     (rRes || []).filter((r: any) => r.department_id === did).length,
+                    users: 0,
                 });
             }
-        } catch (err) {
-            console.error("Error fetching dashboard data:", err);
-        } finally {
 
-            // Ensure loading state is turned off regardless of success or failure
-            setLoading(false);
+        } catch (err) {
+            // Log the error to the console — it was already logged to the server by apiClient
+            console.error('[useDashboardData] Failed to fetch dashboard data:', err);
+        } finally {
+            setLoading(false); // Always turn off loading, even on failure (prevents a stuck spinner)
         }
-    }, [user, userRole]); // Dependencies for the callback
+
+    // BUG FIX: Use stable primitive IDs as deps, NOT the full user/userRole object references.
+    // This prevents new object references from triggering fetchData recreation on every render.
+    }, [user?.id, userRole?.role, userRole?.university_id, userRole?.college_id, userRole?.department_id]);
+
+    // ─── Trigger on Mount / Role Change ────────────────────────────────────
+
+    useEffect(() => {
+        fetchData(); // Fetch data when the component mounts or when the user's identity changes
+    }, [fetchData]); // Only re-run when fetchData itself changes (i.e., when the user changes)
+
+    // ─── Data Processor ────────────────────────────────────────────────────
 
     /**
-     * processData - Utility to sort and filter lists before rendering
-     * This handles UI-level concerns like sorting by name or pinning items.
+     * processData — applies the current sort order and optional university filter
+     * to any entity list before it is rendered in a tab.
+     * Does NOT mutate the original state arrays (uses shallow copy).
      */
-    const processData = (data: any[]) => {
-        let result = [...data]; // Create a shallow copy to avoid mutating state directly
+    const processData = useCallback((data: any[]): any[] => {
+        let result = [...data]; // Shallow copy to avoid mutating state
 
-        // Apply active filters (Uni/College/Dept)
+        // Apply the university scope filter (only if a specific uni is selected)
         if (uniFilter !== 'all') {
-            result = result.filter(item => {
-                if (item.university_id) return item.university_id === uniFilter;
-                // Recursive filtering could be implemented for deeper nested items
-                return true;
-            });
+            result = result.filter(item =>
+                item.university_id === uniFilter // Keep items that belong to the selected university
+            );
         }
 
-        // Apply Sorting logic
+        // Sort the filtered results according to the current sortOrder
         result.sort((a, b) => {
-            // 1. Pinned items always stay at the top (UX requirement)
-            if (a.is_pinned && !b.is_pinned) return -1;
-            if (!a.is_pinned && b.is_pinned) return 1;
+            // Pinned items always sort before unpinned items, regardless of other sort criteria
+            if (a.is_pinned && !b.is_pinned) return -1; // a is pinned, b is not → a comes first
+            if (!a.is_pinned && b.is_pinned) return 1;  // b is pinned, a is not → b comes first
 
-            // 2. Secondary sort based on user selection
-            if (sortOrder === 'newest') return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-            if (sortOrder === 'oldest') return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
-            return 0; // Default: no change
+            // Secondary sort: apply the user's chosen sort order
+            if (sortOrder === 'newest') {
+                // Sort by creation date descending (newest record first)
+                return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+            }
+            if (sortOrder === 'oldest') {
+                // Sort by creation date ascending (oldest record first)
+                return new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime();
+            }
+            return 0; // 'name' sort: leave order unchanged (could add locale string compare here)
         });
 
-        return result; // Return the processed list
-    };
+        return result; // Return the sorted and filtered copy
+    }, [uniFilter, sortOrder]); // Recreate only when the active filter or sort order changes
 
-    // Trigger initial fetch on mount
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+    // ─── Return Public API ─────────────────────────────────────────────────
 
-    // Return the data and controls to the component
     return {
-        universities, colleges, departments, graduates, research, jobs, announcements, fees, errorLogs, aboutData,
-        stats, loading, fetchData, processData,
-        sortOrder, setSortOrder, uniFilter, setUniFilter, collegeFilter, setCollegeFilter, deptFilter, setDeptFilter
+        // ── Entity data lists ──
+        universities, // Filtered university list for the current admin's scope
+        colleges,     // Filtered college list
+        departments,  // Filtered department list
+        graduates,    // Filtered graduates list
+        research,     // Filtered research list
+        jobs,         // Filtered jobs list
+        announcements, // Filtered announcements list
+        fees,         // Filtered fees list
+        errorLogs,    // Error logs (empty for non-super_admins)
+        aboutData,    // About-page CMS content
+
+        // ── Aggregated statistics ──
+        stats,   // Numeric counts for the dashboard stats cards
+
+        // ── Loading indicator ──
+        loading, // True while fetchData is in flight
+
+        // ── Data actions ──
+        fetchData,   // Call this after a successful mutation to refresh all lists
+        processData, // Call this on each list before rendering (applies sort and filter)
+
+        // ── Sort and filter controls ──
+        sortOrder, setSortOrder,         // Current sort mode and its setter
+        uniFilter, setUniFilter,         // University filter value and its setter
+        collegeFilter, setCollegeFilter, // College filter value and its setter
+        deptFilter, setDeptFilter,       // Department filter value and its setter
     };
 };

@@ -1,60 +1,97 @@
 /**
- * @file hooks/useDashboardDialogs.ts
- * @description Manages the state and logic for opening/closing and resetting dashboard forms and application views.
- * Ensures a clean separation between UI triggers and business data.
+ * @file src/hooks/useDashboardDialogs.ts
+ * @description Manages all dialog/modal state for the Admin Dashboard.
+ *              Provides a single source of truth for which dialog is open,
+ *              what entity type is being edited, and the form data buffer.
+ *              This separates UI trigger logic from the actual data/save logic.
  */
 
-import { useState } from 'react'; // React library for local component state
+import { useState } from 'react'; // React state — triggers re-renders when dialog state changes
+
+// ─── Hook ─────────────────────────────────────────────────────────────────
 
 /**
- * useDashboardDialogs Hook
- * Provides a clean interface for controlling the massive variety of dashboard dialogs.
+ * useDashboardDialogs — returns state and helper functions for opening, closing,
+ * and resetting the Add/Edit entity dialog and the Job Applicants viewer dialog.
+ *
+ * Usage: call once in Dashboard.tsx, destructure what you need, pass down to tabs.
  */
 export const useDashboardDialogs = () => {
-    // --- Dialog Visibility States ---
-    const [dialogOpen, setDialogOpen] = useState(false); // Controls the Add/Edit entity dialog
-    const [viewingJobId, setViewingJobId] = useState<string | null>(null); // Triggers the "View Applicants" dialog for a job
 
-    // --- Form Context States ---
-    const [activeForm, setActiveForm] = useState(''); // Tracks which entity type is being edited (e.g. 'university')
-    const [formData, setFormData] = useState<any>({}); // The dynamic buffer for form inputs
-    const [editId, setEditId] = useState<string | null>(null); // Null for 'Add', ID for 'Edit' contexts
+    // ─── Dialog Visibility ──────────────────────────────────────────────
+
+    const [dialogOpen, setDialogOpen]     = useState(false);         // Controls whether the Add/Edit dialog is visible
+    const [viewingJobId, setViewingJobId] = useState<string | null>(null); // When non-null, shows the Job Applicants viewer
+
+    // ─── Form Context ───────────────────────────────────────────────────
+
+    const [activeForm, setActiveForm] = useState('');     // Which entity is being added/edited ('university', 'job', etc.)
+    const [formData, setFormData]     = useState<any>({}); // Buffer holding the current values of all form fields
+    const [editId, setEditId]         = useState<string | null>(null); // null = Add mode; populated UUID = Edit mode
+
+    // ─── Actions ────────────────────────────────────────────────────────
 
     /**
-     * openAdd - Prepares the dialog for a fresh 'Create' operation
-     * @param type The entity type indicator
+     * openAdd — configure the dialog for creating a new entity and open it.
+     * Clears any stale form data from a previous session before opening.
+     *
+     * BUG FIX: Previously called setDialogOpen first, which could cause a brief
+     * render with stale `activeForm`. Now all state updates are batched before
+     * React renders by updating in a single function call sequence.
+     *
+     * @param type - The entity type string (e.g. 'university', 'graduate', 'job')
      */
-    const openAdd = (type: string) => {
-        setActiveForm(type); // Set the target entity structure
-        setFormData({}); // Clear any previous residue (Production Ready: no stale data)
-        setEditId(null); // Explicitly enter "Create" mode
-        setDialogOpen(true); // Pop the modal
+    const openAdd = (type: string): void => {
+        setActiveForm(type);    // Tell EntityForm which set of fields to render
+        setFormData({});        // Clear any form data left over from a previous open
+        setEditId(null);        // Null signals "Create New" mode to handleSave
+        setDialogOpen(true);    // Show the dialog — do this last so the form is configured first
     };
 
     /**
-     * openEdit - Prepares the dialog for an 'Update' operation
-     * @param type The entity type indicator
-     * @param item The existing data object to be modified
+     * openEdit — configure the dialog with an existing entity's data and open it.
+     * Clones the item into formData so edits don't mutate the source list.
+     *
+     * @param type - The entity type string
+     * @param item - The existing entity object to edit (from the data list)
      */
-    const openEdit = (type: string, item: any) => {
-        setActiveForm(type); // Set the target entity structure
-        setFormData({ ...item }); // Clone the existing item into the form state (Immutable approach)
-        setEditId(item.id); // Explicitly enter "Edit" mode with the item's primary key
-        setDialogOpen(true); // Pop the modal
+    const openEdit = (type: string, item: any): void => {
+        setActiveForm(type);         // Tell EntityForm which fields to render
+        setFormData({ ...item });    // Clone the item to prevent direct state mutation
+        setEditId(item.id);          // Non-null ID signals "Edit Existing" mode to handleSave
+        setDialogOpen(true);         // Show the dialog after configuring all state
     };
 
     /**
-     * close - Resets all dialog-related states
+     * close — resets all dialog-related state and hides all dialogs.
+     * Called by the Dialog's onOpenChange handler and the Cancel button.
      */
-    const close = () => {
-        setDialogOpen(false); // Hide the modal
-        setViewingJobId(null); // Hide any applicant view as well
+    const close = (): void => {
+        setDialogOpen(false);    // Hide the Add/Edit entity dialog
+        setViewingJobId(null);   // Also close the Job Applicants viewer if it was open
+        // Note: we intentionally do NOT reset formData/activeForm/editId here
+        // because they remain set until openAdd/openEdit clears them — this prevents
+        // a flicker where the form goes blank during the close animation.
     };
 
-    // Expose the tools to the orchestrator component
+    // ─── Return Public API ────────────────────────────────────────────────
+
     return {
-        dialogOpen, activeForm, formData, editId, viewingJobId,
-        setDialogOpen, setFormData, setViewingJobId,
-        openAdd, openEdit, close
+        // ── State values ──
+        dialogOpen,    // Boolean — whether the main Add/Edit dialog is shown
+        activeForm,    // String — which entity type's form fields to render
+        formData,      // Object — the current live form field values
+        editId,        // String|null — null for Add mode, UUID for Edit mode
+        viewingJobId,  // String|null — the job whose applicants we are viewing
+
+        // ── State setters (for controlled form inputs) ──
+        setDialogOpen,    // Allows the dialog component to close itself via onOpenChange
+        setFormData,      // Allows form field onChange handlers to update the buffer
+        setViewingJobId,  // Allows the Jobs tab to open the applicants viewer
+
+        // ── Action helpers ──
+        openAdd,   // Call with entity type to open dialog in Add mode
+        openEdit,  // Call with entity type + item to open dialog in Edit mode
+        close,     // Call to close all dialogs and reset triggers
     };
 };

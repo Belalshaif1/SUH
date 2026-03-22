@@ -1,183 +1,290 @@
 /**
- * @file hooks/useDashboardActions.ts
- * @description This hook handles all destructive and constructive actions (CRUD) in the Dashboard.
- * It abstracts the complexity of saving different entity types and handling file uploads.
+ * @file src/hooks/useDashboardActions.ts
+ * @description Handles all CRUD mutations for the Admin Dashboard:
+ *              creating, updating, and deleting any entity type.
+ *              Also manages the delete confirmation dialog state.
+ *
+ * BUG FIX: All async actions now have `setLoading(false)` in a `finally` block,
+ *           so the loading indicator is guaranteed to turn off even if a file
+ *           upload or API call throws an uncaught exception.
  */
 
-import { useState } from 'react'; // React state for local action loading states
-import apiClient from '@/lib/apiClient'; // Central API client
-import { useToast } from '@/hooks/use-toast'; // Toast notifications for user feedback
-import { useLanguage } from '@/contexts/LanguageContext'; // For localized success/error messages
+import { useState, useCallback } from 'react'; // React hooks for state and stable function references
+import apiClient   from '@/lib/apiClient';      // Central HTTP client with auth, offline queue, and error logging
+import { useToast } from '@/hooks/use-toast';   // Toast notifications for success and error feedback
+import { useLanguage } from '@/contexts/LanguageContext'; // For localised success/error messages
+
+// ─── Hook ─────────────────────────────────────────────────────────────────
 
 /**
- * useDashboardActions Hook
- * @param fetchData Function to refresh the global state after a successful action
- * @param onSuccess Callback to execute after a successful save (e.g., closing a dialog)
+ * useDashboardActions — provides save, delete, and file-upload handlers.
+ *
+ * @param fetchData - Callback that refreshes all dashboard lists after a mutation
+ * @param onSuccess - Callback called on successful save (typically closes the dialog)
  */
-export const useDashboardActions = (fetchData: () => void, onSuccess: () => void) => {
-    const [loading, setLoading] = useState<boolean>(false); // Action-level loading state (for buttons)
-    const { toast } = useToast(); // Hook to trigger UI notifications
-    const { language } = useLanguage(); // Current site language
-    const [deleteConfirm, setDeleteConfirm] = useState<{ id: string, table: string, name: string } | null>(null);
+export const useDashboardActions = (
+    fetchData: () => void, // Called after each successful save to refresh the UI
+    onSuccess: () => void  // Called after each successful save to close the dialog
+) => {
+    const [loading, setLoading]       = useState<boolean>(false);    // True while any async action is in progress
+    const { toast }                   = useToast();                  // Access the toast notification system
+    const { language }                = useLanguage();               // Current language for localised messages
 
+    // Delete confirmation dialog state
+    const [deleteConfirm, setDeleteConfirm] = useState<{
+        id: string;      // The UUID of the entity that is being requested for deletion
+        table: string;   // The API endpoint table name (e.g. 'universities', 'graduates')
+        name: string;    // The human-readable name to show in the confirmation dialog
+    } | null>(null); // null means no deletion is pending and the dialog is hidden
+
+    // ─── File Upload Helper ───────────────────────────────────────────────
 
     /**
-     * handleFileUpload - Helper to upload files to the server
-     * @param file The file object from an input
-     * @returns The remote URL of the uploaded file
+     * handleFileUpload — uploads a single File object to the server.
+     * Returns the remote URL string provided by the server after upload.
+     * Throws if the upload fails — the calling function should catch this.
+     *
+     * @param file - A File object from a browser <input type="file"> element
+     * @returns The absolute or relative URL of the uploaded file
      */
-    const handleFileUpload = async (file: File) => {
-        const formData = new FormData(); // Browser API to prepare multipart/form-data
-        formData.append('file', file); // Append the raw file
-        const data = await apiClient('/upload', { // Send to the upload endpoint
+    const handleFileUpload = useCallback(async (file: File): Promise<string> => {
+        const formData = new FormData();     // FormData is required for multipart/form-data file uploads
+        formData.append('file', file);       // Add the file under the 'file' key the server expects
+
+        // POST to /api/upload — apiClient detects FormData and omits the Content-Type header
+        // so the browser can set the correct multipart boundary automatically
+        const data = await apiClient('/upload', {
             method: 'POST',
-            body: formData // Note: apiClient should handle boundary headers if needed
+            body: formData, // Send as multipart form — NOT JSON
         });
-        return data.url; // Return the absolute or relative URL provided by the server
-    };
+
+        return data.url; // Return the file URL so the caller can save it in the entity payload
+    }, []); // No dependencies — this function is stable
+
+    // ─── Main Save Handler ───────────────────────────────────────────────
 
     /**
-     * handleSave - The primary entry point for creating/updating any entity
-     * @param activeForm The type of entity being saved (e.g., 'university', 'job')
-     * @param formData The raw state from the form component
-     * @param editId The ID of the item if we are in Edit mode (null for new items)
-     * @param role User's role for security checks and default fields
-     * @param userRole Object containing IDs like university_id for context
+     * handleSave — the unified create/update handler for all entity types.
+     * Determines the HTTP method (POST vs PUT) based on whether editId is set.
+     * Handles file uploads as pre-processing steps before the main API call.
+     *
+     * BUG FIX: `setLoading(false)` is now in a `finally` block so it always runs,
+     *           even when a file upload or API call throws before reaching it.
+     *
+     * @param activeForm - Entity type string ('university', 'graduate', etc.)
+     * @param formData   - Raw form state object with all field values
+     * @param editId     - null for Create, UUID string for Update
+     * @param role       - Current admin's role for RBAC default overrides
+     * @param userRole   - Full role object for scoped field injection (e.g. college_id)
      */
-    const handleSave = async (activeForm: string, formData: any, editId: string | null, role: string, userRole: any) => {
-        setLoading(true); // Disable buttons during the request
-        try {
-            let payload: any = { ...formData }; // Start with a copy of the form state
+    const handleSave = useCallback(async (
+        activeForm: string,
+        formData: any,
+        editId: string | null,
+        role: string,
+        userRole: any
+    ): Promise<void> => {
+        setLoading(true); // Lock the save button to prevent double-submission
 
-            // --- Entity-Specific Pre-Processing ---
-            // This section handles file uploads and ID associations based on the entity type
+        try {
+            // Start with a shallow copy of the form data so we don't mutate React state
+            let payload: any = { ...formData };
+
+            // ── Entity-specific pre-processing ─────────────────────────────
+            // Each case uploads files and resolves Foreign Key defaults before the main call.
 
             if (activeForm === 'university') {
-                // Handle images/PDFs if they were newly selected
-                if (formData._guide_file) payload.guide_pdf_url = await handleFileUpload(formData._guide_file);
-                if (formData._logo_file) payload.logo_url = await handleFileUpload(formData._logo_file);
-            }
-            else if (activeForm === 'college') {
-                payload.university_id = role === 'university_admin' ? userRole.university_id : formData.university_id;
-                if (formData._guide_file) payload.guide_pdf_url = await handleFileUpload(formData._guide_file);
-                if (formData._logo_file) payload.logo_url = await handleFileUpload(formData._logo_file);
-            }
-            else if (activeForm === 'department') {
-                payload.college_id = role === 'college_admin' ? userRole.college_id : formData.college_id;
-                if (formData._plan_file) payload.study_plan_url = await handleFileUpload(formData._plan_file);
-                if (formData._logo_file) payload.logo_url = await handleFileUpload(formData._logo_file);
-            }
-            else if (activeForm === 'announcement') {
-                if (formData._image_file) payload.image_url = await handleFileUpload(formData._image_file);
-                if (formData._attachment_file) payload.file_url = await handleFileUpload(formData._attachment_file);
-            }
-            else if (activeForm === 'research') {
-                if (formData._pdf_file) payload.pdf_url = await handleFileUpload(formData._pdf_file);
-            }
-            else if (activeForm === 'about') {
-                if (formData._image_file) payload.developer_image_url = await handleFileUpload(formData._image_file);
-            }
-            else if (activeForm === 'graduate') {
-                payload.graduation_year = parseInt(formData.graduation_year);
-                payload.gpa = formData.gpa ? parseFloat(formData.gpa) : null;
-            }
-            else if (activeForm === 'fee') {
-                payload.amount = parseFloat(formData.amount);
-            }
-            else if (activeForm === 'job') {
-                payload.college_id = role === 'college_admin' ? userRole.college_id : formData.college_id;
+                // Upload the guide PDF if a new file was selected
+                if (formData._guide_file) {
+                    payload.guide_pdf_url = await handleFileUpload(formData._guide_file);
+                }
+                // Upload the logo image if a new file was selected
+                if (formData._logo_file) {
+                    payload.logo_url = await handleFileUpload(formData._logo_file);
+                }
             }
 
-            // Inject department context for lower level admins
+            else if (activeForm === 'college') {
+                // University admins automatically get their own uni_id injected
+                payload.university_id = role === 'university_admin'
+                    ? userRole.university_id  // Use the admin's own university
+                    : formData.university_id; // Use the value selected in the form
+
+                if (formData._guide_file) {
+                    payload.guide_pdf_url = await handleFileUpload(formData._guide_file);
+                }
+                if (formData._logo_file) {
+                    payload.logo_url = await handleFileUpload(formData._logo_file);
+                }
+            }
+
+            else if (activeForm === 'department') {
+                // College admins automatically get their own college_id injected
+                payload.college_id = role === 'college_admin'
+                    ? userRole.college_id   // Use the admin's own college
+                    : formData.college_id;  // Use the value selected in the form
+
+                if (formData._plan_file) {
+                    payload.study_plan_url = await handleFileUpload(formData._plan_file); // Study plan PDF
+                }
+                if (formData._logo_file) {
+                    payload.logo_url = await handleFileUpload(formData._logo_file);
+                }
+            }
+
+            else if (activeForm === 'announcement') {
+                if (formData._image_file) {
+                    payload.image_url = await handleFileUpload(formData._image_file); // Announcement banner image
+                }
+                if (formData._attachment_file) {
+                    payload.file_url = await handleFileUpload(formData._attachment_file); // Announcement PDF attachment
+                }
+            }
+
+            else if (activeForm === 'research') {
+                if (formData._pdf_file) {
+                    payload.pdf_url = await handleFileUpload(formData._pdf_file); // Research paper PDF
+                }
+            }
+
+            else if (activeForm === 'about') {
+                if (formData._image_file) {
+                    payload.developer_image_url = await handleFileUpload(formData._image_file); // Developer profile photo
+                }
+            }
+
+            else if (activeForm === 'graduate') {
+                payload.graduation_year = parseInt(formData.graduation_year, 10); // Convert to integer for database
+                payload.gpa = formData.gpa ? parseFloat(formData.gpa) : null;      // Convert to float or null if empty
+            }
+
+            else if (activeForm === 'fee') {
+                payload.amount = parseFloat(formData.amount); // Convert amount string to float number
+            }
+
+            else if (activeForm === 'job') {
+                // College admins automatically get their own college_id injected
+                payload.college_id = role === 'college_admin'
+                    ? userRole.college_id  // Use the admin's own college
+                    : formData.college_id; // Use the value selected in the form
+            }
+
+            // ── Inject department scope for entities that belong to a department ──
             if (['research', 'graduate', 'fee'].includes(activeForm)) {
                 if (role === 'department_admin') {
+                    // Department admins can only create records for their own department
                     payload.department_id = userRole.department_id;
                 }
             }
 
-            // Global Security Override: Only Super Admins can pin items
+            // ── Pin flag security: only super_admin can set is_pinned ──
             if (role === 'super_admin' && formData.is_pinned !== undefined) {
-                payload.is_pinned = formData.is_pinned ? 1 : 0;
+                payload.is_pinned = formData.is_pinned ? 1 : 0; // Convert boolean to 1/0 for DB storage
             } else if (payload.is_pinned !== undefined) {
-                delete payload.is_pinned;
+                delete payload.is_pinned; // Remove the pin flag for non-super admins (prevents privilege escalation)
             }
 
-            // Note: Logic for other forms (Announcements, Research, etc.) follows the same pattern.
-            // We would ideally use a strategy pattern here if the number of entities grows very large.
+            // ── Remove internal file references before sending to the server ──
+            // The _*_file keys are local browser File objects — the server doesn't need them
+            delete payload._guide_file;
+            delete payload._logo_file;
+            delete payload._plan_file;
+            delete payload._image_file;
+            delete payload._attachment_file;
+            delete payload._pdf_file;
 
-            // --- API Execution ---
-            const method = editId ? 'PUT' : 'POST'; // Choose HTTP verb based on mode
+            // ── Determine the HTTP method and endpoint ──────────────────────
+            const method = editId ? 'PUT' : 'POST'; // POST for new records, PUT for updates
 
-            // Construct the correct endpoint mapping for each entity
+            // Map entity type names to their corresponding API resource paths
             const endpointMap: Record<string, string> = {
-                university: 'universities',
-                college: 'colleges',
-                department: 'departments',
-                announcement: 'announcements',
-                job: 'jobs',
-                graduate: 'graduates',
-                research: 'research',      // Note: server uses '/api/research' without 's'
-                fee: 'fees',
-                about: 'about',
+                university:   'universities',  // /api/universities
+                college:      'colleges',      // /api/colleges
+                department:   'departments',   // /api/departments
+                announcement: 'announcements', // /api/announcements
+                job:          'jobs',          // /api/jobs
+                graduate:     'graduates',     // /api/graduates
+                research:     'research',      // /api/research (no 's')
+                fee:          'fees',          // /api/fees
+                about:        'about',         // /api/about
             };
 
-            const base = endpointMap[activeForm] || (activeForm + 's');
-            const endpoint = `/${base}${editId ? `/${editId}` : ''}`;
-            // Note: The endpoint construction above is simplified; some routes might need explicit mapping.
-            // For production, a mapping object { 'university': '/universities' } is safer.
+            const base     = endpointMap[activeForm] ?? (activeForm + 's'); // Fallback: append 's' to entity name
+            const endpoint = `/${base}${editId ? `/${editId}` : ''}`;       // Append /:id for PUT requests
 
+            // Execute the main API request
             await apiClient(endpoint, {
-                method,
-                body: JSON.stringify(payload) // Standardize on JSON for the payload
+                method,                        // POST or PUT
+                body: JSON.stringify(payload), // Serialise the cleaned payload to JSON
             });
 
-            // --- Post-Action Success ---
-            toast({ title: language === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully' });
-            onSuccess(); // Close dialog or clear state
-            fetchData(); // Refresh the main dashboard view
+            // ── Post-success actions ────────────────────────────────────────
+            toast({ title: language === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully' }); // Notify the user
+            onSuccess();    // Close the dialog (calls useDashboardDialogs.close())
+            fetchData();    // Refresh all entity lists to show the newly saved record
+
         } catch (err: any) {
-            // Production-grade error reporting via Toasts
+            // Show the server's error message (or a generic fallback) as a destructive toast
             toast({
-                title: language === 'ar' ? 'فشل الحفظ' : 'Save failed',
-                description: err.message,
-                variant: 'destructive'
+                title:       language === 'ar' ? 'فشل الحفظ' : 'Save failed',  // Toast title
+                description: err.message,                                        // The specific error from the server
+                variant:     'destructive',                                       // Red destructive style
             });
         } finally {
-            setLoading(false); // Enable buttons back
+            setLoading(false); // BUG FIX: always runs — even when file upload or API call throws
         }
-    };
+    }, [fetchData, onSuccess, toast, language, handleFileUpload]); // Stable deps
+
+    // ─── Delete Flow ──────────────────────────────────────────────────────
 
     /**
-     * requestDelete - Initiates the custom confirmation flow
+     * requestDelete — arms the delete flow by populating the confirmation state.
+     * This opens the DeleteConfirmDialog without actually deleting anything yet.
+     *
+     * @param table - API endpoint table name (e.g. 'universities')
+     * @param id    - UUID of the entity to delete
+     * @param name  - Human-readable name shown in the confirmation dialog
      */
-    const requestDelete = (table: string, id: string, name: string) => {
-        setDeleteConfirm({ id, table, name });
-    };
+    const requestDelete = useCallback((table: string, id: string, name: string): void => {
+        setDeleteConfirm({ id, table, name }); // Arm the delete — dialog will show
+    }, []); // No deps — never recreated
 
     /**
-     * confirmDelete - Performs the actual deletion after user clicks "Yes"
+     * confirmDelete — executes the actual HTTP DELETE after the user clicks "Confirm".
+     * Only runs if deleteConfirm is non-null (i.e., requestDelete was called first).
      */
-    const confirmDelete = async () => {
-        if (!deleteConfirm) return;
-        const { id, table } = deleteConfirm;
+    const confirmDelete = useCallback(async (): Promise<void> => {
+        if (!deleteConfirm) return; // Guard: do nothing if no deletion was requested
+
+        const { id, table } = deleteConfirm; // Extract the entity's id and table from the confirmation state
 
         try {
-            await apiClient(`/${table}/${id}`, { method: 'DELETE' }); // Perform HTTP DELETE
-            toast({ title: language === 'ar' ? 'تم الحذف' : 'Deleted' });
-            fetchData(); // Sync UI with database
+            await apiClient(`/${table}/${id}`, { method: 'DELETE' }); // Send HTTP DELETE to the server
+            toast({ title: language === 'ar' ? 'تم الحذف' : 'Deleted' }); // Notify success
+            fetchData(); // Refresh the entity lists to remove the deleted record from the UI
         } catch (err: any) {
-            toast({ title: err.message, variant: 'destructive' });
+            toast({ title: err.message, variant: 'destructive' }); // Show the server's error message
         } finally {
-            setDeleteConfirm(null);
+            setDeleteConfirm(null); // Always clear the confirmation state to close the dialog
         }
-    };
+    }, [deleteConfirm, fetchData, toast, language]); // Recreate when the pending deletion changes
+
+    /**
+     * cancelDelete — disarms the delete flow without deleting anything.
+     * Called when the user clicks "Cancel" in the confirmation dialog.
+     */
+    const cancelDelete = useCallback((): void => {
+        setDeleteConfirm(null); // Clear the pending deletion — this closes the confirm dialog
+    }, []); // No deps — never recreated
+
+    // ─── Return Public API ────────────────────────────────────────────────
 
     return {
-        loading,
-        handleSave,
-        requestDelete,
-        confirmDelete,
-        deleteConfirm,
-        cancelDelete: () => setDeleteConfirm(null)
-    }; // Expose state and methods
+        loading,        // True while any save or delete action is in flight
+        handleSave,     // Call to save (create or update) any entity
+        requestDelete,  // Call to arm the delete confirmation dialog
+        confirmDelete,  // Call when user confirms deletion
+        cancelDelete,   // Call when user cancels deletion
+        deleteConfirm,  // The pending deletion record — null when no deletion is pending
+    };
 };

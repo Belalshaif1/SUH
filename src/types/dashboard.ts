@@ -1,128 +1,158 @@
 /**
- * @file types/dashboard.ts
- * @description defines the data structures and types used across the Admin Dashboard.
- * This ensures type safety and better developer experience.
+ * @file src/types/dashboard.ts
+ * @description Defines every TypeScript interface and type used throughout the Admin Dashboard.
+ *              Centralising types here ensures type safety and a single source of truth.
  */
 
+// ─── University ─────────────────────────────────────────────────────────────
+
+/** Represents a single University record stored in the database */
 export interface University {
-    id: string;
-    name_ar: string;
-    name_en?: string;
-    description_ar?: string;
-    description_en?: string;
-    logo_url?: string;
-    guide_pdf_url?: string;
-    is_pinned?: number;
-    created_at?: string;
+    id: string;             // UUID primary key generated server-side
+    name_ar: string;        // Arabic name — required for all entities
+    name_en?: string;       // English name — optional for bilingual display
+    description_ar?: string;  // Arabic description shown on detail pages
+    description_en?: string;  // English description shown on detail pages
+    logo_url?: string;        // Path or URL to the uploaded university logo image
+    guide_pdf_url?: string;   // Path or URL to the university guide PDF file
+    is_pinned?: number;       // 1 = pinned to the top of lists, 0 = normal order
+    created_at?: string;      // ISO timestamp of when this record was created
 }
 
+// ─── College ────────────────────────────────────────────────────────────────
+
+/** Represents a single College that belongs to a University */
 export interface College {
-    id: string;
-    university_id: string;
-    name_ar: string;
-    name_en?: string;
-    description_ar?: string;
-    description_en?: string;
-    logo_url?: string;
-    guide_pdf_url?: string;
-    is_pinned?: number;
-    created_at?: string;
+    id: string;             // UUID primary key
+    university_id: string;  // Foreign key linking this college to its parent university
+    name_ar: string;        // Arabic name of the college
+    name_en?: string;       // Optional English name of the college
+    description_ar?: string;  // Arabic description
+    description_en?: string;  // English description
+    logo_url?: string;        // Path to the college logo image
+    guide_pdf_url?: string;   // Path to the college guide PDF
+    is_pinned?: number;       // 1 = pinned, 0 = normal
+    created_at?: string;      // ISO timestamp of record creation
 }
 
+// ─── Department ─────────────────────────────────────────────────────────────
+
+/** Represents an academic Department that belongs to a College */
 export interface Department {
-    id: string;
-    college_id: string;
-    university_id?: string;
-    name_ar: string;
-    name_en?: string;
-    description_ar?: string;
-    description_en?: string;
-    logo_url?: string;
-    study_plan_url?: string;
-    created_at?: string;
+    id: string;              // UUID primary key
+    college_id: string;      // Foreign key for the parent college
+    university_id?: string;  // Denormalized university reference for faster filtering
+    name_ar: string;         // Arabic name of the department
+    name_en?: string;        // Optional English name
+    description_ar?: string; // Arabic description
+    description_en?: string; // English description
+    logo_url?: string;       // Path to department logo image
+    study_plan_url?: string; // Path to the PDF study plan document
+    created_at?: string;     // ISO timestamp of record creation
 }
 
+// ─── Announcement ───────────────────────────────────────────────────────────
+
+/** Represents a public or scoped Announcement posted by an admin */
 export interface Announcement {
-    id: string;
-    title_ar: string;
-    title_en?: string;
-    content_ar: string;
-    content_en?: string;
-    scope: 'global' | 'university' | 'college' | 'department';
-    university_id?: string;
-    college_id?: string;
-    department_id?: string;
-    image_url?: string;
-    file_url?: string;
-    is_pinned?: number;
-    created_by?: string;
-    created_at?: string;
+    id: string;              // UUID primary key
+    title_ar: string;        // Arabic title shown in listings
+    title_en?: string;       // Optional English title
+    content_ar: string;      // Arabic body content of the announcement
+    content_en?: string;     // Optional English body content
+    scope: 'global' | 'university' | 'college' | 'department'; // Visibility scope
+    university_id?: string;  // Scope: restrict to a specific university if set
+    college_id?: string;     // Scope: restrict to a specific college if set
+    department_id?: string;  // Scope: restrict to a specific department if set
+    image_url?: string;      // Path to an optional banner/thumbnail image
+    file_url?: string;       // Path to an optional attached PDF file
+    is_pinned?: number;      // 1 = pinned to top, 0 = normal
+    created_by?: string;     // User ID of the admin who posted this announcement
+    created_at?: string;     // ISO timestamp of record creation
 }
 
+// ─── Job ───────────────────────────────────────────────────────────────────
+
+/** Represents a Job listing posted by a college */
 export interface Job {
-    id: string;
-    college_id: string;
-    title_ar: string;
-    title_en?: string;
-    description_ar: string;
-    description_en?: string;
-    deadline?: string;
-    is_pinned?: number;
-    created_at?: string;
+    id: string;               // UUID primary key
+    college_id: string;       // Foreign key for the college posting this job
+    title_ar: string;         // Arabic job title
+    title_en?: string;        // Optional English job title
+    description_ar: string;   // Arabic job description
+    description_en?: string;  // Optional English job description
+    deadline?: string;        // ISO date string of the application deadline
+    is_pinned?: number;       // 1 = pinned, 0 = normal ordering
+    created_at?: string;      // ISO timestamp of record creation
 }
 
+// ─── Graduate ──────────────────────────────────────────────────────────────
+
+/** Represents a Graduate record linked to an academic Department */
 export interface Graduate {
-    id: string;
-    department_id: string;
-    full_name_ar: string;
-    full_name_en?: string;
-    graduation_year: number;
-    gpa?: number;
-    specialization_ar?: string;
-    specialization_en?: string;
-    created_at?: string;
+    id: string;                   // UUID primary key
+    department_id: string;        // Foreign key linking to the graduate's department
+    full_name_ar: string;         // Arabic full name — required field
+    full_name_en?: string;        // Optional English full name
+    graduation_year: number;      // The year of graduation (e.g. 2023)
+    gpa?: number;                 // Grade point average (e.g. 3.75)
+    specialization_ar?: string;   // Arabic field of specialization
+    specialization_en?: string;   // English field of specialization
+    created_at?: string;          // ISO timestamp of record creation
 }
 
+// ─── Research ──────────────────────────────────────────────────────────────
+
+/** Represents an academic Research paper or thesis */
 export interface Research {
-    id: string;
-    department_id: string;
-    title_ar: string;
-    title_en?: string;
-    abstract_ar?: string;
-    abstract_en?: string;
-    author_name: string;
-    pdf_url?: string;
-    published?: boolean;
-    students?: string[];
-    is_pinned?: number;
-    created_at?: string;
+    id: string;               // UUID primary key
+    department_id: string;    // Foreign key linking to the department that owns it
+    title_ar: string;         // Arabic title of the research paper
+    title_en?: string;        // Optional English title
+    abstract_ar?: string;     // Arabic abstract / summary
+    abstract_en?: string;     // English abstract / summary
+    author_name: string;      // Free-text name of the primary author(s)
+    pdf_url?: string;         // Path to the uploaded PDF file of the research
+    published?: boolean;      // Whether this research is publicly published
+    students?: string[];      // Array of contributing student names (if applicable)
+    is_pinned?: number;       // 1 = pinned, 0 = normal ordering
+    created_at?: string;      // ISO timestamp of record creation
 }
 
+// ─── Fee ──────────────────────────────────────────────────────────────────
+
+/** Represents a Tuition Fee entry linked to an academic Department */
 export interface Fee {
-    id: string;
-    department_id: string;
-    fee_type: 'public' | 'private';
-    amount: number;
-    academic_year: string;
-    created_at?: string;
+    id: string;               // UUID primary key
+    department_id: string;    // Foreign key for the department this fee applies to
+    fee_type: 'public' | 'private'; // Distinguishes government vs. private/parallel track fees
+    amount: number;           // Numeric fee amount in local currency
+    academic_year: string;    // The academic year this fee applies to (e.g. "2024-2025")
+    created_at?: string;      // ISO timestamp of record creation
 }
 
+// ─── ErrorLog ─────────────────────────────────────────────────────────────
+
+/** Represents a single error log entry captured from frontend or backend */
 export interface ErrorLog {
-    id: string;
-    message: string;
-    stack_trace?: string;
-    source: string;
-    user_id?: string;
-    user_name?: string;
-    user_email?: string;
-    created_at: string;
+    id: string;             // UUID primary key
+    message: string;        // Short, human-readable error message
+    stack_trace?: string;   // Full stack trace or HTTP status string for debugging
+    source: string;         // Origin of the error (e.g. 'frontend_apiClient', 'backend')
+    user_id?: string;       // The ID of the user who triggered the error (if authenticated)
+    user_name?: string;     // The display name of that user (for convenience in logs UI)
+    user_email?: string;    // The email of that user (for filtering in the error log tab)
+    created_at: string;     // ISO timestamp — required for sorting and time-based filtering
 }
 
+// ─── DashboardStats ───────────────────────────────────────────────────────
+
+/** Aggregated numeric statistics shown in the stats cards at the top of the Dashboard */
 export interface DashboardStats {
-    universities: number;
-    colleges: number;
-    departments: number;
-    graduates: number;
-    research: number;
-    users: number;
+    universities: number;  // Total number of university records
+    colleges: number;      // Total number of college records
+    departments: number;   // Total number of department records
+    graduates: number;     // Total number of graduate records
+    research: number;      // Total number of research paper records
+    users: number;         // Total number of admin user accounts
 }
