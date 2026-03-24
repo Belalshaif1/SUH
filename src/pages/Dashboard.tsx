@@ -115,7 +115,7 @@ const Dashboard: React.FC = () => {
             <StatsOverview stats={data.stats} role={role} hasPermission={hasPermission} />
 
             {/* ── Main content area — tabs and content ── */}
-            <main className="container mx-auto px-4 pb-20 relative -mt-16 z-10">
+            <main className="container mx-auto px-4 pb-20 relative  z-10">
 
                 {/* BUG FIX: Data-loading indicator is now a NON-BLOCKING corner badge.
                     Previously this was an `absolute inset-0` overlay that captured all
