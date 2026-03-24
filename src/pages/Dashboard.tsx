@@ -121,11 +121,15 @@ const Dashboard: React.FC = () => {
                     Previously this was an `absolute inset-0` overlay that captured all
                     pointer events and prevented the "Add" button from being clickable. */}
                 {data.loading && (
-                    <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 bg-white dark:bg-slate-800 text-primary text-xs font-semibold px-3 py-2 rounded-full shadow-lg border border-primary/10">
-                        <Loader2 className="h-3 w-3 animate-spin" /> {/* Spinning icon */}
-                        {language === 'ar' ? 'جاري التحميل...' : 'Loading...'} {/* Localised label */}
-                    </div>
-                )}
+    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl flex flex-col items-center">
+            <Loader2 className="h-12 w-12 text-primary animate-spin" />
+            <p className="mt-4 text-lg font-medium text-foreground">
+                {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+            </p>
+        </div>
+    </div>
+)}
 
                 {/* Save/Delete action loading — this IS intentionally full-screen blocking
                     because we must prevent the user from clicking anything during a mutation */}
