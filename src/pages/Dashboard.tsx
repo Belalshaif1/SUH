@@ -145,7 +145,7 @@ const Dashboard: React.FC = () => {
                     pointer events and prevented the "Add" button from being clickable. */}
                 {data.loading && (
                     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm text-primary text-xs font-semibold px-3 py-2 rounded-full shadow-lg border border-primary/10">
-                        <Loader2 className="h-3 w-3  animate-spin" /> {/* Spinning icon */}
+                        <Loader2 className="h-12 w-12  animate-spin" /> {/* Spinning icon */}
                         <p className='mt-4 text-lg font-medium text-foreground'>
                             {language === 'ar' ? 'جاري التحميل...' : 'Loading...'} {/* Localised label */}
                         </p>
