@@ -148,9 +148,15 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                     {f('name_en', t('common.name_en'), 'text', false, '', '', isCollegeAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
                     {f('description_en', t('common.description_en'), 'textarea')}
-                    <div className="space-y-2">
-                        <Label className="font-bold">{language === 'ar' ? 'شعار الكلية' : 'College Logo'}</Label>
-                        <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _logo_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'دليل الكلية (PDF)' : 'College Guide (PDF)'}</Label>
+                            <Input type="file" accept=".pdf" onChange={e => setFormData({ ...formData, _guide_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'شعار الكلية' : 'College Logo'}</Label>
+                            <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _logo_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
                     </div>
                     {pinField()}
                 </div>

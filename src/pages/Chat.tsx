@@ -17,20 +17,27 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Send, MessageCircle, Search, Menu, X,
-    ArrowLeft, MoreVertical, Circle
+    ArrowLeft, MoreVertical, Circle, Edit, Trash2, Check,
 } from 'lucide-react';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Message {
-    id: string;
-    sender_id: string;
-    content: string;
+    id:         string;
+    sender_id:  string;
+    content:    string;
     created_at: string;
-    is_read?: number;
-    sender?: { full_name?: string; email?: string };
+    is_read?:   number;
+    is_edited?: number; // Flag for edited messages
+    sender?:    { full_name?: string; email?: string };
 }
 
 interface Contact {
@@ -122,7 +129,10 @@ const MessageBubble: React.FC<{
     isMine: boolean;
     showMeta: boolean;
     language: string;
-}> = ({ msg, isMine, showMeta, language }) => {
+    onEdit: (m: Message) => void;
+    onDelete: (id: string) => void;
+}> = ({ msg, isMine, showMeta, language, onEdit, onDelete }) => {
+    const isAr = language === 'ar';
     const initials = msg.sender?.full_name
         ? msg.sender.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
         : msg.sender?.email?.[0]?.toUpperCase() ?? '?';
@@ -143,30 +153,62 @@ const MessageBubble: React.FC<{
 
             {/* Bubble + Meta */}
             <div className={cn(
-                'flex flex-col gap-1 max-w-[75%] sm:max-w-[65%] lg:max-w-[55%]',
+                'flex flex-col gap-1 max-w-[75%] sm:max-w-[65%] lg:max-w-[55%] relative group/bubble',
                 isMine ? 'items-end' : 'items-start'
             )}>
                 {showMeta && !isMine && (
                     <span className="text-[11px] font-bold text-muted-foreground px-2">
-                        {msg.sender?.full_name || msg.sender?.email || (language === 'ar' ? 'مستخدم' : 'User')}
+                        {msg.sender?.full_name || msg.sender?.email || (isAr ? 'مستخدم' : 'User')}
                     </span>
                 )}
 
-                <div className={cn(
-                    'px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm',
-                    isMine
-                        ? 'bg-primary text-primary-foreground rounded-br-md'
-                        : 'bg-card text-card-foreground border border-border/60 rounded-bl-md'
-                )}>
-                    {msg.content}
+                <div className="relative group/actions">
+                    <div className={cn(
+                        'px-4 py-2.5 rounded-2xl text-sm leading-relaxed shadow-sm',
+                        isMine
+                            ? 'bg-primary text-primary-foreground rounded-br-md'
+                            : 'bg-card text-card-foreground border border-border/60 rounded-bl-md'
+                    )}>
+                        {msg.content}
+                    </div>
+
+                    {/* Message Actions (Edit/Delete) - only for own messages */}
+                    {isMine && (
+                        <div className={cn(
+                            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/actions:opacity-100 transition-opacity flex items-center gap-1",
+                            isAr ? "-left-14" : "-right-14"
+                        )}>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-muted">
+                                        <MoreVertical className="h-4 w-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align={isAr ? 'start' : 'end'} className="rounded-xl border-none shadow-xl">
+                                    <DropdownMenuItem onClick={() => onEdit(msg)} className="gap-2 focus:bg-primary/10">
+                                        <Edit className="h-4 w-4 text-primary" />
+                                        <span>{isAr ? 'تعديل' : 'Edit'}</span>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => onDelete(msg.id)} className="gap-2 focus:bg-destructive/10 text-destructive">
+                                        <Trash2 className="h-4 w-4" />
+                                        <span>{isAr ? 'حذف' : 'Delete'}</span>
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        </div>
+                    )}
                 </div>
 
-                <span className={cn(
-                    'text-[10px] text-muted-foreground px-2 opacity-0 group-hover:opacity-100 transition-opacity',
-                    isMine ? 'text-right' : 'text-left'
-                )}>
-                    {fmtTime(msg.created_at, language)}
-                </span>
+                <div className="flex items-center gap-2 px-2">
+                    <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
+                        {fmtTime(msg.created_at, language)}
+                    </span>
+                    {msg.is_edited ? (
+                        <span className="text-[10px] text-muted-foreground italic">
+                            ({isAr ? 'معدلة' : 'edited'})
+                        </span>
+                    ) : null}
+                </div>
             </div>
         </div>
     );
@@ -195,6 +237,7 @@ const Chat: React.FC = () => {
     const [newMessage, setNewMessage] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    const [editingMessage, setEditingMessage] = useState<Message | null>(null);
     const [sending, setSending] = useState(false);
 
     const bottomRef = useRef<HTMLDivElement>(null);
@@ -279,17 +322,42 @@ const Chat: React.FC = () => {
         if (!newMessage.trim() || !user || sending) return;
         setSending(true);
         try {
-            const data = await apiClient('/messages', {
-                method: 'POST',
-                body: JSON.stringify({ sender_id: user.id, content: newMessage.trim() }),
-            });
-            setMessages(prev => [...prev, data]);
+            if (editingMessage) {
+                // UPDATE (Edit)
+                await apiClient(`/messages/${editingMessage.id}`, {
+                    method: 'PATCH',
+                    body: JSON.stringify({ content: newMessage.trim() }),
+                });
+                setMessages(prev => prev.map(m => 
+                    m.id === editingMessage.id 
+                        ? { ...m, content: newMessage.trim(), is_edited: 1 } 
+                        : m
+                ));
+                setEditingMessage(null);
+            } else {
+                // CREATE (New)
+                const data = await apiClient('/messages', {
+                    method: 'POST',
+                    body: JSON.stringify({ sender_id: user.id, content: newMessage.trim() }),
+                });
+                setMessages(prev => [...prev, data]);
+            }
             setNewMessage('');
-            inputRef.current?.focus();
+            textAreaRef.current?.focus();
         } catch (err) {
-            console.error('Error sending message:', err);
+            console.error('Error handling message:', err);
         } finally {
             setSending(false);
+        }
+    };
+
+    const deleteMessage = async (id: string) => {
+        if (!confirm(isAr ? 'هل أنت متأكد من حذف هذه الرسالة؟' : 'Are you sure you want to delete this message?')) return;
+        try {
+            await apiClient(`/messages/${id}`, { method: 'DELETE' });
+            setMessages(prev => prev.filter(m => m.id !== id));
+        } catch (err) {
+            console.error('Error deleting message:', err);
         }
     };
 
@@ -472,6 +540,12 @@ const Chat: React.FC = () => {
                                         isMine={msg.sender_id === user.id}
                                         showMeta={showMeta}
                                         language={language}
+                                        onEdit={(m) => {
+                                            setEditingMessage(m);
+                                            setNewMessage(m.content);
+                                            textAreaRef.current?.focus();
+                                        }}
+                                        onDelete={deleteMessage}
                                     />
                                 );
                             })}
@@ -484,50 +558,59 @@ const Chat: React.FC = () => {
     );
 
     // ─── Input Bar ────────────────────────────────────────────────────────────
-    const renderInputBar = () => {
-        return (
-            <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-md shrink-0">
-                <div className="flex items-end gap-2 max-w-4xl mx-auto">
-                    <div className="flex-1 relative">
-                        <textarea
-                            ref={textAreaRef}
-                            value={newMessage}
-                            rows={1}
-                            onChange={e => setNewMessage(e.target.value)}
-                            onKeyDown={e => {
-                                // الإرسال عند الضغط على Enter بدون Shift
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    e.preventDefault();
-                                    sendMessage();
-                                }
-                            }}
-                            placeholder={t('chat.placeholder') || (isAr ? 'اكتب رسالة... (Enter للإرسال، Shift+Enter سطر جديد)' : 'Type a message...')}
-                            className={cn(
-                                'w-full resize-none rounded-2xl bg-muted/60 border border-border/50',
-                                'px-4 py-2.5 text-sm leading-relaxed',
-                                'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30',
-                                'transition-shadow duration-200 overflow-y-auto' // إزالة transition-all لمنع التقطيع
-                            )}
-                            style={{ minHeight: '44px' }}
-                        />
+    const renderInputBar = () => (
+        <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-md shrink-0">
+            {editingMessage && (
+                <div className="max-w-4xl mx-auto mb-2 flex items-center justify-between bg-primary/5 px-4 py-2 rounded-xl text-xs border border-primary/10">
+                    <div className="flex items-center gap-2 text-primary font-bold">
+                        <Edit className="h-3.5 w-3.5" />
+                        {isAr ? 'تعديل الرسالة' : 'Editing Message'}
                     </div>
-                    {/* زر الإرسال */}
-                    <Button
-                        onClick={sendMessage}
-                        disabled={!newMessage.trim() || sending}
-                        size="icon"
-                        className="h-11 w-11 rounded-2xl shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all active:scale-90 shadow-lg shadow-primary/20"
+                    <button 
+                        onClick={() => { setEditingMessage(null); setNewMessage(''); }}
+                        className="text-muted-foreground hover:text-foreground"
                     >
-                        <Send className={cn('h-4 w-4', isAr && 'scale-x-[-1]')} />
-                    </Button>
+                        <X className="h-3.5 w-3.5" />
+                    </button>
                 </div>
-                {/* تلميح للاختصارات */}
-                <p className="text-center text-[10px] text-muted-foreground mt-1.5 hidden sm:block">
-                    {isAr ? 'Enter للإرسال • Shift+Enter لسطر جديد' : 'Enter to send • Shift+Enter for new line'}
-                </p>
+            )}
+            <div className="flex items-end gap-2 max-w-4xl mx-auto">
+                <div className="flex-1 relative">
+                    <textarea
+                        ref={textAreaRef}
+                        value={newMessage}
+                        rows={1}
+                        onChange={e => setNewMessage(e.target.value)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                sendMessage();
+                            }
+                        }}
+                        placeholder={t('chat.placeholder') || (isAr ? 'اكتب رسالة... (Enter للإرسال، Shift+Enter سطر جديد)' : 'Type a message...')}
+                        className={cn(
+                            'w-full resize-none rounded-2xl bg-muted/60 border border-border/50',
+                            'px-4 py-2.5 text-sm leading-relaxed',
+                            'placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30',
+                            'transition-shadow duration-200 overflow-y-auto'
+                        )}
+                        style={{ minHeight: '44px' }}
+                    />
+                </div>
+                <Button
+                    onClick={sendMessage}
+                    disabled={!newMessage.trim() || sending}
+                    size="icon"
+                    className="h-11 w-11 rounded-2xl shrink-0 bg-primary hover:bg-primary/90 disabled:opacity-30 transition-all active:scale-90 shadow-lg shadow-primary/20"
+                >
+                    <Send className={cn('h-4 w-4', isAr && 'scale-x-[-1]')} />
+                </Button>
             </div>
-        );
-    };
+            <p className="text-center text-[10px] text-muted-foreground mt-1.5 hidden sm:block">
+                {isAr ? 'Enter للإرسال • Shift+Enter لسطر جديد' : 'Enter to send • Shift+Enter for new line'}
+            </p>
+        </div>
+    );
 
     // ─── Main Render ──────────────────────────────────────────────────────────
     return (

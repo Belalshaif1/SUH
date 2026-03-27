@@ -35,6 +35,9 @@ export class SmartUniversityDB extends Dexie {
     research!: Table<any>;                       // Cached research papers list
     graduates!: Table<any>;                      // Cached graduates list
     jobs!: Table<any>;                           // Cached jobs list
+    fees!: Table<any>;                           // Cached fees list
+    services!: Table<any>;                       // Cached services list
+    about_us!: Table<any>;                       // Cached about_us list
     sync_queue!: Table<SyncItem>;                // Queue of mutations to replay when online
     meta!: Table<{ key: string; value: any }>;  // Key/value store for misc metadata
 
@@ -43,16 +46,19 @@ export class SmartUniversityDB extends Dexie {
 
         // Define schema version 1 — the string value is a comma-separated list of indexed fields
         // The first field in each string is the primary key; '++id' means auto-increment
-        this.version(1).stores({
-            universities:  'id, name_ar, is_pinned',            // Indexed by id, name, and pin status
-            colleges:      'id, university_id, name_ar, is_pinned', // Indexed for university filtering
-            departments:   'id, college_id, name_ar',           // Indexed for college filtering
-            announcements: 'id, university_id, college_id, is_pinned', // Indexed for scope filtering
-            research:      'id, department_id, title_ar',       // Indexed for department filtering
-            graduates:     'id, department_id, graduation_year', // Indexed for year-based sorting
-            jobs:          'id, college_id, is_pinned',         // Indexed for college and pin filtering
-            sync_queue:    '++id, table, action',               // Auto-increment id for ordered replay
-            meta:          'key',                               // Simple key-value store
+        this.version(2).stores({
+            universities:  'id, name_ar, is_pinned',            
+            colleges:      'id, university_id, name_ar, is_pinned', 
+            departments:   'id, college_id, name_ar',           
+            announcements: 'id, university_id, college_id, is_pinned', 
+            research:      'id, department_id, title_ar',       
+            graduates:     'id, department_id, graduation_year', 
+            jobs:          'id, college_id, is_pinned',         
+            fees:          'id, department_id, fee_type',
+            services:      'id, title_ar',
+            about_us:      'id',
+            sync_queue:    '++id, table, action',               
+            meta:          'key',                               
         });
     }
 }

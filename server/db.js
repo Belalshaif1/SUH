@@ -185,6 +185,7 @@ async function createTables() {
             receiver_id UUID, 
             content TEXT NOT NULL, 
             is_read INTEGER DEFAULT 0, 
+            is_edited INTEGER DEFAULT 0, 
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )`); 
 
@@ -217,6 +218,27 @@ async function createTables() {
             is_enabled INTEGER DEFAULT 1, 
             created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )`); 
+
+        // Migration: Ensure messages has is_edited column
+        try {
+            await client.query('ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_edited INTEGER DEFAULT 0');
+        } catch (e) {
+            // Column might already exist or other error
+        }
+
+        // Migration: Ensure research has students column
+        try {
+            await client.query('ALTER TABLE research ADD COLUMN IF NOT EXISTS students TEXT');
+        } catch (e) {
+            // Column might already exist
+        }
+
+        // Migration: Ensure announcements has file_url column
+        try {
+            await client.query('ALTER TABLE announcements ADD COLUMN IF NOT EXISTS file_url TEXT');
+        } catch (e) {
+            // Column might already exist
+        }
 
         await client.query('COMMIT'); 
 

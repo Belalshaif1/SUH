@@ -61,4 +61,37 @@ router.post('/', async (req, res) => {
     }
 });
 
+// Update message (Edit)
+router.patch('/:id', async (req, res) => {
+    try {
+        const { content } = req.body;
+        if (!content) {
+            return res.status(400).json({ error: 'Content is required' });
+        }
+
+        const id = req.params.id;
+        await db.runAsync(
+            'UPDATE messages SET content = $1, is_edited = true WHERE id = $2',
+            [content, id]
+        );
+
+        res.json({ success: true, id });
+    } catch (err) {
+        console.error('Update message error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// Delete message
+router.delete('/:id', async (req, res) => {
+    try {
+        const id = req.params.id;
+        await db.runAsync('DELETE FROM messages WHERE id = $1', [id]);
+        res.json({ success: true, id });
+    } catch (err) {
+        console.error('Delete message error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 module.exports = router;

@@ -86,36 +86,36 @@ export const CollegeTab: React.FC<CollegeTabProps> = ({
                         key={c.id} // Stable React key using the college's UUID
                         className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg"
                     >
-                        <CardContent className="flex items-center justify-between p-6">
+                        <CardContent className="flex items-center justify-between gap-2 p-6">
 
-                            {/* Left: icon badge + name */}
-                            <div className="flex items-center gap-4">
+                            {/* Left: icon badge + name — flex-1 min-w-0 prevents overflow */}
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
                                 {/* Gold pin badge for pinned colleges, default book icon otherwise */}
                                 {c.is_pinned ? (
-                                    <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold shadow-inner border border-gold/10">
+                                    <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold shadow-inner border border-gold/10 shrink-0">
                                         <Pin className="h-5 w-5" /> {/* Pinned / featured indicator */}
                                     </div>
                                 ) : (
-                                    <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary/20">
+                                    <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary/20 shrink-0">
                                         <BookOpen className="h-5 w-5" /> {/* Default college icon */}
                                     </div>
                                 )}
 
-                                {/* Name and type label */}
-                                <div className="flex flex-col">
+                                {/* Name and type label — min-w-0 allows text to truncate */}
+                                <div className="flex flex-col min-w-0">
                                     {/* Arabic or English name based on the current language setting */}
-                                    <span className="font-black text-primary leading-tight">
+                                    <span className="font-black text-primary leading-tight truncate">
                                         {language === 'ar' ? c.name_ar : (c.name_en || c.name_ar)}
                                     </span>
                                     {/* Small all-caps decorative label below the name */}
-                                    <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest mt-0.5">
+                                    <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest mt-0.5 truncate">
                                         {language === 'ar' ? 'صرح تعليمي' : 'EDUCATIONAL FACULTY'}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Right: Edit and Delete buttons */}
-                            <div className="flex gap-2">
+                            {/* Right: Edit and Delete buttons — shrink-0 keeps them always visible */}
+                            <div className="flex gap-2 shrink-0">
                                 {/* Edit button — hidden when canEdit is false */}
                                 {canEdit && (
                                     <Button

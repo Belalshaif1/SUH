@@ -11,7 +11,7 @@
  *           loading state is always cleared.
  */
 
-import React, { useEffect, useState } from 'react'; // State for user list, dialogs, search; Effect for initial fetch
+import React, { useEffect, useState, useMemo, useCallback, memo } from 'react'; // State for user list, dialogs, search; Effect for initial fetch
 import { useLanguage } from '@/contexts/LanguageContext'; // Language for formatting and labels
 import { useAuth }     from '@/contexts/AuthContext';     // Permission checks
 import apiClient       from '@/lib/apiClient';            // Authenticated HTTP client
@@ -33,6 +33,7 @@ import { Label }  from '@/components/ui/label';           // Form labels
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';                          // Role selector dropdown
+import { LoadingOverlay } from './LoadingOverlay';        // Standardized overlay
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -82,7 +83,7 @@ const EMPTY_NEW_USER_FORM: NewUserForm = {
 
 // ─── Component ────────────────────────────────────────────────────────────
 
-const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin }) => {
+const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdmin }) => {
     const { toast }    = useToast();    // Toast notification system
     const { language } = useLanguage(); // Current UI language
     const { userRole, hasPermission } = useAuth(); // RBAC permission checks
@@ -93,6 +94,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
     const [users, setUsers] = useState<UserWithRole[]>([]); // Full list from the server
     const [search, setSearch] = useState('');               // Name filter string
     const [loading, setLoading] = useState(true);           // Initial fetch loading flag
+    const [mutationLoading, setMutationLoading] = useState(false); // Blocking overlay for save/delete
     const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null); // User being edited
 
     // Edit dialog
@@ -107,12 +109,14 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
 
     // ── Computed stats ────────────────────────────────────────────────
 
-    const stats = {
+    // ── Computed stats ────────────────────────────────────────────────
+
+    const stats = useMemo(() => ({
         total:    users.length,                                   // Total registered users
         active:   users.filter(u => u.is_active !== false).length, // Users not explicitly deactivated
         admins:   users.filter(u => u.role).length,               // Users who have an admin role
         inactive: users.filter(u => u.is_active === false).length, // Explicitly deactivated users
-    };
+    }), [users]);
 
     // Whether the current user is a super_admin (unlocks additional UI elements)
     const _isSuperAdmin = userRole?.role === 'super_admin';
@@ -147,6 +151,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
      * @param currentStatus - The user's current is_active state (to flip it)
      */
     const handleToggleStatus = async (userId: string, currentStatus: boolean): Promise<void> => {
+        setMutationLoading(true);
         try {
             await apiClient(`/auth/users/${userId}`, {
                 method: 'PUT',
@@ -156,6 +161,8 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
             fetchUsers(); // Re-fetch to reflect the updated status
         } catch (err: any) {
             toast({ title: err.message, variant: 'destructive' });
+        } finally {
+            setMutationLoading(false);
         }
     };
 
@@ -168,12 +175,15 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
     const handleDeleteUser = async (userId: string): Promise<void> => {
         // Lightweight safety guard — native confirm so we don't need a full dialog component
         if (!confirm(isAr ? 'هل أنت متأكد من حذف هذا المستخدم؟' : 'Are you sure you want to delete this user?')) return;
+        setMutationLoading(true);
         try {
             await apiClient(`/auth/users/${userId}`, { method: 'DELETE' }); // DELETE /api/auth/users/:id
             toast({ title: isAr ? 'تم حذف المستخدم' : 'User deleted' });
             fetchUsers(); // Remove deleted user from the list
         } catch (err: any) {
             toast({ title: err.message, variant: 'destructive' });
+        } finally {
+            setMutationLoading(false);
         }
     };
 
@@ -196,6 +206,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
     /** handleUpdateUser — sends updated user data to the server for the currently selected user */
     const handleUpdateUser = async (): Promise<void> => {
         if (!selectedUser) return; // Guard: shouldn't happen, but protects against stale state
+        setMutationLoading(true);
         try {
             await apiClient(`/auth/users/${selectedUser.id}`, {
                 method: 'PUT',
@@ -206,6 +217,8 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
             fetchUsers();               // Refresh the table to show updated data
         } catch (err: any) {
             toast({ title: err.message, variant: 'destructive' });
+        } finally {
+            setMutationLoading(false);
         }
     };
 
@@ -219,6 +232,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
             });
             return;
         }
+        setMutationLoading(true);
         try {
             await apiClient('/auth/users', {
                 method: 'POST',
@@ -230,6 +244,8 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
             fetchUsers();                        // Add the new user to the table
         } catch (err: any) {
             toast({ title: err.message, variant: 'destructive' });
+        } finally {
+            setMutationLoading(false);
         }
     };
 
@@ -267,9 +283,11 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
     // ── Filtered list ─────────────────────────────────────────────────
 
     // Apply the search filter — case-insensitive name search
-    const filtered = users.filter(u =>
-        !search || u.full_name?.toLowerCase().includes(search.toLowerCase())
-    );
+    const filtered = useMemo(() => {
+        return users.filter(u =>
+            !search || (u.full_name || '').toLowerCase().includes(search.toLowerCase())
+        );
+    }, [users, search]);
 
     // ── Stat card config ──────────────────────────────────────────────
 
@@ -284,6 +302,8 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
 
     return (
         <div className="space-y-6">
+            {/* Standard full-screen blocking overlay handles the "Save/Delete" mutation state */}
+            <LoadingOverlay isVisible={mutationLoading} />
 
             {/* ── Stat cards ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -589,6 +609,6 @@ const UserManagementTable: React.FC<UserManagementTableProps> = ({ onAddAdmin })
 
         </div>
     );
-};
+});
 
 export default UserManagementTable; // Default export to match Dashboard.tsx import

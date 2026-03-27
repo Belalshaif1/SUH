@@ -12,9 +12,9 @@
  */
 
 import React, { useEffect } from 'react';                                          // React core and useEffect for the auth guard
-import { useNavigate }      from 'react-router-dom';                               // Navigation hook to redirect unauthenticated users
-import { useLanguage }      from '@/contexts/LanguageContext';                     // Translation and direction
-import { useAuth }          from '@/contexts/AuthContext';                         // User, role, and hasPermission
+import { useNavigate } from 'react-router-dom';                               // Navigation hook to redirect unauthenticated users
+import { useLanguage } from '@/contexts/LanguageContext';                     // Translation and direction
+import { useAuth } from '@/contexts/AuthContext';                         // User, role, and hasPermission
 import {
     Tabs, TabsContent, TabsList, TabsTrigger
 } from '@/components/ui/tabs';                                                     // Shadcn tabs for the main navigation
@@ -23,36 +23,39 @@ import {
     Megaphone, Briefcase, GraduationCap, DollarSign,
     Info, AlertTriangle, Users, Archive, Loader2
 } from 'lucide-react';                                                              // Icon set for tab triggers
+import { Button } from '@/components/ui/button';                                     // Shadcn button
 
 // ── Custom hooks (all business logic lives here) ──────────────────────────
-import { useDashboardData }    from '@/hooks/useDashboardData';    // Fetches and filters all entity lists
+import { useDashboardData } from '@/hooks/useDashboardData';    // Fetches and filters all entity lists
 import { useDashboardActions } from '@/hooks/useDashboardActions'; // Handles save, delete, file upload
 import { useDashboardDialogs } from '@/hooks/useDashboardDialogs'; // Manages dialog open/close state
+import { useNotifications } from '@/hooks/useNotifications';    // Handles SW registration and permissions
 
 // ── Shared dashboard UI components ───────────────────────────────────────
-import { DashboardHeader }       from '@/components/dashboard/DashboardHeader';       // Top header with user info and logout
-import { StatsOverview }         from '@/components/dashboard/StatsOverview';         // Stats cards row at the top
-import { EntityDialog }          from '@/components/dashboard/EntityDialog';          // Unified Add/Edit form dialog
-import { DeleteConfirmDialog }   from '@/components/dashboard/DeleteConfirmDialog';   // Themed confirmation dialog
+import { DashboardHeader } from '@/components/dashboard/DashboardHeader';       // Top header with user info and logout
+import { StatsOverview } from '@/components/dashboard/StatsOverview';         // Stats cards row at the top
+import { LoadingOverlay } from '@/components/dashboard/LoadingOverlay';        // Standard full-screen overlay component
+import { EntityDialog } from '@/components/dashboard/EntityDialog';          // Unified Add/Edit form dialog
+import { DeleteConfirmDialog } from '@/components/dashboard/DeleteConfirmDialog';   // Themed confirmation dialog
 import { JobApplicationsViewer } from '@/components/dashboard/JobApplicationsViewer'; // Slide-out job applicants viewer
-import AdminManagement           from '@/components/dashboard/AdminManagement';       // Admin CRUD table
-import UserManagementTable       from '@/components/dashboard/UserManagementTable';   // User accounts table
-import RolePermissions           from '@/components/dashboard/RolePermissions';       // Role default permissions editor
-import PermissionsMatrix         from '@/components/dashboard/PermissionsMatrix';     // All-roles grid overview
-import SecurityTab               from '@/components/dashboard/SecurityTab';           // Password change tab
+import AdminManagement from '@/components/dashboard/AdminManagement';       // Admin CRUD table
+import UserManagementTable from '@/components/dashboard/UserManagementTable';   // User accounts table
+import RolePermissions from '@/components/dashboard/RolePermissions';       // Role default permissions editor
+import PermissionsMatrix from '@/components/dashboard/PermissionsMatrix';     // All-roles grid overview
+import SecurityTab from '@/components/dashboard/SecurityTab';           // Password change tab
 
 // ── Domain-specific tab components ───────────────────────────────────────
-import { UniversityTab }   from '@/components/dashboard/tabs/UniversityTab';    // University CRUD list
-import { CollegeTab }      from '@/components/dashboard/tabs/CollegeTab';       // College CRUD list
-import { DepartmentTab }   from '@/components/dashboard/tabs/DepartmentTab';    // Department CRUD list
-import { AnnouncementsTab }from '@/components/dashboard/tabs/AnnouncementsTab'; // Announcement CRUD list
-import { JobsTab }         from '@/components/dashboard/tabs/JobsTab';          // Job postings CRUD list
-import { GraduatesTab }    from '@/components/dashboard/tabs/GraduatesTab';     // Graduate records CRUD list
-import { ResearchTab }     from '@/components/dashboard/tabs/ResearchTab';      // Research papers CRUD list
-import { FeesTab }         from '@/components/dashboard/tabs/FeesTab';          // Tuition fees CRUD list
-import { ErrorLogsTab }    from '@/components/dashboard/tabs/ErrorLogsTab';     // System error logs (super_admin only)
-import { BackupTab }       from '@/components/dashboard/tabs/BackupTab';        // Database backup tools
-import { AboutUsTab }      from '@/components/dashboard/tabs/AboutUsTab';       // About-page CMS editor
+import { UniversityTab } from '@/components/dashboard/tabs/UniversityTab';    // University CRUD list
+import { CollegeTab } from '@/components/dashboard/tabs/CollegeTab';       // College CRUD list
+import { DepartmentTab } from '@/components/dashboard/tabs/DepartmentTab';    // Department CRUD list
+import { AnnouncementsTab } from '@/components/dashboard/tabs/AnnouncementsTab'; // Announcement CRUD list
+import { JobsTab } from '@/components/dashboard/tabs/JobsTab';          // Job postings CRUD list
+import { GraduatesTab } from '@/components/dashboard/tabs/GraduatesTab';     // Graduate records CRUD list
+import { ResearchTab } from '@/components/dashboard/tabs/ResearchTab';      // Research papers CRUD list
+import { FeesTab } from '@/components/dashboard/tabs/FeesTab';          // Tuition fees CRUD list
+import { ErrorLogsTab } from '@/components/dashboard/tabs/ErrorLogsTab';     // System error logs (super_admin only)
+import { BackupTab } from '@/components/dashboard/tabs/BackupTab';        // Database backup tools
+import { AboutUsTab } from '@/components/dashboard/tabs/AboutUsTab';       // About-page CMS editor
 
 // ─── Component ────────────────────────────────────────────────────────────
 
@@ -63,7 +66,7 @@ import { AboutUsTab }      from '@/components/dashboard/tabs/AboutUsTab';       
 const Dashboard: React.FC = () => {
 
     // ── Context consumers ────────────────────────────────────────────────
-    const { t, language }   = useLanguage(); // t() for translations, language for inline conditionals
+    const { t, language } = useLanguage(); // t() for translations, language for inline conditionals
     const {
         user,          // The authenticated user object
         userRole,      // The user's role object (role string + scope IDs + permissions map)
@@ -74,9 +77,10 @@ const Dashboard: React.FC = () => {
     const navigate = useNavigate(); // Used to redirect to /login if not authenticated
 
     // ── Hook composition ─────────────────────────────────────────────────
-    const data    = useDashboardData();                               // All entity lists, stats, loading, and sort/filter
+    const data = useDashboardData();                               // All entity lists, stats, loading, and sort/filter
     const dialogs = useDashboardDialogs();                            // Dialog open/close state and form data buffer
     const actions = useDashboardActions(data.fetchData, dialogs.close); // Save/delete handlers
+    const { permission, requestPermission } = useNotifications();     // Background notifications
 
     // ── Auth guard ───────────────────────────────────────────────────────
 
@@ -114,6 +118,25 @@ const Dashboard: React.FC = () => {
             {/* ── Statistics overview cards ── */}
             <StatsOverview stats={data.stats} role={role} hasPermission={hasPermission} />
 
+            {/* Notification Permission Prompt — shown only if not yet allowed/denied */}
+            {permission === 'default' && (
+                <div className="container mx-auto px-4 mb-4">
+                    <div className="bg-primary/5 border border-primary/10 rounded-2xl p-4 flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <Megaphone className="h-5 w-5 text-primary" />
+                            <p className="text-sm font-medium">
+                                {language === 'ar'
+                                    ? 'هل تود استلام التنبيهات في الخلفية للبقاء على اطلاع؟'
+                                    : 'Would you like to receive background notifications to stay updated?'}
+                            </p>
+                        </div>
+                        <Button onClick={requestPermission} size="sm" className="bg-primary text-white">
+                            {language === 'ar' ? 'تفعيل' : 'Enable'}
+                        </Button>
+                    </div>
+                </div>
+            )}
+
             {/* ── Main content area — tabs and content ── */}
             <main className="container mx-auto px-4 pb-20 relative  z-10">
 
@@ -121,34 +144,13 @@ const Dashboard: React.FC = () => {
                     Previously this was an `absolute inset-0` overlay that captured all
                     pointer events and prevented the "Add" button from being clickable. */}
                 {data.loading && (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl shadow-2xl flex flex-col items-center">
-            <Loader2 className="h-12 w-12 text-primary animate-spin" />
-            <p className="mt-4 text-lg font-medium text-foreground">
-                {language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
-            </p>
-        </div>
-    </div>
-)}
-
-                {/* Save/Delete action loading — this IS intentionally full-screen blocking
-                    because we must prevent the user from clicking anything during a mutation */}
-                {actions.loading && (
-                    <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/40 backdrop-blur-md">
-                        <div className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] shadow-2xl flex flex-col items-center">
-                            <Loader2 className="w-14 h-14 text-primary animate-spin mb-4" /> {/* Large spinner */}
-                            <h2 className="text-xl font-bold text-foreground mb-1">
-                                {language === 'ar' ? 'جاري المعالجة...' : 'Processing...'} {/* Saving / deleting label */}
-                            </h2>
-                            <p className="text-sm text-muted-foreground text-center max-w-xs">
-                                {language === 'ar'
-                                    ? 'جاري معالجة طلبك وتحديث البيانات'
-                                    : 'Processing your request and updating data'
-                                }
-                            </p>
-                        </div>
+                    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm text-primary text-xs font-semibold px-3 py-2 rounded-full shadow-lg border border-primary/10">
+                        <Loader2 className="h-3 w-3  animate-spin" /> {/* Spinning icon */}
+                        {/* <p className='mt-4 text-lg font-medium text-foreground'></p> */}
+                        {language === 'ar' ? 'جاري التحميل...' : 'Loading...'} {/* Localised label */}
                     </div>
                 )}
+
 
                 {/* ── Tabs container card ── */}
                 <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl shadow-primary/5 border border-white/50 dark:border-white/5 overflow-hidden min-h-[500px]">
@@ -456,6 +458,21 @@ const Dashboard: React.FC = () => {
             </main>
 
             {/* ── Global action dialogs (rendered outside the tabs to avoid z-index issues) ── */}
+
+            {/* Premium, full-screen blocking indicator for all mutations (Create/Update/Delete) */}
+            <LoadingOverlay
+                isVisible={actions.loading}
+                message={
+                    dialogs.editId
+                        ? (language === 'ar' ? 'جاري حفظ التعديلات...' : 'Saving changes...')
+                        : (language === 'ar' ? 'جاري الإضافة...' : 'Adding new item...')
+                }
+                description={
+                    language === 'ar'
+                        ? 'يرجى الانتظار، جاري معالجة طلبك وتأمين البيانات'
+                        : 'Please wait while we process your request secure your data'
+                }
+            />
 
             {/* Add / Edit entity dialog — shown when dialogs.dialogOpen is true */}
             <EntityDialog

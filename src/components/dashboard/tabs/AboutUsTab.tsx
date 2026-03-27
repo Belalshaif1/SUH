@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';              // Toast notification
 import {
     Info, Save, RefreshCw, Upload, FileText, X, Image as ImageIcon
 } from 'lucide-react';                                     // Icon set
+import { LoadingOverlay } from '../LoadingOverlay';        // Standardized overlay
 
 // ─── Props ────────────────────────────────────────────────────────────────
 
@@ -112,22 +113,22 @@ export const AboutUsTab: React.FC<AboutUsTabProps> = ({ aboutData, onSaved }) =>
         formData.append('file', file);   // Attach the file under the key the server expects
 
         try {
-            // Manually call fetch (not apiClient) because we need multipart/form-data, not JSON
-            const baseUrl  = import.meta.env.VITE_API_URL || ''; // API base URL from env
-            const response = await fetch(`${baseUrl}/api/upload`, {
-                method:  'POST',
-                body:    formData,
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }, // JWT auth
+            // Use apiClient for consistency — it handles Token, Auth, and error logging automatically
+            const data = await apiClient('/upload', {
+                method: 'POST',
+                body: formData,
             });
 
-            if (!response.ok) throw new Error('Upload failed'); // Treat non-2xx as an error
-
-            const data = await response.json(); // Server returns { url: <public_url> }
+            // Server returns { url: <public_url> }
             // Update only the relevant field in the form state
             setForm(prev => ({ ...prev, [field]: data.url }));
             toast({ title: isAr ? '✅ تم رفع الملف بنجاح' : '✅ File uploaded successfully' });
-        } catch {
-            toast({ title: isAr ? '❌ فشل الرفع' : '❌ Upload failed', variant: 'destructive' });
+        } catch (err: any) {
+            toast({ 
+                title: isAr ? '❌ فشل الرفع' : '❌ Upload failed', 
+                description: err.message,
+                variant: 'destructive' 
+            });
         } finally {
             setUploading(null); // Always clear the uploading indicator
         }
@@ -409,6 +410,8 @@ export const AboutUsTab: React.FC<AboutUsTabProps> = ({ aboutData, onSaved }) =>
                 </Button>
             </div>
 
+            {/* Standard full-screen blocking overlay handles the "Saving" state */}
+            <LoadingOverlay isVisible={saving} />
         </div>
     );
 };

@@ -93,36 +93,36 @@ export const UniversityTab: React.FC<UniversityTabProps> = ({
                         key={u.id} // React requires a stable unique key for list items
                         className="card-premium group hover:scale-[1.02] transition-all duration-300 border-none shadow-lg"
                     >
-                        <CardContent className="flex items-center justify-between p-6">
+                        <CardContent className="flex items-center justify-between gap-2 p-6">
 
-                            {/* Left side: icon badge + name */}
-                            <div className="flex items-center gap-4">
+                            {/* Left side: icon badge + name — flex-1 min-w-0 ensures text truncates before overflowing */}
+                            <div className="flex items-center gap-4 flex-1 min-w-0">
                                 {/* Show a gold pin badge for pinned items, or a default icon for normal items */}
                                 {u.is_pinned ? (
-                                    <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold shadow-inner border border-gold/10">
+                                    <div className="h-10 w-10 rounded-xl bg-gold/10 flex items-center justify-center text-gold shadow-inner border border-gold/10 shrink-0">
                                         <Pin className="h-5 w-5" /> {/* Gold pin indicates pinned / featured */}
                                     </div>
                                 ) : (
-                                    <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary/20">
+                                    <div className="h-10 w-10 rounded-xl bg-primary/5 flex items-center justify-center text-primary/20 shrink-0">
                                         <Building2 className="h-5 w-5" /> {/* Default building icon */}
                                     </div>
                                 )}
 
-                                {/* Name and type label */}
-                                <div className="flex flex-col">
+                                {/* Name and type label — min-w-0 allows text to truncate inside flex */}
+                                <div className="flex flex-col min-w-0">
                                     {/* Display Arabic or English name based on current UI language */}
-                                    <span className="font-black text-primary leading-tight">
+                                    <span className="font-black text-primary leading-tight truncate">
                                         {language === 'ar' ? u.name_ar : (u.name_en || u.name_ar)}
                                     </span>
-                                    {/* Decorative sub-label — always in the opposite script for aesthetic */}
-                                    <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest mt-0.5">
+                                    {/* Decorative sub-label */}
+                                    <span className="text-[10px] font-bold text-primary/20 uppercase tracking-widest mt-0.5 truncate">
                                         {language === 'ar' ? 'مؤسسة أكاديمية' : 'ACADEMIC INSTITUTION'}
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Right side: action buttons */}
-                            <div className="flex gap-2">
+                            {/* Right side: action buttons — shrink-0 keeps buttons always visible */}
+                            <div className="flex gap-2 shrink-0">
                                 {/* Edit button — only shown when canEdit is true */}
                                 {canEdit && (
                                     <Button

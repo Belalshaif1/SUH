@@ -33,6 +33,7 @@ interface RequestOptions extends RequestInit {
 const OFFLINE_SUPPORTED_TABLES = [
     'universities', 'colleges', 'departments',
     'announcements', 'research', 'graduates', 'jobs',
+    'fees', 'services', 'about_us'
 ];
 
 // ─── Core Client Function ─────────────────────────────────────────────────
