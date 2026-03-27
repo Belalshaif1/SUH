@@ -17,7 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Send, MessageCircle, Search, Menu, X,
-    ArrowLeft, MoreVertical, Circle, Edit, Trash2, Check,
+    ArrowLeft, MoreVertical, Circle, Edit, Trash2, Check, Copy
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -131,7 +131,8 @@ const MessageBubble: React.FC<{
     language: string;
     onEdit: (m: Message) => void;
     onDelete: (id: string) => void;
-}> = ({ msg, isMine, showMeta, language, onEdit, onDelete }) => {
+    onCopy: (text: string) => void;
+}> = ({ msg, isMine, showMeta, language, onEdit, onDelete, onCopy }) => {
     const isAr = language === 'ar';
     const initials = msg.sender?.full_name
         ? msg.sender.full_name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
@@ -175,7 +176,7 @@ const MessageBubble: React.FC<{
                     {/* Message Actions (Edit/Delete) - only for own messages */}
                     {isMine && (
                         <div className={cn(
-                            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/actions:opacity-100 transition-opacity flex items-center gap-1",
+                            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/actions:opacity-100 max-lg:opacity-100 transition-opacity flex items-center gap-1",
                             isAr ? "-left-14" : "-right-14"
                         )}>
                             <DropdownMenu>
@@ -185,6 +186,10 @@ const MessageBubble: React.FC<{
                                     </Button>
                                 </DropdownMenuTrigger>
                                 <DropdownMenuContent align={isAr ? 'start' : 'end'} className="rounded-xl border-none shadow-xl">
+                                    <DropdownMenuItem onClick={() => onCopy(msg.content)} className="gap-2 focus:bg-primary/10">
+                                        <Copy className="h-4 w-4 text-primary" />
+                                        <span>{isAr ? 'نسخ' : 'Copy'}</span>
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => onEdit(msg)} className="gap-2 focus:bg-primary/10">
                                         <Edit className="h-4 w-4 text-primary" />
                                         <span>{isAr ? 'تعديل' : 'Edit'}</span>
@@ -195,6 +200,24 @@ const MessageBubble: React.FC<{
                                     </DropdownMenuItem>
                                 </DropdownMenuContent>
                             </DropdownMenu>
+                        </div>
+                    )}
+
+                    {/* Copy action for other people's messages */}
+                    {!isMine && (
+                        <div className={cn(
+                            "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/actions:opacity-100 lg:group-hover/actions:opacity-100 transition-opacity flex items-center gap-1",
+                            isAr ? "-right-14" : "-left-14"
+                        )}>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 rounded-full hover:bg-muted"
+                                onClick={() => onCopy(msg.content)}
+                                title={isAr ? 'نسخ' : 'Copy'}
+                            >
+                                <Copy className="h-4 w-4 text-muted-foreground" />
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -359,6 +382,11 @@ const Chat: React.FC = () => {
         } catch (err) {
             console.error('Error deleting message:', err);
         }
+    };
+
+    const copyMessage = (text: string) => {
+        navigator.clipboard.writeText(text);
+        // Simple visual feedback could be added here if a toast system exists
     };
 
     const filteredContacts = contacts.filter(c =>
@@ -546,6 +574,7 @@ const Chat: React.FC = () => {
                                             textAreaRef.current?.focus();
                                         }}
                                         onDelete={deleteMessage}
+                                        onCopy={copyMessage}
                                     />
                                 );
                             })}

@@ -71,7 +71,7 @@ router.patch('/:id', async (req, res) => {
 
         const id = req.params.id;
         await db.runAsync(
-            'UPDATE messages SET content = $1, is_edited = true WHERE id = $2',
+            'UPDATE messages SET content = $1, is_edited = 1 WHERE id = $2',
             [content, id]
         );
 
