@@ -1,5 +1,0 @@
-src\components\layout\Header.tsx
-src\components\ui\breadcrumb.tsx
-src\components\ui\button.tsx
-src\components\ui\select.tsx
-src\components\ui\sidebar.tsx
