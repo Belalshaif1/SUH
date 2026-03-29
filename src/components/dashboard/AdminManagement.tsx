@@ -346,242 +346,242 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
         </>
     );
 
-                // ── All permission keys shown in the overrides dialog ────────────
-                const PERM_KEYS = [
-                'manage_universities','manage_colleges','manage_departments',
-                'manage_users','manage_announcements','manage_jobs',
-                'manage_research','manage_graduates','manage_fees',
-                'view_reports','advanced_settings',
-                ];
+    // ── All permission keys shown in the overrides dialog ────────────
+    const PERM_KEYS = [
+        'manage_universities', 'manage_colleges', 'manage_departments',
+        'manage_users', 'manage_announcements', 'manage_jobs',
+        'manage_research', 'manage_graduates', 'manage_fees',
+        'manage_services', 'view_reports', 'advanced_settings',
+    ];
 
-                // ─── Render ───────────────────────────────────────────────────────────
+    // ─── Render ───────────────────────────────────────────────────────────
 
-                return (
-                <>
-                    {/* Standard full-screen blocking overlay handles the "Save/Delete" mutation state */}
-                    <LoadingOverlay isVisible={loading} />
+    return (
+        <>
+            {/* Standard full-screen blocking overlay handles the "Save/Delete" mutation state */}
+            <LoadingOverlay isVisible={loading} />
 
-                    <div>
-                        {/* ── Header: title + Add Admin button ── */}
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold flex items-center gap-2">
-                                <UserCog className="h-5 w-5 text-accent" /> {/* People with gear icon */}
-                                {isAr ? 'إدارة المدراء' : 'Manage Admins'}
-                            </h2>
-                            {hasPermission('manage_users') && ( // Show Add button only for privileged users
-                                <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground">
-                                    <Plus className="h-4 w-4 me-1" />
-                                    {isAr ? 'إضافة مدير' : 'Add Admin'}
-                                </Button>
-                            )}
-                        </div>
+            <div>
+                {/* ── Header: title + Add Admin button ── */}
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-bold flex items-center gap-2">
+                        <UserCog className="h-5 w-5 text-accent" /> {/* People with gear icon */}
+                        {isAr ? 'إدارة المدراء' : 'Manage Admins'}
+                    </h2>
+                    {hasPermission('manage_users') && ( // Show Add button only for privileged users
+                        <Button onClick={() => setDialogOpen(true)} className="bg-accent text-accent-foreground">
+                            <Plus className="h-4 w-4 me-1" />
+                            {isAr ? 'إضافة مدير' : 'Add Admin'}
+                        </Button>
+                    )}
+                </div>
 
-                        {/* ── Admin cards grid ── */}
-                        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                            {admins.map(admin => (
-                                <Card key={admin.id} className="overflow-hidden transition-all hover:shadow-md border-border/60">
-                                    <CardContent className="p-0">
-                                        {/* Top colour bar: green = active, red = deactivated */}
-                                        <div className={`h-1.5 w-full ${admin.is_active ? 'bg-green-500' : 'bg-destructive'}`} />
-                                        <div className="p-5">
-                                            {/* Avatar + name + email + role badge */}
-                                            <div className="flex items-start justify-between mb-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                                                        <Shield className={`h-5 w-5 ${admin.is_active ? 'text-accent' : 'text-muted-foreground'}`} />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-bold text-foreground leading-none mb-1">{admin.full_name || (isAr ? 'بدون اسم' : 'No name')}</h3>
-                                                        <p className="text-xs text-muted-foreground">{admin.email}</p>
-                                                    </div>
-                                                </div>
-                                                <Badge variant={admin.is_active ? 'secondary' : 'destructive'} className="text-[10px] h-5">{getRoleName(admin.role)}</Badge>
+                {/* ── Admin cards grid ── */}
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {admins.map(admin => (
+                        <Card key={admin.id} className="overflow-hidden transition-all hover:shadow-md border-border/60">
+                            <CardContent className="p-0">
+                                {/* Top colour bar: green = active, red = deactivated */}
+                                <div className={`h-1.5 w-full ${admin.is_active ? 'bg-green-500' : 'bg-destructive'}`} />
+                                <div className="p-5">
+                                    {/* Avatar + name + email + role badge */}
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                                                <Shield className={`h-5 w-5 ${admin.is_active ? 'text-accent' : 'text-muted-foreground'}`} />
                                             </div>
-
-                                            {/* Entity scope breadcrumb + active status */}
-                                            <div className="space-y-3 mb-6">
-                                                {getEntityName(admin) && (
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <div className="p-1 rounded bg-muted"><UserCog className="h-3.5 w-3.5 text-muted-foreground" /></div>
-                                                        <span className="text-muted-foreground font-medium">{isAr ? 'يدير:' : 'Manages:'}</span>
-                                                        <span className="text-foreground font-semibold">{getEntityName(admin)}</span>
-                                                    </div>
-                                                )}
-                                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                    <div className={`h-2 w-2 rounded-full ${admin.is_active ? 'bg-green-500' : 'bg-destructive'}`} />
-                                                    <span>{admin.is_active ? (isAr ? 'الحساب مفعّل' : 'Account Active') : (isAr ? 'الحساب معطل' : 'Account Disabled')}</span>
-                                                </div>
-                                            </div>
-
-                                            {/* Action buttons */}
-                                            <div className="flex items-center justify-between pt-4 border-t border-border/50">
-                                                <div className="flex gap-1">
-                                                    {/* Edit — requires manage_users permission */}
-                                                    {hasPermission('manage_users') && (
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => openEditDialog(admin)} title={isAr ? 'تعديل' : 'Edit'}>
-                                                            <Edit className="h-4 w-4 text-primary" />
-                                                        </Button>
-                                                    )}
-                                                    {/* Custom permissions — super_admin only */}
-                                                    {role === 'super_admin' && (
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => openPermissionsDialog(admin)} title={isAr ? 'الصلاحيات' : 'Permissions'}>
-                                                            <Shield className="h-4 w-4 text-accent" />
-                                                        </Button>
-                                                    )}
-                                                    {/* Toggle active/inactive — not for own account */}
-                                                    {hasPermission('manage_users') && admin.id !== user?.id && (
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleToggle(admin.id, admin.is_active)}
-                                                            title={admin.is_active ? (isAr ? 'إيقاف' : 'Deactivate') : (isAr ? 'تفعيل' : 'Activate')}>
-                                                            {admin.is_active ? <ShieldOff className="h-4 w-4 text-destructive" /> : <Shield className="h-4 w-4 text-green-600" />}
-                                                        </Button>
-                                                    )}
-                                                </div>
-                                                <div className="flex gap-1">
-                                                    {/* Password reset button */}
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setPasswordDialog(admin.id); setNewPassword(''); }} title={isAr ? 'تغيير كلمة المرور' : 'Change Password'}>
-                                                        <KeyRound className="h-4 w-4 text-muted-foreground" />
-                                                    </Button>
-                                                    {/* Delete — not for own account */}
-                                                    {hasPermission('manage_users') && admin.id !== user?.id && (
-                                                        <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10" onClick={() => handleDelete(admin.id)} title={isAr ? 'حذف' : 'Delete'}>
-                                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                                        </Button>
-                                                    )}
-                                                </div>
+                                            <div>
+                                                <h3 className="font-bold text-foreground leading-none mb-1">{admin.full_name || (isAr ? 'بدون اسم' : 'No name')}</h3>
+                                                <p className="text-xs text-muted-foreground">{admin.email}</p>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
+                                        <Badge variant={admin.is_active ? 'secondary' : 'destructive'} className="text-[10px] h-5">{getRoleName(admin.role)}</Badge>
+                                    </div>
 
-                            {/* Empty state */}
-                            {admins.length === 0 && (
-                                <div className="col-span-full py-12 flex flex-col items-center justify-center bg-muted/20 rounded-2xl border border-dashed border-border/60">
-                                    <UserCog className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
-                                    <p className="text-muted-foreground font-medium">{isAr ? 'لا يوجد مدراء لعرضهم' : 'No admins found to display'}</p>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* ── Create Admin Dialog ── */}
-                        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-                            <DialogContent className="max-h-[80vh] overflow-y-auto">
-                                <DialogHeader><DialogTitle>{isAr ? 'إضافة مدير جديد' : 'Add New Admin'}</DialogTitle></DialogHeader>
-                                <div className="space-y-4">
-                                    <div className="space-y-1">
-                                        <Label>{isAr ? 'الاسم الكامل' : 'Full Name'}</Label>
-                                        <Input placeholder={isAr ? 'أدخل الاسم الكامل...' : "Enter full name..."} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label>{isAr ? 'البريد الإلكتروني' : 'Email'} *</Label>
-                                        <Input type="email" placeholder="admin@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
-                                    </div>
-                                    <div className="space-y-1">
-                                        <Label>{isAr ? 'كلمة المرور' : 'Password'} *</Label>
-                                        <Input type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
-                                    </div>
-                                    {renderRoleFields(form, setForm, filtColleges, filtDepts)}
-                                    <div className="flex gap-2 justify-end pt-4 border-t">
-                                        <Button variant="outline" onClick={() => setDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                        <Button onClick={handleCreate} disabled={loading} className="bg-accent text-accent-foreground">
-                                            {loading ? (isAr ? 'جاري الإنشاء...' : 'Creating...') : (isAr ? 'إنشاء المسؤول' : 'Create Admin')}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* ── Edit Admin Dialog ── */}
-                        <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-                            <DialogContent className="max-h-[80vh] overflow-y-auto">
-                                <DialogHeader>
-                                    <DialogTitle>{isAr ? 'تعديل بيانات المسؤول' : 'Edit Admin Details'}</DialogTitle>
-                                    {editingAdmin && getEntityName(editingAdmin) && (
-                                        <div className="flex items-center gap-2 text-sm text-primary font-medium mt-1">
-                                            <Shield className="h-4 w-4" />
-                                            <span>{isAr ? 'يدير:' : 'Manages:'} {getEntityName(editingAdmin)}</span>
+                                    {/* Entity scope breadcrumb + active status */}
+                                    <div className="space-y-3 mb-6">
+                                        {getEntityName(admin) && (
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <div className="p-1 rounded bg-muted"><UserCog className="h-3.5 w-3.5 text-muted-foreground" /></div>
+                                                <span className="text-muted-foreground font-medium">{isAr ? 'يدير:' : 'Manages:'}</span>
+                                                <span className="text-foreground font-semibold">{getEntityName(admin)}</span>
+                                            </div>
+                                        )}
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                            <div className={`h-2 w-2 rounded-full ${admin.is_active ? 'bg-green-500' : 'bg-destructive'}`} />
+                                            <span>{admin.is_active ? (isAr ? 'الحساب مفعّل' : 'Account Active') : (isAr ? 'الحساب معطل' : 'Account Disabled')}</span>
                                         </div>
-                                    )}
-                                </DialogHeader>
-                                <div className="space-y-4">
-                                    <div className="space-y-1">
-                                        <Label>{isAr ? 'الاسم الكامل' : 'Full Name'}</Label>
-                                        <Input value={editForm.full_name} onChange={e => setEditForm(p => ({ ...p, full_name: e.target.value }))} disabled={editingAdmin?.id === user?.id && role !== 'super_admin'} />
                                     </div>
-                                    <div className="space-y-1">
-                                        <Label>{isAr ? 'البريد الإلكتروني' : 'Email Address'}</Label>
-                                        <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
-                                    </div>
-                                    <div className="pt-2 border-t mt-4">
-                                        <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
-                                            <Shield className="h-3 w-3" />
-                                            {isAr ? 'الصلاحيات والنطاق الإداري' : 'Role & Administrative Scope'}
-                                        </p>
-                                        {renderRoleFields(editForm, setEditForm, editFiltColleges, editFiltDepts)}
-                                    </div>
-                                    <div className="flex gap-2 justify-end pt-4 border-t">
-                                        <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                        <Button onClick={handleEdit} disabled={loading} className="bg-accent text-accent-foreground">
-                                            {loading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ التعديلات' : 'Save Changes')}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
 
-                        {/* ── Change Password Dialog ── */}
-                        <Dialog open={!!passwordDialog} onOpenChange={() => setPasswordDialog(null)}>
-                            <DialogContent>
-                                <DialogHeader><DialogTitle>{isAr ? 'تغيير كلمة المرور' : 'Change Password'}</DialogTitle></DialogHeader>
-                                <div className="space-y-4">
-                                    <div className="space-y-1">
-                                        <Label>{isAr ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
-                                        <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
-                                    </div>
-                                    <div className="flex gap-2 justify-end">
-                                        <Button variant="outline" onClick={() => setPasswordDialog(null)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                        <Button onClick={handleChangePassword} className="bg-accent text-accent-foreground">{isAr ? 'تغيير' : 'Change'}</Button>
-                                    </div>
-                                </div>
-                            </DialogContent>
-                        </Dialog>
-
-                        {/* ── Per-user Permissions Override Dialog ── */}
-                        <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
-                            <DialogContent className="max-h-[80vh] overflow-y-auto">
-                                <DialogHeader>
-                                    <DialogTitle>
-                                        {isAr ? `صلاحيات ${selectedAdminForPermissions?.full_name}` : `Permissions for ${selectedAdminForPermissions?.full_name}`}
-                                    </DialogTitle>
-                                </DialogHeader>
-                                <div className="grid gap-4 py-4">
-                                    <div className="space-y-4">
-                                        {PERM_KEYS.map(perm => (
-                                            <div key={perm} className="flex items-center justify-between p-2 border rounded-lg">
-                                                <span className="text-sm font-medium">{perm.replace(/_/g, ' ').toUpperCase()}</span>
-                                                <Button
-                                                    variant={getPermissionStatus(perm) ? 'default' : 'outline'}
-                                                    size="sm"
-                                                    onClick={() => handlePermissionToggle(perm, !getPermissionStatus(perm))} // Flip the state
-                                                    className={getPermissionStatus(perm) ? 'bg-green-600 hover:bg-green-700' : ''}
-                                                >
-                                                    {getPermissionStatus(perm) ? (isAr ? 'مسموح' : 'Allowed') : (isAr ? 'ممنوع' : 'Blocked')}
+                                    {/* Action buttons */}
+                                    <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                                        <div className="flex gap-1">
+                                            {/* Edit — requires manage_users permission */}
+                                            {hasPermission('manage_users') && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => openEditDialog(admin)} title={isAr ? 'تعديل' : 'Edit'}>
+                                                    <Edit className="h-4 w-4 text-primary" />
                                                 </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <div className="flex gap-2 justify-end sticky bottom-0 bg-background pt-4 border-t mt-4">
-                                        <Button variant="outline" onClick={() => setPermissionsDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                        <Button onClick={saveUserPermissions} disabled={loading} className="bg-accent text-accent-foreground">
-                                            {loading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ الصلاحيات' : 'Save Permissions')}
-                                        </Button>
+                                            )}
+                                            {/* Custom permissions — super_admin only */}
+                                            {role === 'super_admin' && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => openPermissionsDialog(admin)} title={isAr ? 'الصلاحيات' : 'Permissions'}>
+                                                    <Shield className="h-4 w-4 text-accent" />
+                                                </Button>
+                                            )}
+                                            {/* Toggle active/inactive — not for own account */}
+                                            {hasPermission('manage_users') && admin.id !== user?.id && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => handleToggle(admin.id, admin.is_active)}
+                                                    title={admin.is_active ? (isAr ? 'إيقاف' : 'Deactivate') : (isAr ? 'تفعيل' : 'Activate')}>
+                                                    {admin.is_active ? <ShieldOff className="h-4 w-4 text-destructive" /> : <Shield className="h-4 w-4 text-green-600" />}
+                                                </Button>
+                                            )}
+                                        </div>
+                                        <div className="flex gap-1">
+                                            {/* Password reset button */}
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => { setPasswordDialog(admin.id); setNewPassword(''); }} title={isAr ? 'تغيير كلمة المرور' : 'Change Password'}>
+                                                <KeyRound className="h-4 w-4 text-muted-foreground" />
+                                            </Button>
+                                            {/* Delete — not for own account */}
+                                            {hasPermission('manage_users') && admin.id !== user?.id && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full hover:bg-destructive/10" onClick={() => handleDelete(admin.id)} title={isAr ? 'حذف' : 'Delete'}>
+                                                    <Trash2 className="h-4 w-4 text-destructive" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                            </DialogContent>
-                        </Dialog>
-                    </div>
-                </>
-                );
+                            </CardContent>
+                        </Card>
+                    ))}
+
+                    {/* Empty state */}
+                    {admins.length === 0 && (
+                        <div className="col-span-full py-12 flex flex-col items-center justify-center bg-muted/20 rounded-2xl border border-dashed border-border/60">
+                            <UserCog className="h-12 w-12 text-muted-foreground mb-4 opacity-20" />
+                            <p className="text-muted-foreground font-medium">{loading ? (isAr ? 'جاري التحميل' : 'Loading') : (isAr ? 'لا يوجد مدراء لعرضهم' : 'No admins found to display')}</p>
+                        </div>
+                    )}
+                </div>
+
+                {/* ── Create Admin Dialog ── */}
+                <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                    <DialogContent className="max-h-[80vh] overflow-y-auto">
+                        <DialogHeader><DialogTitle>{isAr ? 'إضافة مدير جديد' : 'Add New Admin'}</DialogTitle></DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <Label>{isAr ? 'الاسم الكامل' : 'Full Name'}</Label>
+                                <Input placeholder={isAr ? 'أدخل الاسم الكامل...' : "Enter full name..."} value={form.full_name} onChange={e => setForm({ ...form, full_name: e.target.value })} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label>{isAr ? 'البريد الإلكتروني' : 'Email'} *</Label>
+                                <Input type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label>{isAr ? 'كلمة المرور' : 'Password'} *</Label>
+                                <Input type="password" placeholder="••••••••" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })} />
+                            </div>
+                            {renderRoleFields(form, setForm, filtColleges, filtDepts)}
+                            <div className="flex gap-2 justify-end pt-4 border-t">
+                                <Button variant="outline" onClick={() => setDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
+                                <Button onClick={handleCreate} disabled={loading} className="bg-accent text-accent-foreground">
+                                    {loading ? (isAr ? 'جاري الإنشاء...' : 'Creating...') : (isAr ? 'إنشاء المسؤول' : 'Create Admin')}
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Edit Admin Dialog ── */}
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                    <DialogContent className="max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>{isAr ? 'تعديل بيانات المسؤول' : 'Edit Admin Details'}</DialogTitle>
+                            {editingAdmin && getEntityName(editingAdmin) && (
+                                <div className="flex items-center gap-2 text-sm text-primary font-medium mt-1">
+                                    <Shield className="h-4 w-4" />
+                                    <span>{isAr ? 'يدير:' : 'Manages:'} {getEntityName(editingAdmin)}</span>
+                                </div>
+                            )}
+                        </DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <Label>{isAr ? 'الاسم الكامل' : 'Full Name'}</Label>
+                                <Input value={editForm.full_name} onChange={e => setEditForm(p => ({ ...p, full_name: e.target.value }))} disabled={editingAdmin?.id === user?.id && role !== 'super_admin'} />
+                            </div>
+                            <div className="space-y-1">
+                                <Label>{isAr ? 'البريد الإلكتروني' : 'Email Address'}</Label>
+                                <Input type="email" value={editForm.email} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} />
+                            </div>
+                            <div className="pt-2 border-t mt-4">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <Shield className="h-3 w-3" />
+                                    {isAr ? 'الصلاحيات والنطاق الإداري' : 'Role & Administrative Scope'}
+                                </p>
+                                {renderRoleFields(editForm, setEditForm, editFiltColleges, editFiltDepts)}
+                            </div>
+                            <div className="flex gap-2 justify-end pt-4 border-t">
+                                <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
+                                <Button onClick={handleEdit} disabled={loading} className="bg-accent text-accent-foreground">
+                                    {loading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ التعديلات' : 'Save Changes')}
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Change Password Dialog ── */}
+                <Dialog open={!!passwordDialog} onOpenChange={() => setPasswordDialog(null)}>
+                    <DialogContent>
+                        <DialogHeader><DialogTitle>{isAr ? 'تغيير كلمة المرور' : 'Change Password'}</DialogTitle></DialogHeader>
+                        <div className="space-y-4">
+                            <div className="space-y-1">
+                                <Label>{isAr ? 'كلمة المرور الجديدة' : 'New Password'}</Label>
+                                <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                                <Button variant="outline" onClick={() => setPasswordDialog(null)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
+                                <Button onClick={handleChangePassword} className="bg-accent text-accent-foreground">{isAr ? 'تغيير' : 'Change'}</Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+
+                {/* ── Per-user Permissions Override Dialog ── */}
+                <Dialog open={permissionsDialogOpen} onOpenChange={setPermissionsDialogOpen}>
+                    <DialogContent className="max-h-[80vh] overflow-y-auto">
+                        <DialogHeader>
+                            <DialogTitle>
+                                {isAr ? `صلاحيات ${selectedAdminForPermissions?.full_name}` : `Permissions for ${selectedAdminForPermissions?.full_name}`}
+                            </DialogTitle>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                            <div className="space-y-4">
+                                {PERM_KEYS.map(perm => (
+                                    <div key={perm} className="flex items-center justify-between p-2 border rounded-lg">
+                                        <span className="text-sm font-medium">{perm.replace(/_/g, ' ').toUpperCase()}</span>
+                                        <Button
+                                            variant={getPermissionStatus(perm) ? 'default' : 'outline'}
+                                            size="sm"
+                                            onClick={() => handlePermissionToggle(perm, !getPermissionStatus(perm))} // Flip the state
+                                            className={getPermissionStatus(perm) ? 'bg-green-600 hover:bg-green-700' : ''}
+                                        >
+                                            {getPermissionStatus(perm) ? (isAr ? 'مسموح' : 'Allowed') : (isAr ? 'ممنوع' : 'Blocked')}
+                                        </Button>
+                                    </div>
+                                ))}
+                            </div>
+                            <div className="flex gap-2 justify-end sticky bottom-0 bg-background pt-4 border-t mt-4">
+                                <Button variant="outline" onClick={() => setPermissionsDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
+                                <Button onClick={saveUserPermissions} disabled={loading} className="bg-accent text-accent-foreground">
+                                    {loading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ الصلاحيات' : 'Save Permissions')}
+                                </Button>
+                            </div>
+                        </div>
+                    </DialogContent>
+                </Dialog>
+            </div>
+        </>
+    );
 };
 
-                export default AdminManagement;
+export default AdminManagement;

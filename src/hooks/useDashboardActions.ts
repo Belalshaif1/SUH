@@ -153,6 +153,12 @@ export const useDashboardActions = (
                 }
             }
 
+            else if (activeForm === 'service') {
+                if (formData._icon_file) {
+                    payload.icon = await handleFileUpload(formData._icon_file); // Service icon/image
+                }
+            }
+
             else if (activeForm === 'graduate') {
                 payload.graduation_year = parseInt(formData.graduation_year, 10); // Convert to integer for database
                 payload.gpa = formData.gpa ? parseFloat(formData.gpa) : null;      // Convert to float or null if empty
@@ -192,6 +198,7 @@ export const useDashboardActions = (
             delete payload._image_file;
             delete payload._attachment_file;
             delete payload._pdf_file;
+            delete payload._icon_file;
 
             // ── Determine the HTTP method and endpoint ──────────────────────
             const method = editId ? 'PUT' : 'POST'; // POST for new records, PUT for updates
@@ -207,6 +214,7 @@ export const useDashboardActions = (
                 research:     'research',      // /api/research (no 's')
                 fee:          'fees',          // /api/fees
                 about:        'about',         // /api/about
+                service:      'services',      // /api/services
             };
 
             const base     = endpointMap[activeForm] ?? (activeForm + 's'); // Fallback: append 's' to entity name

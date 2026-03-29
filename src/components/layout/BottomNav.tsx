@@ -13,7 +13,8 @@ const BottomNav: React.FC = () => {
     { path: '/graduates', icon: GraduationCap, label: t('nav.graduates') },
     { path: '/announcements', icon: Megaphone, label: t('nav.announcements') },
     { path: '/chat', icon: MessageCircle, label: t('nav.chat') },
-    { path: '/about', icon: Info, label: language === 'ar' ? 'من نحن' : 'About Us' },
+    // { path: '/about', icon: Info, label: language === 'ar' ? 'من نحن' : 'About Us' },
+    { path: '/jobs', icon: Briefcase, label: t('nav.jobs') },
   ];
 
   return (

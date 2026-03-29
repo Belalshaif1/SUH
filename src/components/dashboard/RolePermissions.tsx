@@ -39,6 +39,7 @@ const PERMISSION_LABELS: Record<string, Record<string, string>> = {
     manage_research:     { ar: 'إدارة البحوث',    en: 'Manage Research' },
     manage_graduates:    { ar: 'إدارة الخريجين',  en: 'Manage Graduates' },
     manage_fees:         { ar: 'إدارة الرسوم',    en: 'Manage Fees' },
+    manage_services:     { ar: 'إدارة الخدمات',   en: 'Manage Services' },
     view_reports:        { ar: 'عرض التقارير',    en: 'View Reports' },
     advanced_settings:   { ar: 'الإعدادات المتقدمة', en: 'Advanced Settings' },
 };

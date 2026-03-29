@@ -27,22 +27,20 @@ const Signup: React.FC = () => {
   const [password, setPassword] = useState(''); // تخزين كلمة المرور
   const [loading, setLoading] = useState(false); // حالة التحميل (لتعطيل الأزرار أثناء الطلب)
   const [success, setSuccess] = useState(false); // حالة نجاح العملية بالكامل
-  const [expectedCode, setExpectedCode] = useState(''); // الكود الصحيح القادم من السيرفر للمقارنة
 
   // 4. معالجة الانتقال بين الخطوات
   const handleNextStep = async (e: React.FormEvent) => {
     e.preventDefault(); // منع الصفحة من إعادة التحميل عند ضغط الزر
-    
+
     // الخطوة الأولى: إرسال كود التحقق بناءً على الإيميل أو الهاتف
     if (step === 1) {
       setLoading(true); // بدء حالة التحميل
       try {
         // طلب إرسال الكود من السيرفر
         const res = await apiClient('/auth/send-register-code', {
-            method: 'POST',
-            body: JSON.stringify(regType === 'email' ? { email } : { phone }),
+          method: 'POST',
+          body: JSON.stringify(regType === 'email' ? { email } : { phone }),
         });
-        setExpectedCode(res.code); // حفظ الكود القادم (للتطوير المحلي)
         setStep(2); // الانتقال للخطوة التالية
         toast({ title: t('auth.code_sent'), description: language === 'ar' ? 'تم إرسال رمز التحقق' : 'Verification code sent' });
       } catch (err: any) {
@@ -51,15 +49,25 @@ const Signup: React.FC = () => {
       } finally {
         setLoading(false); // إنهاء حالة التحميل
       }
-    } 
-    // الخطوة الثانية: مقارنة الكود المدخل بالكود المتوقع
+    }
+    // الخطوة الثانية: التحقق من الكود عبر السيرفر
     else if (step === 2) {
-      if (verificationCode === expectedCode) {
-        setStep(3); // الانتقال لخطوة تعيين كلمة المرور في حال مطابقة الكود
-      } else {
-        toast({ title: language === 'ar' ? 'رمز غير صحيح' : 'Invalid code', variant: 'destructive' });
+      setLoading(true);
+      try {
+        await apiClient('/auth/verify-register-code', {
+          method: 'POST',
+          body: JSON.stringify({
+            identifier: regType === 'email' ? email : phone,
+            code: verificationCode
+          }),
+        });
+        setStep(3); // الانتقال لخطوة تعيين كلمة المرور
+      } catch (err: any) {
+        toast({ title: err.message || "Invalid code", variant: 'destructive' });
+      } finally {
+        setLoading(false);
       }
-    } 
+    }
     // الخطوة الثالثة: إتمام عملية التسجيل النهائية وحفظ البيانات
     else if (step === 3) {
       setLoading(true);
@@ -112,7 +120,7 @@ const Signup: React.FC = () => {
                 value={fullName}
                 onChange={e => setFullName(e.target.value)}
                 required
-                placeholder={language === 'ar' ? 'مثلاً: علاء الدين' : 'John Doe'}
+                placeholder={language === 'ar' ? 'ادخل اسمك:' : 'Enter Your Name'}
                 className="h-14 rounded-2xl border-2 border-border/30 bg-white/50 focus-visible:ring-primary/10 focus-visible:border-primary/30 transition-all font-bold"
               />
             </div>

@@ -134,6 +134,9 @@ router.post('/register', async (req, res) => {
             [userId, email || null, phone || null, hashedPassword, full_name, 'user', 1]
         );
 
+        // مسح كود التحقق بعد الاستخدام الناجح
+        await db.runAsync('DELETE FROM verification_codes WHERE identifier = $1', [email || phone]);
+
         // إرسال رد بنجاح العملية
         res.status(201).json({ message: 'User registered successfully' });
     } catch (err) {
@@ -159,7 +162,15 @@ router.post('/send-register-code', async (req, res) => {
 
         // توليد كود عشوائي من 6 أرقام
         const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // صالح لمدة 15 دقيقة
         
+        // حفظ الكود في قاعدة البيانات للتحقق اللاحق
+        const identifierValue = email || phone;
+        await db.runAsync(
+            'INSERT INTO verification_codes (identifier, code, expires_at) VALUES ($1, $2, $3)',
+            [identifierValue, resetCode, expiresAt.toISOString()]
+        );
+
         // محاكاة الإرسال عبر الطباعة في Terminal السيرفر بقالب جمالي
         const methodLabel = email ? 'EMAIL' : 'SMS';
         const targetValue = email || phone;
@@ -175,11 +186,34 @@ router.post('/send-register-code', async (req, res) => {
 ╚════════════════════════════════════════════════════════════╝
         `);
 
-        // ملاحظة: لأغراض التطوير المحلي، يتم إرسال الكود في الرد للسماح بتجربة البرنامج بدون إرسال حقيقي
-        res.json({ success: true, code: resetCode });
+        // ملاحظة: تم إزالة الكود من الرد لدواعي أمنية - يتم جلب الكود من سجلات السيرفر
+        res.json({ success: true, message: 'Verification code sent' });
     } catch (err) {
-        // معالجة الخطأ
         console.error('Send register code error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// مسار التحقق من كود التسجيل (Verify Register Code)
+router.post('/verify-register-code', async (req, res) => {
+    try {
+        const { identifier, code } = req.body;
+        if (!identifier || !code) {
+            return res.status(400).json({ error: 'Identifier and code are required' });
+        }
+
+        const validCode = await db.getAsync(
+            'SELECT * FROM verification_codes WHERE identifier = $1 AND code = $2 AND expires_at > CURRENT_TIMESTAMP ORDER BY created_at DESC LIMIT 1',
+            [identifier, code]
+        );
+
+        if (!validCode) {
+            return res.status(400).json({ error: 'Invalid or expired verification code' });
+        }
+
+        res.json({ success: true, message: 'Code verified successfully' });
+    } catch (err) {
+        console.error('Verify register code error:', err);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
@@ -187,10 +221,10 @@ router.post('/send-register-code', async (req, res) => {
 // Update User Profile
 router.put('/update', require('../middleware/auth').authenticateToken, async (req, res) => {
     try {
-        const { full_name, phone, avatar_url } = req.body;
+        const { full_name, phone, avatar_url, cover_url } = req.body;
         await db.runAsync(
-            'UPDATE users SET full_name = $1, phone = $2, avatar_url = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4',
-            [full_name, phone, avatar_url, req.user.id]
+            'UPDATE users SET full_name = $1, phone = $2, avatar_url = $3, cover_url = $4, updated_at = CURRENT_TIMESTAMP WHERE id = $5',
+            [full_name, phone, avatar_url, cover_url, req.user.id]
         );
         res.json({ success: true });
     } catch (err) {
@@ -203,7 +237,7 @@ router.put('/update', require('../middleware/auth').authenticateToken, async (re
 router.get('/me', require('../middleware/auth').authenticateToken, async (req, res) => {
     try {
         const user = await db.getAsync(
-            'SELECT id, email, full_name, avatar_url, phone, role, is_active, university_id, college_id, department_id FROM users WHERE id = $1',
+            'SELECT id, email, full_name, avatar_url, cover_url, phone, role, is_active, university_id, college_id, department_id FROM users WHERE id = $1',
             [req.user.id]
         );
         if (!user) return res.status(404).json({ error: 'User not found' });
@@ -309,7 +343,10 @@ router.post('/users', require('../middleware/auth').authenticateToken, require('
 
         await db.runAsync(
             'INSERT INTO users (id, email, password, full_name, role, phone, university_id, college_id, department_id, is_active) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 1)',
-            [userId, email, hashedPassword, full_name, role || 'user', phone, university_id, college_id, department_id]
+            [
+                userId, email, hashedPassword, full_name, role || 'user', phone,
+                university_id || null, college_id || null, department_id || null
+            ]
         );
 
         res.status(201).json({ id: userId, message: 'User created successfully' });

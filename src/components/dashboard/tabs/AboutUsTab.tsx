@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect } from 'react'; // State for form fields, effect for syncing prop to state
 import { useLanguage } from '@/contexts/LanguageContext'; // Current UI language
-import apiClient        from '@/lib/apiClient';            // HTTP client with auth header
+import apiClient, { getMediaUrl } from '@/lib/apiClient';            // HTTP client with auth header
 import {
     Card, CardContent, CardHeader, CardTitle
 } from '@/components/ui/card';                             // Shadcn card
@@ -268,7 +268,7 @@ export const AboutUsTab: React.FC<AboutUsTabProps> = ({ aboutData, onSaved }) =>
                                     {form.developer_image_url ? (
                                         /* Show the uploaded image when a URL has been stored */
                                         <img
-                                            src={form.developer_image_url}
+                                            src={getMediaUrl(form.developer_image_url)}
                                             alt="Developer profile" // Descriptive alt for accessibility
                                             className="h-full w-full object-cover" // Crop and fill the preview box
                                         />

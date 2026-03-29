@@ -145,6 +145,21 @@ export interface ErrorLog {
     created_at: string;     // ISO timestamp — required for sorting and time-based filtering
 }
 
+// ─── Service ──────────────────────────────────────────────────────────────
+
+/** Represents a Service record offered by the university */
+export interface Service {
+    id: string;               // UUID primary key
+    title_ar: string;         // Arabic title
+    title_en?: string;        // Optional English title
+    description_ar?: string;  // Arabic description
+    description_en?: string;  // English description
+    icon?: string;            // Icon name (Lucide) or image URL
+    link?: string;            // Optional external or internal link
+    is_active?: number;       // 1 = active, 0 = inactive
+    created_at?: string;      // ISO timestamp
+}
+
 // ─── DashboardStats ───────────────────────────────────────────────────────
 
 /** Aggregated numeric statistics shown in the stats cards at the top of the Dashboard */
@@ -154,5 +169,6 @@ export interface DashboardStats {
     departments: number;   // Total number of department records
     graduates: number;     // Total number of graduate records
     research: number;      // Total number of research paper records
+    services: number;      // Total number of service records
     users: number;         // Total number of admin user accounts
 }

@@ -29,6 +29,7 @@ interface User {
     full_name: string | null;    // Display name — null if not set
     role: string;                // The user's base role (e.g. 'super_admin', 'user')
     avatar_url: string | null;   // URL path to the uploaded profile picture — null if none
+    cover_url: string | null;    // URL path to the uploaded cover picture — null if none
     phone: string | null;        // Phone number — null if not provided
 }
 
@@ -48,6 +49,7 @@ interface Profile {
     user_id: string;          // References the User.id
     full_name: string | null; // Display name
     avatar_url: string | null; // Profile picture URL
+    cover_url: string | null;  // Cover picture URL
     phone: string | null;     // Phone number
 }
 
@@ -90,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             full_name: userData.full_name ?? null,
             role: userData.role,
             avatar_url: userData.avatar_url ?? null,
+            cover_url: userData.cover_url ?? null,
             phone: userData.phone ?? null,
         });
 
@@ -99,6 +102,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             user_id: userData.id,
             full_name: userData.full_name ?? null,
             avatar_url: userData.avatar_url ?? null,
+            cover_url: userData.cover_url ?? null,
             phone: userData.phone ?? null,
         });
 

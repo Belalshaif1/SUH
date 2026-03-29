@@ -21,7 +21,7 @@ import {
 import {
     UserCog, Shield, Building2, BookOpen, FileText,
     Megaphone, Briefcase, GraduationCap, DollarSign,
-    Info, AlertTriangle, Users, Archive, Loader2
+    Info, AlertTriangle, Users, Archive, Loader2, LayoutGrid
 } from 'lucide-react';                                                              // Icon set for tab triggers
 import { Button } from '@/components/ui/button';                                     // Shadcn button
 
@@ -56,6 +56,7 @@ import { FeesTab } from '@/components/dashboard/tabs/FeesTab';          // Tuiti
 import { ErrorLogsTab } from '@/components/dashboard/tabs/ErrorLogsTab';     // System error logs (super_admin only)
 import { BackupTab } from '@/components/dashboard/tabs/BackupTab';        // Database backup tools
 import { AboutUsTab } from '@/components/dashboard/tabs/AboutUsTab';       // About-page CMS editor
+import { ServicesTab } from '@/components/dashboard/tabs/ServicesTab';     // Services CRUD list
 
 // ─── Component ────────────────────────────────────────────────────────────
 
@@ -145,10 +146,12 @@ const Dashboard: React.FC = () => {
                     pointer events and prevented the "Add" button from being clickable. */}
                 {data.loading && (
                     <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm">
-                        <Loader2 className="h-12 w-12 text-primary animate-spin" /> {/* Spinning icon */}
-                        <p className='mt-4 text-lg font-medium text-foreground'>
-                            {language === 'ar' ? 'جاري التحميل...' : 'Loading...'} {/* Localised label */}
-                        </p>
+                        <div className='bg-white dark:bg-slate-900 p-6 rounded-2xl flex flex-col items-center justify-center'>
+                            <Loader2 className="h-12 w-12 text-primary animate-spin" /> {/* Spinning icon */}
+                            <p className='mt-4 text-lg font-medium text-foreground'>
+                                {language === 'ar' ? 'جاري التحميل...' : 'Loading...'} {/* Localised label */}
+                            </p>
+                        </div>
                     </div>
                 )}
 
@@ -242,6 +245,12 @@ const Dashboard: React.FC = () => {
                                     <TabsTrigger value="fees" className="tab-trigger-premium">
                                         <DollarSign className="h-4 w-4" />
                                         {t('nav.fees')}
+                                    </TabsTrigger>
+                                )}
+                                {hasPermission('manage_services') && (
+                                    <TabsTrigger value="services" className="tab-trigger-premium">
+                                        <LayoutGrid className="h-4 w-4" />
+                                        {language === 'ar' ? 'الخدمات' : 'Services'}
                                     </TabsTrigger>
                                 )}
 
@@ -426,6 +435,20 @@ const Dashboard: React.FC = () => {
                                 canAdd={hasPermission('manage_fees')}
                                 canEdit={hasPermission('manage_fees')}
                                 canDelete={hasPermission('manage_fees')}
+                            />
+                        </TabsContent>
+
+                        {/* Services CRUD */}
+                        <TabsContent value="services">
+                            <ServicesTab
+                                services={data.services}
+                                onAdd={() => dialogs.openAdd('service')}
+                                onEdit={(item) => dialogs.openEdit('service', item)}
+                                onDelete={(id, title) => actions.requestDelete('services', id, title)}
+                                processData={data.processData}
+                                canAdd={hasPermission('manage_services')}
+                                canEdit={hasPermission('manage_services')}
+                                canDelete={hasPermission('manage_services')}
                             />
                         </TabsContent>
 

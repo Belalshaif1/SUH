@@ -13,6 +13,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import apiClient from '@/lib/apiClient';
+import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
@@ -252,6 +253,7 @@ const DateSeparator: React.FC<{ date: string; language: string }> = ({ date, lan
 const Chat: React.FC = () => {
     const { t, language } = useLanguage();
     const { user } = useAuth();
+    const { toast } = useToast();
     const isAr = language === 'ar';
 
     const [messages, setMessages] = useState<Message[]>([]);
@@ -379,14 +381,16 @@ const Chat: React.FC = () => {
         try {
             await apiClient(`/messages/${id}`, { method: 'DELETE' });
             setMessages(prev => prev.filter(m => m.id !== id));
-        } catch (err) {
+            toast({ title: isAr ? 'تم حذف الرسالة' : 'Message deleted' });
+        } catch (err: any) {
             console.error('Error deleting message:', err);
+            toast({ title: err.message, variant: 'destructive' });
         }
     };
 
     const copyMessage = (text: string) => {
         navigator.clipboard.writeText(text);
-        // Simple visual feedback could be added here if a toast system exists
+        toast({ title: isAr ? 'تم نسخ النص' : 'Copied to clipboard' });
     };
 
     const filteredContacts = contacts.filter(c =>

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Info, Mail, Globe, Code, FileText } from 'lucide-react';
@@ -94,7 +94,7 @@ const About: React.FC = () => {
                             <div className="relative z-10">
                                 <div className="w-48 h-48 rounded-[3rem] bg-white p-4 shadow-2xl shadow-primary/10 flex items-center justify-center mb-8 border-4 border-white group-hover:rotate-3 transition-transform duration-500 overflow-hidden">
                                     {data?.developer_image_url ? (
-                                        <img src={data.developer_image_url} alt={devName} className="w-full h-full rounded-[2rem] object-cover" />
+                                        <img src={getMediaUrl(data.developer_image_url)} alt={devName} className="w-full h-full rounded-[2rem] object-cover" />
                                     ) : (
                                         <div className="h-full w-full rounded-[2rem] bg-primary/5 flex items-center justify-center">
                                             <User className="h-20 w-20 text-primary/10" />

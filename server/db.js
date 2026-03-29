@@ -236,8 +236,33 @@ async function createTables() {
         // Migration: Ensure announcements has file_url column
         try {
             await client.query('ALTER TABLE announcements ADD COLUMN IF NOT EXISTS file_url TEXT');
-        } catch (e) {
-            // Column might already exist
+        } catch (e) {}
+
+        // Migration: Ensure users has cover_url column
+        try {
+            await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_url TEXT');
+        } catch (e) {}
+
+        // Migration: Create verification_codes table
+        try {
+            await client.query(`CREATE TABLE IF NOT EXISTS verification_codes (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                identifier VARCHAR(255) NOT NULL,
+                code VARCHAR(10) NOT NULL,
+                expires_at TIMESTAMP NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )`);
+        } catch (e) {}
+
+        // Migration: Ensure manage_services permission exists for all roles
+        const rolesForMigration = ['super_admin', 'university_admin', 'college_admin', 'department_admin'];
+        for (const role of rolesForMigration) {
+            await client.query(
+                `INSERT INTO role_permissions (id, role, permission_key, is_enabled) 
+                 VALUES ($1, $2, $3, $4) 
+                 ON CONFLICT (role, permission_key) DO NOTHING`,
+                [uuidv4(), role, 'manage_services', (role === 'super_admin' || role === 'university_admin') ? 1 : 0]
+            );
         }
 
         await client.query('COMMIT'); 
@@ -297,7 +322,7 @@ async function insertDefaultData() {
                 'manage_universities', 'manage_colleges', 'manage_departments',
                 'manage_users', 'manage_announcements', 'manage_jobs',
                 'manage_research', 'manage_graduates', 'manage_fees',
-                'view_reports', 'advanced_settings'
+                'manage_services', 'view_reports', 'advanced_settings'
             ]; 
 
             for (const role of roles) { 
@@ -305,7 +330,7 @@ async function insertDefaultData() {
                     let isEnabled = 0; 
                     if (role === 'super_admin') isEnabled = 1; 
                     else if (role === 'university_admin') { 
-                        if (['manage_universities', 'manage_colleges', 'manage_departments', 'manage_users', 'manage_announcements', 'manage_jobs', 'manage_research', 'manage_graduates', 'manage_fees'].includes(perm)) {
+                        if (['manage_universities', 'manage_colleges', 'manage_departments', 'manage_users', 'manage_announcements', 'manage_jobs', 'manage_research', 'manage_graduates', 'manage_fees', 'manage_services'].includes(perm)) {
                             isEnabled = 1; 
                         }
                     } else if (role === 'college_admin') { 

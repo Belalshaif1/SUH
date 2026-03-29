@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import apiClient from '@/lib/apiClient';
+import apiClient, { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -16,11 +16,14 @@ const Profile: React.FC = () => {
   const { toast } = useToast();
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [phone, setPhone] = useState(profile?.phone || '');
+  const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
+  const [coverUrl, setCoverUrl] = useState(profile?.cover_url || '');
   const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [uploading, setUploading] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'cover') => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
 
@@ -33,17 +36,28 @@ const Profile: React.FC = () => {
       return;
     }
 
-    setUploading(true);
+    setUploading(type);
+    const formData = new FormData();
+    formData.append('file', file);
 
-    // In local server, we would normally use a separate upload endpoint
-    // For now, let's assume we can pass the file or skip avatar upload for now 
-    // since we need a backend endpoint for multi-part upload.
-    // I will use a simple message for now.
-    toast({
-      title: language === 'ar' ? 'تحميل الصور غير متاح حالياً' : 'Image upload is not available yet',
-      description: language === 'ar' ? 'سيتم تفعيل هذه الميزة قريباً' : 'This feature will be enabled soon'
-    });
-    setUploading(false);
+    try {
+      const data = await apiClient('/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (type === 'avatar') {
+        setAvatarUrl(data.url);
+      } else {
+        setCoverUrl(data.url);
+      }
+      
+      toast({ title: language === 'ar' ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully' });
+    } catch (error: any) {
+      toast({ title: error.message, variant: 'destructive' });
+    } finally {
+      setUploading(null);
+    }
   };
 
   const handleSave = async () => {
@@ -52,7 +66,7 @@ const Profile: React.FC = () => {
     try {
       await apiClient('/auth/update', {
         method: 'PUT',
-        body: JSON.stringify({ full_name: fullName, phone, avatar_url: profile?.avatar_url }),
+        body: JSON.stringify({ full_name: fullName, phone, avatar_url: avatarUrl, cover_url: coverUrl }),
       });
       toast({ title: language === 'ar' ? 'تم الحفظ بنجاح' : 'Saved successfully' });
       refreshProfile();
@@ -77,24 +91,37 @@ const Profile: React.FC = () => {
 
       <div className="container mx-auto max-w-lg relative z-10">
         <Card className="card-premium overflow-hidden bg-white/80 backdrop-blur-xl border border-border/50 shadow-2xl shadow-primary/10">
-          <div className="h-32 gradient-academic relative">
-            <div className="absolute inset-0 bg-primary/20 backdrop-blur-sm" />
+          <div className="h-40 relative group/cover">
+            {coverUrl ? (
+              <img src={getMediaUrl(coverUrl)} alt="cover" className="h-full w-full object-cover transition-transform duration-700 group-hover/cover:scale-105" />
+            ) : (
+              <div className="absolute inset-0 gradient-academic opacity-80" />
+            )}
+            <div className="absolute inset-0 bg-black/10 transition-opacity group-hover/cover:opacity-100" />
+            <button
+              onClick={() => coverInputRef.current?.click()}
+              className="absolute top-4 right-4 flex h-9 px-3 items-center gap-2 rounded-xl bg-white/20 backdrop-blur-md text-white border border-white/30 hover:bg-white/40 transition-all opacity-0 group-hover/cover:opacity-100"
+            >
+              {uploading === 'cover' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              <span className="text-xs font-bold">{language === 'ar' ? 'تغيير الغلاف' : 'Change Cover'}</span>
+            </button>
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'cover')} />
           </div>
 
           <CardHeader className="text-center relative -mt-16 pb-6 px-8">
             <div className="relative mx-auto mb-6 group">
-              <Avatar className="h-32 w-32 mx-auto border-8 border-white shadow-2xl transition-transform duration-500 group-hover:scale-105">
-                {profile?.avatar_url && <AvatarImage src={profile.avatar_url} alt="avatar" className="object-cover" />}
+              <Avatar className="h-32 w-32 mx-auto border-8 border-white shadow-2xl transition-transform duration-500 group-hover:scale-105 overflow-hidden">
+                {avatarUrl && <AvatarImage src={getMediaUrl(avatarUrl)} alt="avatar" className="object-cover" />}
                 <AvatarFallback className="bg-primary text-white text-4xl font-black">{initials}</AvatarFallback>
               </Avatar>
               <button
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
+                disabled={uploading === 'avatar'}
                 className="absolute bottom-1 right-1 flex h-10 w-10 items-center justify-center rounded-2xl bg-gold text-white shadow-xl hover:bg-primary transition-all duration-300 border-4 border-white active:scale-90"
               >
-                {uploading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
+                {uploading === 'avatar' ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5" />}
               </button>
-              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => handleImageUpload(e, 'avatar')} />
             </div>
 
             <CardTitle className="text-3xl font-black text-primary tracking-tight">{t('nav.profile')}</CardTitle>

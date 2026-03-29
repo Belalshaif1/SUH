@@ -121,7 +121,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
             const isUniAdmin = role === 'university_admin';
             return (
                 <div className="space-y-6">
-                    {f('name_ar', t('common.name_ar'), 'text', true, 'جامعة الملك فيصل', '', isUniAdmin)}
+                    {f('name_ar', t('common.name_ar'), 'text', true, 'اسم الجامعة  ', '', isUniAdmin)}
                     {f('name_en', t('common.name_en'), 'text', false, '', '', isUniAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
                     {f('description_en', t('common.description_en'), 'textarea')}
@@ -144,7 +144,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
             return (
                 <div className="space-y-6">
                     {role === 'super_admin' && selectField('university_id', t('nav.universities'), universities)}
-                    {f('name_ar', t('common.name_ar'), 'text', true, 'كلية الهندسة', '', isCollegeAdmin)}
+                    {f('name_ar', t('common.name_ar'), 'text', true, ' اسم الكلية ', '', isCollegeAdmin)}
                     {f('name_en', t('common.name_en'), 'text', false, '', '', isCollegeAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
                     {f('description_en', t('common.description_en'), 'textarea')}
@@ -167,7 +167,7 @@ export const EntityForm: React.FC<EntityFormProps> = ({
             return (
                 <div className="space-y-6">
                     {role !== 'college_admin' && selectField('college_id', t('universities.colleges'), colleges)}
-                    {f('name_ar', t('common.name_ar'), 'text', true, 'قسم هندسة الحاسوب', '', isDeptAdmin)}
+                    {f('name_ar', t('common.name_ar'), 'text', true, ' اسم القسم ', '', isDeptAdmin)}
                     {f('name_en', t('common.name_en'), 'text', false, '', '', isDeptAdmin)}
                     {f('description_ar', t('common.description_ar'), 'textarea')}
                     {f('description_en', t('common.description_en'), 'textarea')}
@@ -268,6 +268,26 @@ export const EntityForm: React.FC<EntityFormProps> = ({
                     {f('content_en', t('common.content_en'), 'textarea')}
                     {f('developer_name_ar', language === 'ar' ? 'اسم المطور' : "Developer's Name", 'text')}
                     {f('developer_bio_ar', language === 'ar' ? 'نبذة عن المطور' : "Developer's Bio", 'textarea')}
+                </div>
+            );
+
+        case 'service':
+            return (
+                <div className="space-y-6">
+                    {f('title_ar', t('common.title_ar'), 'text', true)}
+                    {f('title_en', t('common.title_en'))}
+                    {f('description_ar', t('common.description_ar'), 'textarea')}
+                    {f('description_en', t('common.description_en'), 'textarea')}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'أيقونة الخدمة' : 'Service Icon/Image'}</Label>
+                            <Input type="file" accept="image/*" onChange={e => setFormData({ ...formData, _icon_file: e.target.files?.[0] })} className="rounded-xl h-11" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label className="font-bold">{language === 'ar' ? 'رابط الخدمة' : 'Service Link'}</Label>
+                            <Input value={formData.link || ''} onChange={e => setFormData({ ...formData, link: e.target.value })} placeholder="https://..." className="rounded-xl h-11" />
+                        </div>
+                    </div>
                 </div>
             );
 

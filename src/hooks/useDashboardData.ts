@@ -17,7 +17,7 @@ import { useAuth }     from '@/contexts/AuthContext';     // Auth context for ro
 import { useLanguage } from '@/contexts/LanguageContext'; // Language context for locale-aware sorting
 import {
     University, College, Department, Graduate, Research,
-    Job, Announcement, Fee, ErrorLog, DashboardStats
+    Job, Announcement, Fee, ErrorLog, DashboardStats, Service
 } from '@/types/dashboard'; // All entity interfaces for full type safety
 
 // ─── Hook ─────────────────────────────────────────────────────────────────
@@ -42,6 +42,7 @@ export const useDashboardData = () => {
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);  // Announcements visible to this admin
     const [fees, setFees]                   = useState<Fee[]>([]);             // Fee records visible to this admin
     const [errorLogs, setErrorLogs]         = useState<ErrorLog[]>([]);       // Error logs — super_admin only
+    const [services, setServices]           = useState<Service[]>([]);        // University services
     const [aboutData, setAboutData]         = useState<any>(null);            // About-page CMS content
 
     // ─── UI State ──────────────────────────────────────────────────────────
@@ -52,6 +53,7 @@ export const useDashboardData = () => {
         departments: 0,  // Initial count for the department stat card
         graduates: 0,    // Initial count for the graduates stat card
         research: 0,     // Initial count for the research stat card
+        services: 0,     // Initial count for the services stat card
         users: 0,        // Initial count for the users stat card (populated separately)
     });
 
@@ -99,6 +101,7 @@ export const useDashboardData = () => {
                 aboutRes, // About page content object
                 logsRes, // Error logs — only fetched for super_admin (others get empty array)
                 fRes,    // Raw fees array
+                sRes,    // Raw services array
             ] = await Promise.all([
                 apiClient('/universities'),            // GET /api/universities
                 apiClient('/colleges'),                // GET /api/colleges
@@ -112,6 +115,7 @@ export const useDashboardData = () => {
                     ? apiClient('/error_logs')
                     : Promise.resolve([]),             // Other roles receive an empty array immediately
                 apiClient('/fees'),                    // GET /api/fees
+                apiClient('/services'),                // GET /api/services
             ]);
 
             // ── RBAC Filtering ──────────────────────────────────────────────
@@ -128,6 +132,7 @@ export const useDashboardData = () => {
                 setJobs(jRes || []);            // Store the complete jobs list
                 setAnnouncements(aRes || []);  // Store the complete announcements list
                 setFees(fRes || []);            // Store the complete fees list
+                setServices(sRes || []);        // Store the complete services list
                 setErrorLogs(logsRes || []);   // Store the error logs (super_admin only)
                 setAboutData(aboutRes);         // Store the about-page CMS content
 
@@ -138,6 +143,7 @@ export const useDashboardData = () => {
                     departments:  (dRes || []).length,  // Total number of departments
                     graduates:    (gRes || []).length,  // Total number of graduates
                     research:     (rRes || []).length,  // Total number of research papers
+                    services:     (sRes || []).length,  // Total number of services
                     users: 0, // User count populated via AdminManagement separately
                 });
 
@@ -173,6 +179,7 @@ export const useDashboardData = () => {
                 setGraduates((gRes || []).filter((g: any) => deptIds.has(g.department_id)));     // Graduates in their departments
                 setResearch((rRes || []).filter((r: any) => deptIds.has(r.department_id)));      // Research in their departments
                 setFees((fRes || []).filter((f: any) => deptIds.has(f.department_id)));          // Fees in their departments
+                setServices(sRes || []);        // Services are visible to university admins as well
                 setAnnouncements(filteredAnnouncements); // Scoped announcements
 
                 // Stats scoped to this university
@@ -182,6 +189,7 @@ export const useDashboardData = () => {
                     departments: filteredDepts.length,    // All departments in their university
                     graduates:   (gRes || []).filter((g: any) => deptIds.has(g.department_id)).length,
                     research:    (rRes || []).filter((r: any) => deptIds.has(r.department_id)).length,
+                    services:    (sRes || []).length,
                     users: 0,
                 });
 
@@ -208,6 +216,7 @@ export const useDashboardData = () => {
                 setAnnouncements((aRes || []).filter((a: any) =>
                     a.scope === 'college' && a.college_id === cid // Only college-scoped announcements for their college
                 ));
+                setServices(sRes || []); // Visible
 
                 setStats({
                     universities: myUni.length,     // Usually 1 — the parent university
@@ -215,6 +224,7 @@ export const useDashboardData = () => {
                     departments:  myDepts.length,    // All departments in their college
                     graduates:    (gRes || []).filter((g: any) => deptIds.has(g.department_id)).length,
                     research:     (rRes || []).filter((r: any) => deptIds.has(r.department_id)).length,
+                    services:     (sRes || []).length,
                     users: 0,
                 });
 
@@ -247,6 +257,7 @@ export const useDashboardData = () => {
                     a.created_by === user?.id || // Their own announcements
                     (a.scope === 'college' && myCollege.some((c: any) => c.id === a.college_id)) // Or college-scoped ones
                 ));
+                setServices(sRes || []); // Visible
 
                 setStats({
                     universities: myUni.length,     // Usually 1
@@ -254,6 +265,7 @@ export const useDashboardData = () => {
                     departments:  1,                 // They manage exactly one department
                     graduates:    (gRes || []).filter((g: any) => g.department_id === did).length,
                     research:     (rRes || []).filter((r: any) => r.department_id === did).length,
+                    services:     (sRes || []).length,
                     users: 0,
                 });
             }
@@ -325,6 +337,7 @@ export const useDashboardData = () => {
         jobs,         // Filtered jobs list
         announcements, // Filtered announcements list
         fees,         // Filtered fees list
+        services,     // Filtered services list
         errorLogs,    // Error logs (empty for non-super_admins)
         aboutData,    // About-page CMS content
 
