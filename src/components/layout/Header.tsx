@@ -23,10 +23,10 @@ const Header: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
 
   React.useEffect(() => {
-    if (user) {
+    if (user?.id) {
       const fetchUnread = async () => {
         try {
-          const msgs = await apiClient('/messages');
+          const msgs = await apiClient(`/messages/${user.id}`);
           // For simplicity, we count all messages where user is receiver
           // Real apps would have an 'is_read' flag
           setUnreadCount(msgs.length);
@@ -38,7 +38,7 @@ const Header: React.FC = () => {
       const interval = setInterval(fetchUnread, 30000); // Check every 30s
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user?.id]);
 
   const navItems = [
     { path: '/', icon: Home, label: t('nav.home') },

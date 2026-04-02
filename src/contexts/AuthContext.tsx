@@ -16,6 +16,7 @@ import React, {
     useState,        // Local component state with re-render trigger
     useEffect,       // Side effects that run after render (used here only once, on mount)
     useCallback,     // Memoizes a function so its reference only changes when deps change
+    useMemo,         // Memoizes a value object
 } from 'react';
 
 import apiClient from '@/lib/apiClient'; // Central fetch wrapper with auth headers and offline queueing
@@ -229,19 +230,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // ─── Context Value ──────────────────────────────────────────────────
 
+    const authValue = useMemo(() => ({
+        user,          // The logged-in user or null
+        profile,       // The user's profile data or null
+        userRole,      // The user's admin role and permissions or null
+        loading,       // True during the initial startup auth check
+        signIn,        // Function to log in
+        signUp,        // Function to create an account and log in
+        signOut,       // Function to log out
+        refreshProfile, // Function to re-fetch the profile from the server
+        hasPermission, // Function to check if the user can perform an action
+    }), [user, profile, userRole, loading, signIn, signUp, signOut, refreshProfile, hasPermission]);
+
     return (
         // Provide all auth state and methods to every component in the subtree
-        <AuthContext.Provider value={{
-            user,          // The logged-in user or null
-            profile,       // The user's profile data or null
-            userRole,      // The user's admin role and permissions or null
-            loading,       // True during the initial startup auth check
-            signIn,        // Function to log in
-            signUp,        // Function to create an account and log in
-            signOut,       // Function to log out
-            refreshProfile, // Function to re-fetch the profile from the server
-            hasPermission, // Function to check if the user can perform an action
-        }}>
+        <AuthContext.Provider value={authValue}>
             {children}     {/* Render all child components inside this provider */}
         </AuthContext.Provider>
     );
