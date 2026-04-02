@@ -2,14 +2,9 @@
  * @file pages/Chat.tsx
  * @description Full-featured chat page with ChatGPT-style layout.
  * Fully responsive: Mobile, Tablet, and Desktop (all sizes).
- * 
- * Layout:
- * - Mobile (< 768px): Full screen chat, bottom input bar, slide-up contacts panel
- * - Tablet (768px - 1024px): Split view with collapsible sidebar
- * - Desktop (> 1024px): Fixed two-column layout (sidebar + chat)
  */
 
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import apiClient from '@/lib/apiClient';
@@ -18,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import {
     Send, MessageCircle, Search, Menu, X,
-    ArrowLeft, MoreVertical, Circle, Edit, Trash2, Check, Copy
+    ArrowLeft, MoreVertical, Circle, Edit, Trash2, Copy
 } from 'lucide-react';
 import {
     DropdownMenu,
@@ -37,7 +32,7 @@ interface Message {
     content:    string;
     created_at: string;
     is_read?:   number;
-    is_edited?: number; // Flag for edited messages
+    is_edited?: number;
     sender?:    { full_name?: string; email?: string };
 }
 
@@ -87,17 +82,13 @@ const ContactItem: React.FC<{
                     : 'hover:bg-muted/60 text-foreground'
             )}
         >
-            {/* Avatar */}
             <div className={cn(
                 'h-11 w-11 rounded-full flex items-center justify-center text-sm font-black shrink-0 relative',
                 isActive ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
             )}>
                 {initials}
-                {/* Online dot */}
                 <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-green-400 border-2 border-background" />
             </div>
-
-            {/* Name + last message */}
             <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                     <span className="font-bold text-sm truncate">
@@ -113,8 +104,6 @@ const ContactItem: React.FC<{
                     {contact.lastMessage || (language === 'ar' ? 'ابدأ المحادثة...' : 'Start chatting...')}
                 </p>
             </div>
-
-            {/* Unread badge */}
             {contact.unread && contact.unread > 0 ? (
                 <span className="h-5 min-w-[20px] px-1 rounded-full bg-primary text-white text-[10px] font-black flex items-center justify-center shrink-0">
                     {contact.unread}
@@ -144,7 +133,6 @@ const MessageBubble: React.FC<{
             'flex items-end gap-2 group',
             isMine ? 'flex-row-reverse' : 'flex-row'
         )}>
-            {/* Avatar */}
             <div className={cn(
                 'h-7 w-7 rounded-full flex items-center justify-center text-[10px] font-black shrink-0 mb-1 transition-opacity',
                 isMine ? 'bg-primary/20 text-primary' : 'bg-emerald-100 text-emerald-700',
@@ -153,7 +141,6 @@ const MessageBubble: React.FC<{
                 {isMine ? '👤' : initials}
             </div>
 
-            {/* Bubble + Meta */}
             <div className={cn(
                 'flex flex-col gap-1 max-w-[75%] sm:max-w-[65%] lg:max-w-[55%] relative group/bubble',
                 isMine ? 'items-end' : 'items-start'
@@ -174,7 +161,6 @@ const MessageBubble: React.FC<{
                         {msg.content}
                     </div>
 
-                    {/* Message Actions (Edit/Delete) - only for own messages */}
                     {isMine && (
                         <div className={cn(
                             "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/actions:opacity-100 max-lg:opacity-100 transition-opacity flex items-center gap-1",
@@ -204,7 +190,6 @@ const MessageBubble: React.FC<{
                         </div>
                     )}
 
-                    {/* Copy action for other people's messages */}
                     {!isMine && (
                         <div className={cn(
                             "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover/actions:opacity-100 lg:group-hover/actions:opacity-100 transition-opacity flex items-center gap-1",
@@ -238,7 +223,6 @@ const MessageBubble: React.FC<{
     );
 };
 
-// ─── Date Separator ───────────────────────────────────────────────────────────
 const DateSeparator: React.FC<{ date: string; language: string }> = ({ date, language }) => (
     <div className="flex items-center gap-3 my-4">
         <div className="flex-1 h-px bg-border/50" />
@@ -266,7 +250,6 @@ const Chat: React.FC = () => {
     const [sending, setSending] = useState(false);
 
     const bottomRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
     const textAreaRef = useRef<HTMLTextAreaElement>(null);
 
     const adjustHeight = useCallback(() => {
@@ -281,18 +264,16 @@ const Chat: React.FC = () => {
         adjustHeight();
     }, [newMessage, adjustHeight]);
 
-    // Fetch messages
     const fetchMessages = useCallback(async () => {
-        if (!user) return;
+        if (!user?.id) return;
         try {
             const data = await apiClient(`/messages/${user.id}`);
             setMessages(Array.isArray(data) ? data : []);
         } catch (err) {
             console.error('Error fetching messages:', err);
         }
-    }, [user]);
+    }, [user?.id]);
 
-    // Mock contacts from messages (group by sender)
     const buildContacts = useCallback((msgs: Message[]) => {
         const map = new Map<string, Contact>();
         msgs.forEach(m => {
@@ -314,7 +295,6 @@ const Chat: React.FC = () => {
             }
         });
 
-        // Always add a "General / Broadcast" conversation
         if (!map.has('general')) {
             map.set('general', {
                 id: 'general',
@@ -324,16 +304,15 @@ const Chat: React.FC = () => {
                 unread: 0,
             });
         }
-
         return Array.from(map.values());
-    }, [user, isAr, language]);
+    }, [user?.id, isAr, language]);
 
     useEffect(() => {
-        if (!user) return;
+        if (!user?.id) return;
         fetchMessages();
         const interval = setInterval(fetchMessages, 5000);
         return () => clearInterval(interval);
-    }, [user, fetchMessages]);
+    }, [user?.id, fetchMessages]);
 
     useEffect(() => {
         setContacts(buildContacts(messages));
@@ -348,7 +327,6 @@ const Chat: React.FC = () => {
         setSending(true);
         try {
             if (editingMessage) {
-                // UPDATE (Edit)
                 await apiClient(`/messages/${editingMessage.id}`, {
                     method: 'PATCH',
                     body: JSON.stringify({ content: newMessage.trim() }),
@@ -360,7 +338,6 @@ const Chat: React.FC = () => {
                 ));
                 setEditingMessage(null);
             } else {
-                // CREATE (New)
                 const data = await apiClient('/messages', {
                     method: 'POST',
                     body: JSON.stringify({ sender_id: user.id, content: newMessage.trim() }),
@@ -393,23 +370,27 @@ const Chat: React.FC = () => {
         toast({ title: isAr ? 'تم نسخ النص' : 'Copied to clipboard' });
     };
 
-    const filteredContacts = contacts.filter(c =>
-        (c.full_name || c.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredContacts = useMemo(() => 
+        contacts.filter(c =>
+            (c.full_name || c.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+        ),
+        [contacts, searchQuery]
     );
 
-    // Group messages by date
-    const groupedMessages = messages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
-        const d = new Date(msg.created_at).toDateString();
-        const last = acc[acc.length - 1];
-        if (last && last.date === d) {
-            last.msgs.push(msg);
-        } else {
-            acc.push({ date: d, msgs: [msg] });
-        }
-        return acc;
-    }, []);
+    const groupedMessages = useMemo(() => 
+        messages.reduce((acc: { date: string; msgs: Message[] }[], msg) => {
+            const d = new Date(msg.created_at).toDateString();
+            const last = acc[acc.length - 1];
+            if (last && last.date === d) {
+                last.msgs.push(msg);
+            } else {
+                acc.push({ date: d, msgs: [msg] });
+            }
+            return acc;
+        }, []),
+        [messages]
+    );
 
-    // ─── Not logged in ────────────────────────────────────────────────────────
     if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center">
@@ -427,17 +408,14 @@ const Chat: React.FC = () => {
         );
     }
 
-    // ─── Chat Header (mobile/tablet only) ─────────────────────────────────────
     const ChatHeader = () => (
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border/50 bg-background/80 backdrop-blur-md shrink-0">
-            {/* Mobile: back / sidebar toggle */}
             <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden p-2 rounded-xl hover:bg-muted transition-colors"
             >
                 {activeContact ? <ArrowLeft className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </button>
-
             {activeContact ? (
                 <>
                     <div className="h-9 w-9 rounded-full bg-emerald-100 flex items-center justify-center text-sm font-black text-emerald-700 shrink-0">
@@ -465,13 +443,11 @@ const Chat: React.FC = () => {
         </div>
     );
 
-    // ─── Sidebar ──────────────────────────────────────────────────────────────
     const Sidebar = ({ className = '' }: { className?: string }) => (
         <div className={cn(
             'flex flex-col bg-background border-e border-border/50 h-full',
             className
         )}>
-            {/* Sidebar Header */}
             <div className="px-4 pt-4 pb-3 border-b border-border/30 shrink-0">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="font-black text-lg text-foreground flex items-center gap-2">
@@ -487,8 +463,6 @@ const Chat: React.FC = () => {
                         <X className="h-4 w-4" />
                     </button>
                 </div>
-
-                {/* Search */}
                 <div className="relative">
                     <Search className={cn(
                         'absolute top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground',
@@ -505,8 +479,6 @@ const Chat: React.FC = () => {
                     />
                 </div>
             </div>
-
-            {/* Contacts list */}
             <div className="flex-1 overflow-y-auto px-2 py-2 space-y-0.5">
                 {filteredContacts.length === 0 ? (
                     <div className="text-center py-12 text-muted-foreground">
@@ -528,8 +500,6 @@ const Chat: React.FC = () => {
                     ))
                 )}
             </div>
-
-            {/* User profile at bottom */}
             <div className="px-4 py-3 border-t border-border/30 flex items-center gap-3 shrink-0">
                 <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-black text-primary">
                     {user.email?.[0]?.toUpperCase() ?? '?'}
@@ -542,7 +512,6 @@ const Chat: React.FC = () => {
         </div>
     );
 
-    // ─── Message Area ─────────────────────────────────────────────────────────
     const MessageArea = () => (
         <div className="flex-1 overflow-y-auto px-4 py-4 space-y-1 scroll-smooth">
             {messages.length === 0 ? (
@@ -590,7 +559,6 @@ const Chat: React.FC = () => {
         </div>
     );
 
-    // ─── Input Bar ────────────────────────────────────────────────────────────
     const renderInputBar = () => (
         <div className="px-4 py-3 border-t border-border/50 bg-background/80 backdrop-blur-md shrink-0">
             {editingMessage && (
@@ -639,29 +607,18 @@ const Chat: React.FC = () => {
                     <Send className={cn('h-4 w-4', isAr && 'scale-x-[-1]')} />
                 </Button>
             </div>
-            <p className="text-center text-[10px] text-muted-foreground mt-1.5 hidden sm:block">
-                {isAr ? 'Enter للإرسال • Shift+Enter لسطر جديد' : 'Enter to send • Shift+Enter for new line'}
-            </p>
         </div>
     );
 
-    // ─── Main Render ──────────────────────────────────────────────────────────
     return (
         <div className="h-[100dvh] flex flex-col overflow-hidden bg-background" dir={isAr ? 'rtl' : 'ltr'}>
-
-            {/* ── Mobile overlay when sidebar is open ─── */}
             {sidebarOpen && (
                 <div
                     className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden"
                     onClick={() => setSidebarOpen(false)}
                 />
             )}
-
-            {/* ── Main layout ───────────────────────────────────────────────── */}
             <div className="flex flex-1 overflow-hidden">
-
-                {/* ── SIDEBAR: sticky on desktop, slide-over on mobile/tablet ── */}
-                {/* Mobile/Tablet: fixed position slide-over */}
                 <div className={cn(
                     'fixed inset-y-0 z-50 w-[320px] transition-transform duration-300 ease-out lg:hidden',
                     isAr ? 'right-0' : 'left-0',
@@ -669,23 +626,14 @@ const Chat: React.FC = () => {
                         ? 'translate-x-0'
                         : isAr ? 'translate-x-full' : '-translate-x-full'
                 )}>
-                    {Sidebar({})}
+                    <Sidebar />
                 </div>
-
-                {/* Desktop: fixed sidebar */}
                 <div className="hidden lg:flex w-[300px] xl:w-[340px] shrink-0 border-e border-border/50">
-                    {Sidebar({ className: "flex-1" })}
+                    <Sidebar className="flex-1" />
                 </div>
-
-                {/* ── CHAT AREA ─────────────────────────────────────────────── */}
                 <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-                    {/* Header */}
-                    {ChatHeader()}
-
-                    {/* Messages */}
-                    {MessageArea()}
-
-                    {/* Input */}
+                    <ChatHeader />
+                    <MessageArea />
                     {renderInputBar()}
                 </div>
             </div>
