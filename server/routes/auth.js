@@ -5,9 +5,42 @@ const bcrypt = require('bcryptjs'); // لتشفير وفك تشفير كلمات
 const jwt = require('jsonwebtoken'); // لإنشاء رموز التحقق (Tokens)
 const crypto = require('crypto'); // للعمليات التشفيرية
 const db = require('../db'); // الربط مع قاعدة البيانات
+const nodemailer = require('nodemailer'); // لإرسال الإيميلات
 
 // 2. مفتاح التشفير الخاص بالـ JWT
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
+
+// إعداد مرسل الإيميلات (Nodemailer Transporter)
+const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || '',
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_PORT === '465',
+    auth: {
+        user: process.env.SMTP_USER || '',
+        pass: process.env.SMTP_PASS || '',
+    },
+});
+
+// دالة مساعدة لإرسال الإيميلات مع نظام احتياطي للطباعة في السجل
+async function sendEmail(to, subject, html, text) {
+    if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+        try {
+            await transporter.sendMail({
+                from: `"Smart University" <${process.env.SMTP_USER}>`,
+                to,
+                subject,
+                text,
+                html,
+            });
+            return true;
+        } catch (error) {
+            console.error('❌ خطأ في إرسال الإيميل:', error);
+        }
+    }
+    // نظام احتياطي: إذا لم يتم تكوين الـ SMTP، اطبع في الـ Console
+    console.log(`\n📧 [EMAIL SIMULATION] TO: ${to} | SUBJECT: ${subject}\n${text}\n`);
+    return false;
+}
 
 // 3. دالة مساعدة لجلب الصلاحيات الفعلية للمستخدم (دمج صلاحيات الدور مع التجاوزات)
 async function getEffectivePermissions(userId, role) {
@@ -80,6 +113,7 @@ router.post('/login', async (req, res) => {
                 full_name: user.full_name,
                 role: user.role,
                 avatar_url: user.avatar_url,
+                cover_url: user.cover_url,
                 phone: user.phone,
                 university_id: user.university_id,
                 college_id: user.college_id,
@@ -185,6 +219,23 @@ router.post('/send-register-code', async (req, res) => {
 ║          It will expire in 10 minutes.                     ║
 ╚════════════════════════════════════════════════════════════╝
         `);
+
+        // إرسال الإيميل فعلياً إذا كان البريد الإلكتروني هو المستخدم
+        if (email) {
+            await sendEmail(
+                email,
+                'Smart University - Verification Code',
+                `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #1a56db;">رمز التحقق الخاص بك</h2>
+                    <p>عزيزي المستخدم، شكراً لتسجيلك في جامعة سمارت. رمز التحقق الخاص بك هو:</p>
+                    <div style="background: #f3f4f6; padding: 15px; font-size: 24px; font-weight: bold; text-align: center; border-radius: 8px; letter-spacing: 5px; color: #111827;">
+                        ${resetCode}
+                    </div>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">هذا الرمز صالح لمدة 15 دقيقة فقط.</p>
+                </div>`,
+                `رمز التحقق الخاص بك هو: ${resetCode}`
+            );
+        }
 
         // ملاحظة: تم إزالة الكود من الرد لدواعي أمنية - يتم جلب الكود من سجلات السيرفر
         res.json({ success: true, message: 'Verification code sent' });
@@ -469,6 +520,23 @@ router.post('/forgot-password', async (req, res) => {
 ║ MESSAGE: Use code ${resetCode} to reset your password.     ║
 ╚════════════════════════════════════════════════════════════╝
         `);
+
+        // إرسال الإيميل فعلياً إذا كان البريد الإلكتروني متوفراً
+        if (user.email) {
+            await sendEmail(
+                user.email,
+                'Smart University - Password Reset',
+                `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee; border-radius: 10px;">
+                    <h2 style="color: #d97706;">استعادة كلمة المرور</h2>
+                    <p>لقد طلبت إعادة تعيين كلمة المرور الخاصة بك. رمز التحقق هو:</p>
+                    <div style="background: #fffbeb; padding: 15px; font-size: 24px; font-weight: bold; text-align: center; border-radius: 8px; letter-spacing: 5px; color: #b45309;">
+                        ${resetCode}
+                    </div>
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">هذا الرمز صالح لمدة 15 دقيقة فقط.</p>
+                </div>`,
+                `رمز استعادة كلمة المرور الخاص بك هو: ${resetCode}`
+            );
+        }
 
         // الرد على الواجهة الأمامية بالنجاح مع تحديد طريقة الإرسال والمعرف
         res.json({
