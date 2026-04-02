@@ -45,13 +45,13 @@ const Profile: React.FC = () => {
         method: 'POST',
         body: formData,
       });
-      
+
       if (type === 'avatar') {
         setAvatarUrl(data.url);
       } else {
         setCoverUrl(data.url);
       }
-      
+
       toast({ title: language === 'ar' ? 'تم رفع الصورة بنجاح' : 'Image uploaded successfully' });
     } catch (error: any) {
       toast({ title: error.message, variant: 'destructive' });

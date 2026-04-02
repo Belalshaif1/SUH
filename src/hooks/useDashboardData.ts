@@ -300,7 +300,7 @@ export const useDashboardData = () => {
         // Apply the university scope filter (only if a specific uni is selected)
         if (uniFilter !== 'all') {
             result = result.filter(item =>
-                item.university_id === uniFilter // Keep items that belong to the selected university
+                !item.university_id || item.university_id === uniFilter
             );
         }
 
