@@ -12,7 +12,7 @@ async function getByUser(req, res) {
         const query = `
             SELECT m.*, u.full_name as sender_name
             FROM messages m
-            LEFT JOIN users u ON m.sender_id = u.id
+            LEFT JOIN users u ON CAST(m.sender_id AS TEXT) = CAST(u.id AS TEXT)
             WHERE m.sender_id = $1 OR m.receiver_id = $2
             ORDER BY m.created_at ASC
             LIMIT 100`;
@@ -45,7 +45,7 @@ async function create(req, res) {
         );
 
         const newMessage = await db.getAsync(
-            'SELECT m.*, u.full_name as sender_name FROM messages m LEFT JOIN users u ON m.sender_id = u.id WHERE m.id = $1',
+            'SELECT m.*, u.full_name as sender_name FROM messages m LEFT JOIN users u ON CAST(m.sender_id AS TEXT) = CAST(u.id AS TEXT) WHERE m.id = $1',
             [id]
         );
 

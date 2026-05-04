@@ -15,9 +15,9 @@ async function getAll(req, res) {
                    u.name_ar as uni_name_ar, u.name_en as uni_name_en, u.logo_url as uni_logo_url,
                    c.name_ar as college_name_ar, c.name_en as college_name_en, c.logo_url as college_logo_url
             FROM announcements a
-            LEFT JOIN users usr ON a.created_by = usr.id
-            LEFT JOIN universities u ON a.university_id = u.id
-            LEFT JOIN colleges c ON a.college_id = c.id
+            LEFT JOIN users usr ON CAST(a.created_by AS TEXT) = CAST(usr.id AS TEXT)
+            LEFT JOIN universities u ON CAST(a.university_id AS TEXT) = CAST(u.id AS TEXT)
+            LEFT JOIN colleges c ON CAST(a.college_id AS TEXT) = CAST(c.id AS TEXT)
             ORDER BY a.is_pinned DESC, a.created_at DESC`;
         const params = [];
 

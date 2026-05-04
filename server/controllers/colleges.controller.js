@@ -9,7 +9,7 @@ const db = require('../config/db');
 /** GET /api/colleges */
 async function getAll(req, res) {
     try {
-        let query  = 'SELECT c.*, u.name_ar as university_name_ar, u.name_en as university_name_en FROM colleges c LEFT JOIN universities u ON c.university_id = u.id';
+        let query  = 'SELECT c.*, u.name_ar as university_name_ar, u.name_en as university_name_en FROM colleges c LEFT JOIN universities u ON CAST(c.university_id AS TEXT) = CAST(u.id AS TEXT)';
         let params = [];
 
         if (req.query.university_id) {

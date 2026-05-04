@@ -14,8 +14,8 @@ async function getAll(req, res) {
                    c.name_ar as college_name_ar, c.name_en as college_name_en,
                    u.name_ar as uni_name_ar, u.name_en as uni_name_en
             FROM jobs j
-            LEFT JOIN colleges c ON j.college_id = c.id
-            LEFT JOIN universities u ON c.university_id = u.id
+            LEFT JOIN colleges c ON CAST(j.college_id AS TEXT) = CAST(c.id AS TEXT)
+            LEFT JOIN universities u ON CAST(c.university_id AS TEXT) = CAST(u.id AS TEXT)
             ORDER BY j.is_pinned DESC, j.created_at DESC`;
         const jobsList = await db.query(query);
 

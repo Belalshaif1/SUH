@@ -20,7 +20,7 @@ async function getAll(req, res) {
         const logs = await db.query(
             `SELECT e.*, u.full_name AS user_name, u.email AS user_email
              FROM error_logs e
-             LEFT JOIN users u ON e.user_id = u.id
+             LEFT JOIN users u ON CAST(e.user_id AS TEXT) = CAST(u.id AS TEXT)
              ORDER BY e.created_at DESC
              LIMIT $1 OFFSET $2`,
             [limit, offset]

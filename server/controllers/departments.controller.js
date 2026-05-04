@@ -9,7 +9,7 @@ const db = require('../config/db');
 /** GET /api/departments */
 async function getAll(req, res) {
     try {
-        let query  = 'SELECT d.*, c.name_ar as college_name_ar, c.name_en as college_name_en, c.university_id FROM departments d LEFT JOIN colleges c ON d.college_id = c.id';
+        let query  = 'SELECT d.*, c.name_ar as college_name_ar, c.name_en as college_name_en, c.university_id FROM departments d LEFT JOIN colleges c ON CAST(d.college_id AS TEXT) = CAST(c.id AS TEXT)';
         let params = [];
 
         if (req.query.college_id) {
@@ -78,7 +78,7 @@ async function update(req, res) {
     try {
         const { name_ar, name_en, description_ar, description_en, study_plan_url, logo_url } = req.body;
         const target = await db.getAsync(
-            'SELECT d.id, c.university_id, d.college_id FROM departments d JOIN colleges c ON d.college_id = c.id WHERE d.id = $1',
+            'SELECT d.id, c.university_id, d.college_id FROM departments d JOIN colleges c ON CAST(d.college_id AS TEXT) = CAST(c.id AS TEXT) WHERE d.id = $1',
             [req.params.id]
         );
 

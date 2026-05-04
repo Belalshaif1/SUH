@@ -10,7 +10,7 @@ const db = require('../config/db');
 async function getByJob(req, res) {
     try {
         const job = await db.getAsync(
-            'SELECT j.id, c.university_id, j.college_id FROM jobs j JOIN colleges c ON j.college_id = c.id WHERE j.id = $1',
+            'SELECT j.id, c.university_id, j.college_id FROM jobs j JOIN colleges c ON CAST(j.college_id AS TEXT) = CAST(c.id AS TEXT) WHERE j.id = $1',
             [req.params.jobId]
         );
 
@@ -26,7 +26,7 @@ async function getByJob(req, res) {
         }
 
         const applications = await db.query(
-            'SELECT a.*, u.full_name as applicant_name, u.email as applicant_email FROM job_applications a JOIN users u ON a.user_id = u.id WHERE a.job_id = $1 ORDER BY a.created_at DESC',
+            'SELECT a.*, u.full_name as applicant_name, u.email as applicant_email FROM job_applications a JOIN users u ON CAST(a.user_id AS TEXT) = CAST(u.id AS TEXT) WHERE a.job_id = $1 ORDER BY a.created_at DESC',
             [req.params.jobId]
         );
 
@@ -62,7 +62,7 @@ async function apply(req, res) {
 
         // Notify relevant admins
         const jobInfo = await db.getAsync(
-            'SELECT j.title_ar, j.college_id, c.university_id FROM jobs j JOIN colleges c ON j.college_id = c.id WHERE j.id = $1',
+            'SELECT j.title_ar, j.college_id, c.university_id FROM jobs j JOIN colleges c ON CAST(j.college_id AS TEXT) = CAST(c.id AS TEXT) WHERE j.id = $1',
             [job_id]
         );
 
@@ -93,7 +93,7 @@ async function updateStatus(req, res) {
     try {
         const { status } = req.body;
         const target = await db.getAsync(
-            'SELECT a.*, j.title_ar as job_title, j.college_id FROM job_applications a JOIN jobs j ON a.job_id = j.id WHERE a.id = $1',
+            'SELECT a.*, j.title_ar as job_title, j.college_id FROM job_applications a JOIN jobs j ON CAST(a.job_id AS TEXT) = CAST(j.id AS TEXT) WHERE a.id = $1',
             [req.params.id]
         );
 

@@ -30,6 +30,7 @@ const { initBackupScheduler } = require('./backupScheduler'); // استيراد 
 
 
 const app = express(); // إنشاء كائن تطبيق Express
+app.set('trust proxy', 1); // الثقة في البروكسي (مثل Railway) للحصول على الـ IP الصحيح للـ Rate Limiting
 const PORT = process.env.PORT || 5000; // تحديد المنفذ (من البيئة أو 5000 افتراضياً)
 
 // --- Rate Limiting ---
