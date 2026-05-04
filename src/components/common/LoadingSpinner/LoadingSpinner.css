@@ -1,0 +1,41 @@
+/* ─── LoadingSpinner Component ─────────────────────────────────────────────── */
+
+.loading-spinner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-spinner__ring {
+    display: block;
+    border-radius: 50%;
+    border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: var(--color-primary, #6366f1);
+    animation: spin 0.75s linear infinite;
+}
+
+/* ─── Size variants ─── */
+
+.loading-spinner--sm .loading-spinner__ring { width: 1rem;  height: 1rem;  border-width: 2px; }
+.loading-spinner--md .loading-spinner__ring { width: 1.75rem; height: 1.75rem; }
+.loading-spinner--lg .loading-spinner__ring { width: 3rem;  height: 3rem;  border-width: 4px; }
+
+/* ─── Animation ─── */
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ─── Screen-reader only helper ─── */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+}

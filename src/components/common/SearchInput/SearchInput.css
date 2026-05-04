@@ -1,0 +1,63 @@
+/* ─── SearchInput Component ────────────────────────────────────────────────── */
+
+.search-input {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--color-surface, #f9fafb);
+    border: 1.5px solid var(--color-border, #e5e7eb);
+    border-radius: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input:focus-within {
+    border-color: var(--color-primary, #6366f1);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+}
+
+.search-input__icon {
+    font-size: 0.9rem;
+    opacity: 0.5;
+    flex-shrink: 0;
+    margin-inline-end: 0.5rem;
+}
+
+.search-input__field {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: 0.9rem;
+    color: var(--color-text-primary, #1f2937);
+    min-width: 0;
+}
+
+.search-input__field::placeholder {
+    color: var(--color-text-muted, #9ca3af);
+}
+
+/* Remove the browser's native clear button on search inputs */
+.search-input__field::-webkit-search-cancel-button {
+    display: none;
+}
+
+.search-input__clear {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.75rem;
+    color: var(--color-text-muted, #9ca3af);
+    padding: 0.2rem;
+    border-radius: 50%;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+}
+
+.search-input__clear:hover {
+    color: var(--color-text-primary, #1f2937);
+    background: rgba(0, 0, 0, 0.06);
+}

@@ -1,0 +1,35 @@
+/* ─── PageHeader Component ─────────────────────────────────────────────────── */
+
+.page-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--color-border, #e5e7eb);
+}
+
+.page-header__content {
+    flex: 1 1 min-content;
+}
+
+.page-header__title {
+    font-size: 2rem;
+    margin: 0 0 0.5rem 0;
+}
+
+.page-header__description {
+    font-size: 1rem;
+    color: var(--color-text-muted, #6b7280);
+    margin: 0;
+    max-width: 600px;
+    line-height: 1.6;
+}
+
+.page-header__actions {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}

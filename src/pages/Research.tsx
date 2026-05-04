@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient, { getMediaUrl } from '@/lib/apiClient';
+import { getMediaUrl } from '@/lib/apiClient';
+import { UniversitiesService, CollegesService, DepartmentsService, ResearchService } from '@/services';
+import EmptyState from '@/components/common/EmptyState/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { FileText, Download, User, Eye, Search, BookOpen, Calendar, Filter, SortAsc } from 'lucide-react';
@@ -24,12 +26,12 @@ const Research: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<string>('newest');
 
   useEffect(() => {
-    apiClient('/universities').then(setUniversities).catch(console.error);
+    UniversitiesService.getAll().then(setUniversities).catch(console.error);
   }, []);
 
   useEffect(() => {
     if (selectedUni !== 'all') {
-      apiClient('/colleges', { params: { university_id: selectedUni } })
+      CollegesService.getAll(selectedUni)
         .then(setColleges)
         .catch(console.error);
     } else {
@@ -42,7 +44,7 @@ const Research: React.FC = () => {
 
   useEffect(() => {
     if (selectedCollege !== 'all') {
-      apiClient('/departments', { params: { college_id: selectedCollege } })
+      DepartmentsService.getAll(selectedCollege)
         .then(setDepartments)
         .catch(console.error);
     } else {
@@ -58,7 +60,7 @@ const Research: React.FC = () => {
     if (selectedCollege !== 'all') params.college_id = selectedCollege;
     if (selectedDept !== 'all') params.department_id = selectedDept;
 
-    apiClient('/research', { params })
+    ResearchService.getAll(params)
       .then(data => {
         let sorted = [...(data || [])];
         if (sortOrder === 'newest') sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -281,17 +283,13 @@ const Research: React.FC = () => {
             ))}
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
-            <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
-              <BookOpen className="h-12 w-12 text-primary/10" />
-            </div>
-            <h3 className="text-4xl font-bold text-primary mb-6 tracking-tight">{isAr ? 'لا توجد نتائج' : 'No Results Found'}</h3>
-            <p className="text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-              {searchTerm
-                ? (isAr ? `لم نجد أي أبحاث تطابق "${searchTerm}". جرب كلمات مفتاحية أخرى.` : `We couldn't find any research matching "${searchTerm}". Try different keywords.`)
-                : (isAr ? 'لا توجد أبحاث متاحة في هذا القسم حالياً. يرجى مراجعة التصنيفات الأخرى.' : 'No research available in this section yet. Please check other categories.')}
-            </p>
-          </div>
+          <EmptyState
+            icon={<div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-10 border border-primary/10"><BookOpen className="h-12 w-12 text-primary/40" /></div>}
+            title={isAr ? 'لا توجد نتائج' : 'No Results Found'}
+            description={searchTerm
+              ? (isAr ? `لم نجد أي أبحاث تطابق "${searchTerm}". جرب كلمات مفتاحية أخرى.` : `We couldn't find any research matching "${searchTerm}". Try different keywords.`)
+              : (isAr ? 'لا توجد أبحاث متاحة في هذا القسم حالياً. يرجى مراجعة التصنيفات الأخرى.' : 'No research available in this section yet. Please check other categories.')}
+          />
         )}
       </div>
 

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient, { getMediaUrl } from '@/lib/apiClient';
+import { getMediaUrl } from '@/lib/apiClient';
+import { apiGet } from '@/services/api.service';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Info, Mail, Globe, Code, FileText } from 'lucide-react';
@@ -13,7 +14,7 @@ const About: React.FC = () => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const aboutData = await apiClient('/about');
+                const aboutData = await apiGet('/about');
                 setData(aboutData);
             } catch (error) {
                 console.error('Error fetching about data:', error);

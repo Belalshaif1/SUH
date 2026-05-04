@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient, { getMediaUrl } from '@/lib/apiClient';
+import { getMediaUrl } from '@/lib/apiClient';
+import { UniversitiesService, CollegesService, DepartmentsService, GraduatesService } from '@/services';
+import EmptyState from '@/components/common/EmptyState/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { GraduationCap, Search, User, Calendar, BookOpen, Award, Filter, SortAsc } from 'lucide-react';
 import { Input } from '@/components/ui/input';
@@ -21,12 +23,12 @@ const Graduates: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<string>('newest');
 
   useEffect(() => {
-    apiClient('/universities').then(setUniversities).catch(console.error);
+    UniversitiesService.getAll().then(setUniversities).catch(console.error);
   }, []);
 
   useEffect(() => {
     if (selectedUni !== 'all') {
-      apiClient('/colleges', { params: { university_id: selectedUni } })
+      CollegesService.getAll(selectedUni)
         .then(setColleges)
         .catch(console.error);
     } else {
@@ -39,7 +41,7 @@ const Graduates: React.FC = () => {
 
   useEffect(() => {
     if (selectedCollege !== 'all') {
-      apiClient('/departments', { params: { college_id: selectedCollege } })
+      DepartmentsService.getAll(selectedCollege)
         .then(setDepartments)
         .catch(console.error);
     } else {
@@ -55,7 +57,7 @@ const Graduates: React.FC = () => {
     if (selectedCollege !== 'all') params.college_id = selectedCollege;
     if (selectedDept !== 'all') params.department_id = selectedDept;
 
-    apiClient('/graduates', { params })
+    GraduatesService.getAll(params)
       .then(data => {
         let sorted = [...(data || [])];
         if (sortOrder === 'newest') sorted.sort((a, b) => new Date(b.created_at || b.id).getTime() - new Date(a.created_at || a.id).getTime());
@@ -250,17 +252,13 @@ const Graduates: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
-          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
-            <GraduationCap className="h-12 w-12 text-primary/10" />
-          </div>
-          <h3 className="text-4xl font-bold text-primary mb-6 tracking-tight">{isAr ? 'لا توجد نتائج' : 'No Results Found'}</h3>
-          <p className="text-xl text-muted-foreground max-w-lg mx-auto leading-relaxed">
-            {searchTerm
-              ? (isAr ? `لم نجد أي خريجين يطابقون "${searchTerm}". جرب أسماء أخرى.` : `We couldn't find any graduates matching "${searchTerm}". Try different names.`)
-              : (isAr ? 'لا يوجد خريجون مسجلون في هذا القسم حالياً. يرجى مراجعة التصنيفات الأخرى.' : 'No graduates registered in this section yet. Please check other categories.')}
-          </p>
-        </div>
+        <EmptyState
+          icon={<div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-10 border border-primary/10"><GraduationCap className="h-12 w-12 text-primary/40" /></div>}
+          title={isAr ? 'لا توجد نتائج' : 'No Results Found'}
+          description={searchTerm
+            ? (isAr ? `لم نجد أي خريجين يطابقون "${searchTerm}". جرب أسماء أخرى.` : `We couldn't find any graduates matching "${searchTerm}". Try different names.`)
+            : (isAr ? 'لا يوجد خريجون مسجلون في هذا القسم حالياً. يرجى مراجعة التصنيفات الأخرى.' : 'No graduates registered in this section yet. Please check other categories.')}
+        />
       )}
     </div>
   );

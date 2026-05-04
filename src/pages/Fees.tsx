@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import { FeesService } from '@/services';
+import EmptyState from '@/components/common/EmptyState/EmptyState';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -15,7 +16,7 @@ const Fees: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiClient('/fees')
+    FeesService.getAll()
       .then(data => {
         setFees(data || []);
         setLoading(false);
@@ -137,15 +138,11 @@ const Fees: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
-          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
-            <DollarSign className="h-12 w-12 text-primary/10" />
-          </div>
-          <h3 className="text-4xl font-bold text-primary mb-6">{isAr ? 'لا يوجد بيانات رسوم' : 'No Fees Data'}</h3>
-          <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
-            {searchTerm ? (isAr ? 'حاول البحث بكلمات أخرى.' : 'Try searching for other keywords.') : t('fees.no_fees')}
-          </p>
-        </div>
+        <EmptyState
+          icon={<div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-10 border border-primary/10"><DollarSign className="h-12 w-12 text-primary/40" /></div>}
+          title={isAr ? 'لا يوجد بيانات رسوم' : 'No Fees Data'}
+          description={searchTerm ? (isAr ? 'حاول البحث بكلمات أخرى.' : 'Try searching for other keywords.') : t('fees.no_fees')}
+        />
       )}
     </div>
   );

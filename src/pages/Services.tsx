@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient from '@/lib/apiClient';
+import { ServicesService } from '@/services';
+import EmptyState from '@/components/common/EmptyState/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Wrench, ChevronRight } from 'lucide-react';
@@ -12,7 +13,7 @@ const Services: React.FC = () => {
   const Arrow = ChevronRight;
 
   useEffect(() => {
-    apiClient('/services')
+    ServicesService.getAll()
       .then(data => setServices(data || []))
       .catch(err => console.error("Error fetching services:", err));
   }, []);
@@ -75,15 +76,11 @@ const Services: React.FC = () => {
           </Card>
         ))}
         {services.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
-            <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
-              <Wrench className="h-12 w-12 text-primary/10" />
-            </div>
-            <h3 className="text-4xl font-bold text-primary mb-6">{isAr ? 'لا توجد خدمات' : 'No Services Available'}</h3>
-            <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
-              {t('services.no_services')}
-            </p>
-          </div>
+          <EmptyState
+            icon={<div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-10 border border-primary/10"><Wrench className="h-12 w-12 text-primary/40" /></div>}
+            title={isAr ? 'لا توجد خدمات' : 'No Services Available'}
+            description={t('services.no_services')}
+          />
         )}
       </div>
     </div>

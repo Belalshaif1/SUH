@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient, { getMediaUrl } from '@/lib/apiClient';
+import { getMediaUrl } from '@/lib/apiClient';
+import { AnnouncementsService } from '@/services';
+import EmptyState from '@/components/common/EmptyState/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Megaphone, Calendar, ArrowRight, ArrowLeft, Image as ImageIcon, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +14,7 @@ const Announcements: React.FC = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
 
   useEffect(() => {
-    apiClient('/announcements')
+    AnnouncementsService.getAll()
       .then(data => {
         setAnnouncements(data || []);
         setLoading(false);
@@ -137,16 +139,11 @@ const Announcements: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
-          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
-            <Megaphone className="h-12 w-12 text-primary/10" />
-          </div>
-          <h3 className="text-4xl font-bold text-primary mb-6">{isAr ? 'لا توجد إعلانات حالياً' : 'No Announcements Yet'}</h3>
-          <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
-            {isAr ? 'سيتم نشر الإعلانات الهامة هنا قريباً. يرجى المراجعة لاحقاً.'
-              : 'Important announcements will be posted here soon. Please check back later.'}
-          </p>
-        </div>
+        <EmptyState
+          icon={<div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-10 border border-primary/10"><Megaphone className="h-12 w-12 text-primary/40" /></div>}
+          title={isAr ? 'لا توجد إعلانات حالياً' : 'No Announcements Yet'}
+          description={isAr ? 'سيتم نشر الإعلانات الهامة هنا قريباً. يرجى المراجعة لاحقاً.' : 'Important announcements will be posted here soon. Please check back later.'}
+        />
       )}
     </div>
   );

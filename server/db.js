@@ -1,23 +1,75 @@
-const { Pool } = require('pg'); 
-const bcrypt = require('bcryptjs'); 
-const { v4: uuidv4 } = require('uuid'); 
+const sqlite3 = require('sqlite3').verbose();
+const { Pool } = require('pg');
+const path = require('path');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
-const pool = new Pool({ 
-    connectionString: process.env.DATABASE_URL, 
-    ssl: process.env.DATABASE_URL?.includes('localhost') ? false : { rejectUnauthorized: false } 
-});
+const isPostgres = process.env.DATABASE_URL && (process.env.DATABASE_URL.startsWith('postgres://') || process.env.DATABASE_URL.startsWith('postgresql://'));
 
-pool.on('error', (err) => { 
-    console.error('❌ خطأ غير متوقع في قاعدة البيانات:', err); 
-});
+let db_conn;
+let pool;
 
-async function createTables() { 
-    const client = await pool.connect(); 
-    try { 
-        await client.query('BEGIN'); 
+if (isPostgres) {
+    console.log('🐘 استخدام قاعدة بيانات PostgreSQL');
+    pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: {
+            rejectUnauthorized: false
+        }
+    });
+} else {
+    const dbPath = path.join(__dirname, 'database.sqlite');
+    db_conn = new sqlite3.Database(dbPath);
+    console.log('📦 استخدام قاعدة بيانات SQLite:', dbPath);
+}
 
-        await client.query(`CREATE TABLE IF NOT EXISTS users ( 
-            id UUID PRIMARY KEY, 
+// Wrapper to support PostgreSQL-style parameters ($1, $2) and Promises
+const runQuery = (sql, params = []) => {
+    if (isPostgres) {
+        return pool.query(sql, params).then(res => res.rows);
+    }
+    return new Promise((resolve, reject) => {
+        const convertedSql = sql.replace(/\$\d+/g, '?');
+        db_conn.all(convertedSql, params, (err, rows) => {
+            if (err) reject(err);
+            else resolve(rows);
+        });
+    });
+};
+
+const getRow = (sql, params = []) => {
+    if (isPostgres) {
+        return pool.query(sql, params).then(res => res.rows[0]);
+    }
+    return new Promise((resolve, reject) => {
+        const convertedSql = sql.replace(/\$\d+/g, '?');
+        db_conn.get(convertedSql, params, (err, row) => {
+            if (err) reject(err);
+            else resolve(row);
+        });
+    });
+};
+
+const runAsync = (sql, params = []) => {
+    if (isPostgres) {
+        // Postgres uses 'INSERT ... RETURNING id' if needed, but for general compatibility:
+        return pool.query(sql, params).then(res => ({ lastID: null, changes: res.rowCount }));
+    }
+    return new Promise((resolve, reject) => {
+        const convertedSql = sql.replace(/\$\d+/g, '?');
+        db_conn.run(convertedSql, params, function(err) {
+            if (err) reject(err);
+            else resolve({ lastID: this.lastID, changes: this.changes });
+        });
+    });
+};
+
+async function createTables() {
+    try {
+        if (!isPostgres) await runAsync('BEGIN TRANSACTION');
+
+        const userTable = `CREATE TABLE IF NOT EXISTS users ( 
+            id TEXT PRIMARY KEY, 
             email TEXT UNIQUE, 
             password TEXT NOT NULL, 
             full_name TEXT, 
@@ -25,18 +77,21 @@ async function createTables() {
             phone TEXT, 
             is_active INTEGER DEFAULT 1, 
             role TEXT DEFAULT 'user', 
-            university_id UUID, 
-            college_id UUID, 
-            department_id UUID, 
+            university_id TEXT, 
+            college_id TEXT, 
+            department_id TEXT, 
             reset_token TEXT, 
-            reset_token_expires TIMESTAMPTZ, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            created_by UUID 
-        )`); 
+            reset_token_expires TEXT, 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            created_by TEXT,
+            cover_url TEXT
+        )`;
 
-        await client.query(`CREATE TABLE IF NOT EXISTS universities (
-            id UUID PRIMARY KEY, 
+        await runAsync(userTable);
+
+        await runAsync(`CREATE TABLE IF NOT EXISTS universities (
+            id TEXT PRIMARY KEY, 
             name_ar TEXT NOT NULL, 
             name_en TEXT, 
             description_ar TEXT, 
@@ -44,13 +99,13 @@ async function createTables() {
             guide_pdf_url TEXT, 
             logo_url TEXT, 
             is_pinned INTEGER DEFAULT 0, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP 
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS colleges (
-            id UUID PRIMARY KEY, 
-            university_id UUID NOT NULL REFERENCES universities (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS colleges (
+            id TEXT PRIMARY KEY, 
+            university_id TEXT NOT NULL REFERENCES universities (id) ON DELETE CASCADE, 
             name_ar TEXT NOT NULL, 
             name_en TEXT, 
             description_ar TEXT, 
@@ -58,72 +113,73 @@ async function createTables() {
             guide_pdf_url TEXT, 
             logo_url TEXT, 
             is_pinned INTEGER DEFAULT 0, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS departments (
-            id UUID PRIMARY KEY, 
-            college_id UUID NOT NULL REFERENCES colleges (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS departments (
+            id TEXT PRIMARY KEY, 
+            college_id TEXT NOT NULL REFERENCES colleges (id) ON DELETE CASCADE, 
             name_ar TEXT NOT NULL, 
             name_en TEXT, 
             description_ar TEXT, 
             description_en TEXT, 
             study_plan_url TEXT, 
             logo_url TEXT, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS announcements (
-            id UUID PRIMARY KEY, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS announcements (
+            id TEXT PRIMARY KEY, 
             title_ar TEXT NOT NULL, 
             title_en TEXT, 
             content_ar TEXT NOT NULL, 
             content_en TEXT, 
             scope TEXT DEFAULT 'global', 
-            university_id UUID REFERENCES universities (id) ON DELETE CASCADE, 
-            college_id UUID REFERENCES colleges (id) ON DELETE CASCADE, 
+            university_id TEXT REFERENCES universities (id) ON DELETE CASCADE, 
+            college_id TEXT REFERENCES colleges (id) ON DELETE CASCADE, 
             image_url TEXT, 
             file_url TEXT, 
             is_pinned INTEGER DEFAULT 0, 
-            created_by UUID REFERENCES users (id) ON DELETE SET NULL, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_by TEXT REFERENCES users (id) ON DELETE SET NULL, 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS graduates (
-            id UUID PRIMARY KEY, 
-            department_id UUID NOT NULL REFERENCES departments (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS graduates (
+            id TEXT PRIMARY KEY, 
+            department_id TEXT NOT NULL REFERENCES departments (id) ON DELETE CASCADE, 
             full_name_ar TEXT NOT NULL, 
             full_name_en TEXT, 
             graduation_year INTEGER NOT NULL, 
             gpa REAL, 
             specialization_ar TEXT, 
             specialization_en TEXT, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS research (
-            id UUID PRIMARY KEY, 
-            department_id UUID NOT NULL REFERENCES departments (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS research (
+            id TEXT PRIMARY KEY, 
+            department_id TEXT NOT NULL REFERENCES departments (id) ON DELETE CASCADE, 
             title_ar TEXT NOT NULL, 
             title_en TEXT, 
             abstract_ar TEXT, 
             abstract_en TEXT, 
             author_name TEXT NOT NULL, 
             published INTEGER DEFAULT 1, 
-            publish_date TIMESTAMPTZ, 
+            publish_date TEXT, 
             pdf_url TEXT, 
             students TEXT, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            is_pinned INTEGER DEFAULT 0,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS jobs (
-            id UUID PRIMARY KEY, 
-            college_id UUID NOT NULL REFERENCES colleges (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS jobs (
+            id TEXT PRIMARY KEY, 
+            college_id TEXT NOT NULL REFERENCES colleges (id) ON DELETE CASCADE, 
             title_ar TEXT NOT NULL, 
             title_en TEXT, 
             description_ar TEXT NOT NULL, 
@@ -132,43 +188,43 @@ async function createTables() {
             requirements_en TEXT, 
             is_active INTEGER DEFAULT 1, 
             is_pinned INTEGER DEFAULT 0, 
-            deadline TIMESTAMPTZ, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            deadline TEXT, 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS job_applications (
-            id UUID PRIMARY KEY, 
-            job_id UUID NOT NULL REFERENCES jobs (id) ON DELETE CASCADE, 
-            user_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS job_applications (
+            id TEXT PRIMARY KEY, 
+            job_id TEXT NOT NULL REFERENCES jobs (id) ON DELETE CASCADE, 
+            user_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE, 
             file_url TEXT NOT NULL, 
             status TEXT DEFAULT 'pending', 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS fees (
-            id UUID PRIMARY KEY, 
-            department_id UUID NOT NULL REFERENCES departments (id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS fees (
+            id TEXT PRIMARY KEY, 
+            department_id TEXT NOT NULL REFERENCES departments (id) ON DELETE CASCADE, 
             fee_type TEXT NOT NULL, 
             amount REAL NOT NULL, 
             currency TEXT DEFAULT 'IQD', 
             academic_year TEXT, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS error_logs (
-            id UUID PRIMARY KEY, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS error_logs (
+            id TEXT PRIMARY KEY, 
             message TEXT NOT NULL, 
             stack_trace TEXT, 
             source TEXT, 
             user_id TEXT, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS services (
-            id UUID PRIMARY KEY, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS services (
+            id TEXT PRIMARY KEY, 
             title_ar TEXT NOT NULL, 
             title_en TEXT, 
             description_ar TEXT, 
@@ -176,21 +232,21 @@ async function createTables() {
             icon TEXT, 
             link TEXT, 
             is_active INTEGER DEFAULT 1, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS messages (
-            id UUID PRIMARY KEY, 
-            sender_id UUID NOT NULL REFERENCES users (id) ON DELETE CASCADE, 
-            receiver_id UUID, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS messages (
+            id TEXT PRIMARY KEY, 
+            sender_id TEXT NOT NULL REFERENCES users (id) ON DELETE CASCADE, 
+            receiver_id TEXT, 
             content TEXT NOT NULL, 
             is_read INTEGER DEFAULT 0, 
             is_edited INTEGER DEFAULT 0, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS about_us (
-            id UUID PRIMARY KEY, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS about_us (
+            id TEXT PRIMARY KEY, 
             content_ar TEXT, 
             content_en TEXT, 
             developer_name_ar TEXT, 
@@ -201,72 +257,44 @@ async function createTables() {
             developer_cv_url TEXT
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS role_permissions (
-            id UUID PRIMARY KEY, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS role_permissions (
+            id TEXT PRIMARY KEY, 
             role TEXT NOT NULL, 
             permission_key TEXT NOT NULL, 
             is_enabled INTEGER DEFAULT 0, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
-            updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP, 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP, 
+            updated_at TEXT DEFAULT CURRENT_TIMESTAMP, 
             UNIQUE(role, permission_key) 
         )`); 
 
-        await client.query(`CREATE TABLE IF NOT EXISTS user_permissions (
-            id UUID PRIMARY KEY, 
-            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE, 
+        await runAsync(`CREATE TABLE IF NOT EXISTS user_permissions (
+            id TEXT PRIMARY KEY, 
+            user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE, 
             permission_key TEXT NOT NULL, 
             is_enabled INTEGER DEFAULT 1, 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
         )`); 
 
-        // Migration: Ensure messages has is_edited column
-        try {
-            await client.query('ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_edited INTEGER DEFAULT 0');
-        } catch (e) {
-            // Column might already exist or other error
-        }
+        await runAsync(`CREATE TABLE IF NOT EXISTS verification_codes (
+            id TEXT PRIMARY KEY,
+            identifier TEXT NOT NULL,
+            code TEXT NOT NULL,
+            expires_at TEXT NOT NULL,
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )`);
 
-        // Migration: Ensure research has students column
-        try {
-            await client.query('ALTER TABLE research ADD COLUMN IF NOT EXISTS students TEXT');
-        } catch (e) {
-            // Column might already exist
-        }
+        await runAsync(`CREATE TABLE IF NOT EXISTS backup_logs (
+            id TEXT PRIMARY KEY, 
+            filename TEXT NOT NULL, 
+            size_bytes INTEGER, 
+            status TEXT DEFAULT 'success', 
+            triggered_by TEXT DEFAULT 'scheduler', 
+            created_at TEXT DEFAULT CURRENT_TIMESTAMP
+        )`); 
 
-        // Migration: Ensure announcements has file_url column
-        try {
-            await client.query('ALTER TABLE announcements ADD COLUMN IF NOT EXISTS file_url TEXT');
-        } catch (e) {}
+        if (!isPostgres) await runAsync('COMMIT'); 
 
-        // Migration: Ensure users has cover_url column
-        try {
-            await client.query('ALTER TABLE users ADD COLUMN IF NOT EXISTS cover_url TEXT');
-        } catch (e) {}
-
-        // Migration: Create verification_codes table
-        try {
-            await client.query(`CREATE TABLE IF NOT EXISTS verification_codes (
-                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                identifier VARCHAR(255) NOT NULL,
-                code VARCHAR(10) NOT NULL,
-                expires_at TIMESTAMP NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )`);
-        } catch (e) {}
-
-        // Migration: Ensure manage_services permission exists for all roles
-        const rolesForMigration = ['super_admin', 'university_admin', 'college_admin', 'department_admin'];
-        for (const role of rolesForMigration) {
-            await client.query(
-                `INSERT INTO role_permissions (id, role, permission_key, is_enabled) 
-                 VALUES ($1, $2, $3, $4) 
-                 ON CONFLICT (role, permission_key) DO NOTHING`,
-                [uuidv4(), role, 'manage_services', (role === 'super_admin' || role === 'university_admin') ? 1 : 0]
-            );
-        }
-
-        await client.query('COMMIT'); 
-
+        // SQL indexes (Works for both SQLite and Postgres)
         const indexes = [
             'CREATE INDEX IF NOT EXISTS idx_colleges_university_id ON colleges(university_id)',
             'CREATE INDEX IF NOT EXISTS idx_departments_college_id ON departments(college_id)',
@@ -281,36 +309,39 @@ async function createTables() {
             'CREATE INDEX IF NOT EXISTS idx_users_college_id ON users(college_id)',
         ]; 
         for (const idx of indexes) { 
-            try { await pool.query(idx); } catch(e) {} 
+            try { await runAsync(idx); } catch(e) {} 
         }
 
-        await pool.query(`CREATE TABLE IF NOT EXISTS backup_logs (
-            id UUID PRIMARY KEY, 
-            filename TEXT NOT NULL, 
-            size_bytes BIGINT, 
-            status TEXT DEFAULT 'success', 
-            triggered_by TEXT DEFAULT 'scheduler', 
-            created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
-        )`); 
+        // Migration: Ensure manage_services permission exists for all roles
+        const rolesForMigration = ['super_admin', 'university_admin', 'college_admin', 'department_admin'];
+        for (const role of rolesForMigration) {
+            const conflictClause = isPostgres ? 'ON CONFLICT (role, permission_key) DO NOTHING' : '';
+            const insertSql = isPostgres 
+                ? `INSERT INTO role_permissions (id, role, permission_key, is_enabled) VALUES ($1, $2, $3, $4) ${conflictClause}`
+                : `INSERT OR IGNORE INTO role_permissions (id, role, permission_key, is_enabled) VALUES ($1, $2, $3, $4)`;
+            
+            await runAsync(
+                insertSql,
+                [uuidv4(), role, 'manage_services', (role === 'super_admin' || role === 'university_admin') ? 1 : 0]
+            );
+        }
 
         await insertDefaultData(); 
-        console.log('✅ تم الانتهاء من إعداد جداول PostgreSQL.'); 
+        console.log(`✅ تم الانتهاء من إعداد جداول ${isPostgres ? 'PostgreSQL' : 'SQLite'}.`); 
     } catch (e) { 
-        await client.query('ROLLBACK'); 
+        if (!isPostgres) try { await runAsync('ROLLBACK'); } catch(rollErr) {}
         console.error('❌ فشل في إنشاء الجداول:', e.message); 
-    } finally { 
-        client.release(); 
     }
 }
 
 async function insertDefaultData() { 
     try { 
-        const adminCheck = await pool.query("SELECT count(*) FROM users WHERE role = 'super_admin'"); 
-        if (parseInt(adminCheck.rows[0].count) === 0) { 
+        const adminCheck = await getRow("SELECT count(*) as count FROM users WHERE role = 'super_admin'"); 
+        if (parseInt(adminCheck.count) === 0) { 
             const adminId = uuidv4(); 
             const passwordHash = bcrypt.hashSync('Bilal147', 10); 
 
-            await pool.query(
+            await runAsync(
                 `INSERT INTO users (id, email, password, full_name, role, is_active) VALUES ($1, $2, $3, $4, $5, $6)`,
                 [adminId, 'Belal@admin.com', passwordHash, 'بلال شائف', 'super_admin', 1]
             ); 
@@ -343,8 +374,13 @@ async function insertDefaultData() {
                         }
                     }
 
-                    await pool.query(
-                        `INSERT INTO role_permissions (id, role, permission_key, is_enabled) VALUES ($1, $2, $3, $4) ON CONFLICT (role, permission_key) DO NOTHING`,
+                    const conflictClause = isPostgres ? 'ON CONFLICT (role, permission_key) DO NOTHING' : '';
+                    const insertSql = isPostgres 
+                        ? `INSERT INTO role_permissions (id, role, permission_key, is_enabled) VALUES ($1, $2, $3, $4) ${conflictClause}`
+                        : `INSERT OR IGNORE INTO role_permissions (id, role, permission_key, is_enabled) VALUES ($1, $2, $3, $4)`;
+
+                    await runAsync(
+                        insertSql,
                         [uuidv4(), role, perm, isEnabled]
                     ); 
                 }
@@ -356,11 +392,21 @@ async function insertDefaultData() {
 }
 
 const db = { 
-    query: (text, params) => pool.query(text, params).then(res => res.rows), 
-    getAsync: (text, params) => pool.query(text, params).then(res => res.rows[0]), 
-    runAsync: (text, params) => pool.query(text, params).then(res => ({ lastID: null, changes: res.rowCount })), 
-    pool 
+    query: runQuery, 
+    getAsync: getRow, 
+    runAsync: runAsync, 
+    close: () => new Promise((resolve, reject) => {
+        if (isPostgres) {
+            pool.end().then(resolve).catch(reject);
+        } else {
+            db_conn.close((err) => {
+                if (err) reject(err);
+                else resolve();
+            });
+        }
+    })
 };
 
 createTables(); 
 module.exports = db;
+

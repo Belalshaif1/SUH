@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import apiClient, { getMediaUrl } from '@/lib/apiClient';
+import { JobsService } from '@/services';
+import EmptyState from '@/components/common/EmptyState/EmptyState';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -25,7 +27,7 @@ const Jobs: React.FC = () => {
 
   // 1. جلب قائمة الوظائف من السيرفر عند تحميل الصفحة
   useEffect(() => {
-    apiClient('/jobs')
+    JobsService.getAll()
       .then(data => {
         setJobs(data || []);
         setLoading(false);
@@ -71,10 +73,7 @@ const Jobs: React.FC = () => {
       const uploadData = await apiClient('/upload', { method: 'POST', body: formData });
 
       // ثانياً: ربط الملف بالوظيفة المختارة في قاعدة البيانات
-      await apiClient('/job_applications', {
-        method: 'POST',
-        body: JSON.stringify({ job_id: selectedJob, file_url: uploadData.url })
-      });
+      await JobsService.apply({ job_id: selectedJob, file_url: uploadData.url });
 
       toast({ title: isAr ? 'تم التقديم بنجاح' : 'Applied successfully' });
       setSelectedJob(null);
@@ -186,15 +185,11 @@ const Jobs: React.FC = () => {
           ))}
         </div>
       ) : (
-        <div className="flex flex-col items-center justify-center py-40 text-center bg-white/50 backdrop-blur-sm rounded-[4rem] border border-dashed border-primary/20 shadow-2xl shadow-primary/5">
-          <div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mb-10">
-            <Briefcase className="h-12 w-12 text-primary/10" />
-          </div>
-          <h3 className="text-4xl font-bold text-primary mb-6">{isAr ? 'لا توجد وظائف متاحة' : 'No Jobs Available'}</h3>
-          <p className="text-xl text-muted-foreground max-w-md mx-auto leading-relaxed">
-            {searchTerm ? (isAr ? 'حاول البحث بكلمات أخرى.' : 'Try searching for other keywords.') : t('jobs.no_jobs')}
-          </p>
-        </div>
+        <EmptyState
+          icon={<div className="h-24 w-24 rounded-full bg-primary/5 flex items-center justify-center mx-auto mb-10 border border-primary/10"><Briefcase className="h-12 w-12 text-primary/40" /></div>}
+          title={isAr ? 'لا توجد وظائف متاحة' : 'No Jobs Available'}
+          description={searchTerm ? (isAr ? 'حاول البحث بكلمات أخرى.' : 'Try searching for other keywords.') : t('jobs.no_jobs')}
+        />
       )}
 
       <Dialog open={!!selectedJob} onOpenChange={(open) => { if (!open) { setSelectedJob(null); setCvFile(null); } }}>

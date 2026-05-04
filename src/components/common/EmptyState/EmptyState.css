@@ -1,0 +1,38 @@
+/* ─── EmptyState Component ─────────────────────────────────────────────────── */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 1.5rem;
+    text-align: center;
+    gap: 0.75rem;
+    min-height: 200px;
+}
+
+.empty-state__icon {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 0.5rem;
+    filter: grayscale(0.2);
+}
+
+.empty-state__title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary, #1f2937);
+    margin: 0;
+}
+
+.empty-state__description {
+    font-size: 0.9rem;
+    color: var(--color-text-muted, #6b7280);
+    margin: 0;
+    max-width: 320px;
+    line-height: 1.6;
+}
+
+.empty-state__action {
+    margin-top: 0.75rem;
+}

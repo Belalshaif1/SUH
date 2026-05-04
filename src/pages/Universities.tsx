@@ -2,63 +2,77 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { Building2, ArrowRight, ArrowLeft, Search, FileText, Download, Eye } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import apiClient, { getMediaUrl } from '@/lib/apiClient';
+import { getMediaUrl } from '@/lib/apiClient';
 import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PDFViewer from '@/components/ui/PDFViewer';
 
+// Services
+import { UniversitiesService, CollegesService, DepartmentsService } from '@/services';
+
+// Common Components
+import EmptyState from '@/components/common/EmptyState/EmptyState';
+import SearchInput from '@/components/common/SearchInput/SearchInput';
+import LoadingSpinner from '@/components/common/LoadingSpinner/LoadingSpinner';
+
 const Universities: React.FC = () => {
   const { t, language, isRTL } = useLanguage();
   const { universityId, collegeId } = useParams();
+  
   const [universities, setUniversities] = useState<any[]>([]);
   const [colleges, setColleges] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
+  
   const [sortBy, setSortBy] = useState('newest');
   const [search, setSearch] = useState('');
+  
   const [currentUni, setCurrentUni] = useState<any>(null);
   const [currentCollege, setCurrentCollege] = useState<any>(null);
+  
   const [previewPdf, setPreviewPdf] = useState<{ url: string, title: string } | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   const isAr = language === 'ar';
   const Arrow = isRTL ? ArrowLeft : ArrowRight;
 
-  // 1. جلب البيانات بناءً على معطيات الرابط (Params)
+  // 1. Fetch Data
   useEffect(() => {
     const fetchData = async () => {
+      setIsLoading(true);
       try {
         if (collegeId) {
-          // إذا كان الرابط يحتوي على معرف كلية، نجلب الأقسام التابعة لها
-          const deps = await apiClient('/departments', { params: { college_id: collegeId } });
+          const deps = await DepartmentsService.getAll(collegeId);
           setDepartments(deps || []);
-          const college = await apiClient(`/colleges/${collegeId}`);
+          const college = await CollegesService.getById(collegeId);
           setCurrentCollege(college);
         } else if (universityId) {
-          // إذا كان الرابط يحتوي على معرف جامعة، نجلب الكليات التابعة لها
-          const cols = await apiClient('/colleges', { params: { university_id: universityId } });
+          const cols = await CollegesService.getAll(universityId);
           setColleges(cols || []);
-          const uni = await apiClient(`/universities/${universityId}`);
+          const uni = await UniversitiesService.getById(universityId);
           setCurrentUni(uni);
         } else {
-          // إذا لم يوجد شيء، نعرض قائمة بكل الجامعات المتاحة
-          const unis = await apiClient('/universities', { params: { sort: sortBy } });
+          const unis = await UniversitiesService.getAll(sortBy);
           setUniversities(unis || []);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchData();
   }, [universityId, collegeId, sortBy]);
 
-  // وظائف مساعدة لجلب الاسم والوصف باللغة المختارة
+  // Helpers
   const getName = (item: any) => language === 'ar' ? item.name_ar : (item.name_en || item.name_ar);
   const getDesc = (item: any) => language === 'ar' ? item.description_ar : (item.description_en || item.description_ar);
 
-  // تصفية الجامعات بناءً على نص البحث
   const filteredUniversities = universities.filter(u =>
     getName(u).toLowerCase().includes(search.toLowerCase())
   );
+
 
   // --- الحالة الأولى: عرض الأقسام داخل كلية معينة ---
   if (collegeId) {
