@@ -236,14 +236,22 @@ if (typeof window !== 'undefined') {
  * @returns A fully-qualified URL string safe for use in <img src> or <a href>
  */
 export const getMediaUrl = (path: string | null | undefined): string => {
-    if (!path) return ''; // Null/undefined paths return empty string to avoid broken images
+    if (!path) return '';
 
-    if (path.startsWith('http')) return path; // Already a full URL — return as-is
+    if (path.startsWith('http')) return path;
 
-    // Strip '/api' from the end of the base URL — uploads are served at the root server path
-    const baseUrl = API_URL.replace(/\/api$/, '');
+    let baseUrl = API_URL.replace(/\/api$/, '');
+    
+    // Safety check: if we're on a real domain but API_URL is still pointing to localhost, 
+    // it means VITE_API_URL wasn't set. We should try to use the Railway URL if known,
+    // or at least not fail silently.
+    if (typeof window !== 'undefined' && 
+        window.location.hostname !== 'localhost' && 
+        baseUrl.includes('localhost')) {
+        // Fallback to the production Railway URL if VITE_API_URL is missing
+        baseUrl = 'https://suh-server.up.railway.app';
+    }
 
-    // Ensure there's exactly one '/' between the base URL and the path
     return `${baseUrl}${path.startsWith('/') ? '' : '/'}${path}`;
 };
 

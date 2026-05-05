@@ -56,7 +56,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
 
     // ── State ─────────────────────────────────────────────────────────
     const [admins, setAdmins] = useState<AdminRole[]>([]); // Admin list from server
-    const [loading, setLoading] = useState(false);            // True during mutations
+    const [loading, setLoading] = useState<boolean | string>(false);            // True (or message string) during mutations
 
     // -- Dialog visibility ------------------------------------------------
     const [dialogOpen, setDialogOpen] = useState(false);        // Create dialog
@@ -109,7 +109,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
             toast({ title: isAr ? 'أكمل جميع الحقول المطلوبة' : 'Fill all required fields', variant: 'destructive' });
             return;
         }
-        setLoading(true); // Show overlay
+        setLoading(isAr ? 'جاري إضافة مسؤول جديد...' : 'Adding new administrator...');
         try {
             await apiClient('/admins', { method: 'POST', body: JSON.stringify({ ...form, ...scopedIds(form) }) });
             toast({ title: isAr ? 'تم إنشاء المدير بنجاح' : 'Admin created successfully' });
@@ -135,7 +135,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
     // ── Delete ────────────────────────────────────────────────────────
     const handleDelete = async (roleId: string) => {
         if (!confirm(isAr ? 'هل أنت متأكد من حذف هذا المدير؟' : 'Are you sure you want to delete this admin?')) return;
-        setLoading(true);
+        setLoading(isAr ? 'جاري حذف المسؤول...' : 'Deleting administrator...');
         try {
             await apiClient(`/admins/${roleId}`, { method: 'DELETE' });
             toast({ title: isAr ? 'تم حذف المدير' : 'Admin deleted' });
@@ -157,7 +157,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
     // ── Save edit ─────────────────────────────────────────────────────
     const handleEdit = async () => {
         if (!editingAdmin || !editForm.role) return;
-        setLoading(true);
+        setLoading(isAr ? 'جاري تحديث البيانات...' : 'Updating details...');
         try {
             await apiClient(`/admins/${editingAdmin.id}`, { method: 'PUT', body: JSON.stringify({ ...editForm, ...scopedIds(editForm as typeof form) }) });
             toast({ title: isAr ? 'تم تعديل الدور بنجاح' : 'Role updated successfully' });
@@ -193,7 +193,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
     // ── Save permission overrides ────────────────────────────────────
     const saveUserPermissions = async () => {
         if (!selectedAdminForPermissions) return;
-        setLoading(true);
+        setLoading(isAr ? 'جاري حفظ الصلاحيات...' : 'Saving permissions...');
         try {
             await apiClient(`/permissions/user/${selectedAdminForPermissions.id}`, { method: 'PUT', body: JSON.stringify({ overrides: userPermissions }) });
             toast({ title: isAr ? 'تم حفظ الصلاحيات بنجاح' : 'Permissions saved successfully' });
@@ -359,7 +359,10 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
     return (
         <>
             {/* Standard full-screen blocking overlay handles the "Save/Delete" mutation state */}
-            <LoadingOverlay isVisible={loading} />
+            <LoadingOverlay 
+                isVisible={!!loading} 
+                message={typeof loading === 'string' ? loading : undefined} 
+            />
 
             <div>
                 {/* ── Header: title + Add Admin button ── */}
@@ -483,7 +486,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
                             {renderRoleFields(form, setForm, filtColleges, filtDepts)}
                             <div className="flex gap-2 justify-end pt-4 border-t">
                                 <Button variant="outline" onClick={() => setDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                <Button onClick={handleCreate} disabled={loading} className="bg-accent text-accent-foreground">
+                                <Button onClick={handleCreate} disabled={!!loading} className="bg-accent text-accent-foreground">
                                     {loading ? (isAr ? 'جاري الإنشاء...' : 'Creating...') : (isAr ? 'إنشاء المسؤول' : 'Create Admin')}
                                 </Button>
                             </div>
@@ -521,7 +524,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
                             </div>
                             <div className="flex gap-2 justify-end pt-4 border-t">
                                 <Button variant="outline" onClick={() => setEditDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                <Button onClick={handleEdit} disabled={loading} className="bg-accent text-accent-foreground">
+                                <Button onClick={handleEdit} disabled={!!loading} className="bg-accent text-accent-foreground">
                                     {loading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ التعديلات' : 'Save Changes')}
                                 </Button>
                             </div>
@@ -572,7 +575,7 @@ const AdminManagement: React.FC<AdminManagementProps> = ({ universities, college
                             </div>
                             <div className="flex gap-2 justify-end sticky bottom-0 bg-background pt-4 border-t mt-4">
                                 <Button variant="outline" onClick={() => setPermissionsDialogOpen(false)}>{isAr ? 'إلغاء' : 'Cancel'}</Button>
-                                <Button onClick={saveUserPermissions} disabled={loading} className="bg-accent text-accent-foreground">
+                                <Button onClick={saveUserPermissions} disabled={!!loading} className="bg-accent text-accent-foreground">
                                     {loading ? (isAr ? 'جاري الحفظ...' : 'Saving...') : (isAr ? 'حفظ الصلاحيات' : 'Save Permissions')}
                                 </Button>
                             </div>

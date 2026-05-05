@@ -94,7 +94,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
     const [users, setUsers] = useState<UserWithRole[]>([]); // Full list from the server
     const [search, setSearch] = useState('');               // Name filter string
     const [loading, setLoading] = useState(true);           // Initial fetch loading flag
-    const [mutationLoading, setMutationLoading] = useState(false); // Blocking overlay for save/delete
+    const [mutationLoading, setMutationLoading] = useState<boolean | string>(false); // Blocking overlay for save/delete (can hold message string)
     const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null); // User being edited
 
     // Edit dialog
@@ -151,7 +151,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
      * @param currentStatus - The user's current is_active state (to flip it)
      */
     const handleToggleStatus = async (userId: string, currentStatus: boolean): Promise<void> => {
-        setMutationLoading(true);
+        setMutationLoading(isAr ? 'جاري تحديث الحالة...' : 'Updating status...');
         try {
             await apiClient(`/auth/users/${userId}`, {
                 method: 'PUT',
@@ -175,7 +175,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
     const handleDeleteUser = async (userId: string): Promise<void> => {
         // Lightweight safety guard — native confirm so we don't need a full dialog component
         if (!confirm(isAr ? 'هل أنت متأكد من حذف هذا المستخدم؟' : 'Are you sure you want to delete this user?')) return;
-        setMutationLoading(true);
+        setMutationLoading(isAr ? 'جاري حذف المستخدم...' : 'Deleting user...');
         try {
             await apiClient(`/auth/users/${userId}`, { method: 'DELETE' }); // DELETE /api/auth/users/:id
             toast({ title: isAr ? 'تم حذف المستخدم' : 'User deleted' });
@@ -206,7 +206,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
     /** handleUpdateUser — sends updated user data to the server for the currently selected user */
     const handleUpdateUser = async (): Promise<void> => {
         if (!selectedUser) return; // Guard: shouldn't happen, but protects against stale state
-        setMutationLoading(true);
+        setMutationLoading(isAr ? 'جاري تحديث البيانات...' : 'Updating user...');
         try {
             await apiClient(`/auth/users/${selectedUser.id}`, {
                 method: 'PUT',
@@ -232,7 +232,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
             });
             return;
         }
-        setMutationLoading(true);
+        setMutationLoading(isAr ? 'جاري إضافة مستخدم جديد...' : 'Adding new user...');
         try {
             await apiClient('/auth/users', {
                 method: 'POST',
@@ -303,7 +303,10 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
     return (
         <div className="space-y-6">
             {/* Standard full-screen blocking overlay handles the "Save/Delete" mutation state */}
-            <LoadingOverlay isVisible={mutationLoading} />
+            <LoadingOverlay 
+                isVisible={!!mutationLoading} 
+                message={typeof mutationLoading === 'string' ? mutationLoading : undefined} 
+            />
 
             {/* ── Stat cards ── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -520,7 +523,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
                             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
                                 {isAr ? 'إلغاء' : 'Cancel'}
                             </Button>
-                            <Button onClick={handleUpdateUser} className="bg-accent text-accent-foreground">
+                            <Button onClick={handleUpdateUser} disabled={!!mutationLoading} className="bg-accent text-accent-foreground">
                                 {isAr ? 'حفظ التغييرات' : 'Save Changes'}
                             </Button>
                         </div>
@@ -599,7 +602,7 @@ const UserManagementTable: React.FC<UserManagementTableProps> = memo(({ onAddAdm
                             <Button variant="outline" onClick={() => setIsAddUserDialogOpen(false)}>
                                 {isAr ? 'إلغاء' : 'Cancel'}
                             </Button>
-                            <Button onClick={handleAddUser} className="bg-accent text-accent-foreground">
+                            <Button onClick={handleAddUser} disabled={!!mutationLoading} className="bg-accent text-accent-foreground">
                                 {isAr ? 'إضافة مستخدم' : 'Add User'}
                             </Button>
                         </div>

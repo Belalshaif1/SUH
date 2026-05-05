@@ -123,8 +123,8 @@ async function sendRegisterCode(req, res) {
         const identifierValue = email || phone;
 
         await db.runAsync(
-            'INSERT INTO verification_codes (identifier, code, expires_at) VALUES ($1, $2, $3)',
-            [identifierValue, resetCode, expiresAt.toISOString()]
+            'INSERT INTO verification_codes (id, identifier, code, expires_at) VALUES ($1, $2, $3, $4)',
+            [uuidv4(), identifierValue, resetCode, expiresAt.toISOString()]
         );
 
         const methodLabel = email ? 'EMAIL' : 'SMS';

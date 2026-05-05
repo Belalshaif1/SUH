@@ -15,6 +15,7 @@ import { Badge }  from '@/components/ui/badge';   // Role badge in the card head
 import { Button } from '@/components/ui/button';  // Save Changes button in the header bar
 import { useToast } from '@/hooks/use-toast';     // Toast notifications
 import { Shield, Save } from 'lucide-react';       // Shield for the section icon, Save for the button
+import { LoadingOverlay } from './LoadingOverlay';        // Standardized overlay
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -69,7 +70,7 @@ const RolePermissions: React.FC = () => {
     const [permissions, setPermissions] = useState<Permission[]>([]); // All role permission rows
     const [modified,    setModified]    = useState<Set<string>>(new Set()); // IDs of permissions changed locally
     const [loading,     setLoading]     = useState(true);  // Initial fetch loading state
-    const [saving,      setSaving]      = useState(false); // PUT request in-flight state
+    const [saving,      setSaving]      = useState<boolean | string>(false); // PUT request in-flight state (can hold message string)
 
     const isAr = language === 'ar'; // Shorthand for AR/EN checks
 
@@ -112,7 +113,7 @@ const RolePermissions: React.FC = () => {
      * Clears the modified set on success so the save button hides again.
      */
     const handleSave = async (): Promise<void> => {
-        setSaving(true); // Disable the Save button during the request
+        setSaving(isAr ? 'جاري حفظ الصلاحيات...' : 'Saving permissions...'); // Disable the Save button during the request
         try {
             const toUpdate = permissions.filter(p => modified.has(p.id)); // Only send rows that were changed
             await apiClient('/permissions', {
@@ -172,6 +173,10 @@ const RolePermissions: React.FC = () => {
 
     return (
         <div className="space-y-6">
+            <LoadingOverlay 
+                isVisible={!!saving} 
+                message={typeof saving === 'string' ? saving : undefined} 
+            />
 
             {/* ── Section header + conditional Save button ── */}
             <div className="flex items-center justify-between">
@@ -181,7 +186,7 @@ const RolePermissions: React.FC = () => {
                 </h2>
                 {/* Save button — only visible when there are unsaved local changes */}
                 {modified.size > 0 && (
-                    <Button onClick={handleSave} disabled={saving} className="bg-accent text-accent-foreground">
+                    <Button onClick={handleSave} disabled={!!saving} className="bg-accent text-accent-foreground">
                         <Save className="h-4 w-4 me-1" /> {/* Save icon */}
                         {saving
                             ? (isAr ? 'جاري الحفظ...' : 'Saving...')   // In-flight label
